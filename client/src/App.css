@@ -1,0 +1,224 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: rgb(0, 0, 0); /* Черный */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: rgb(255, 255, 255); /* Белый */
+}
+
+.App-link {
+  color: rgb(255, 55, 16); /* Красный */
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Custom theme styles */
+.custom-appbar {
+  background-color: rgb(0, 0, 0) !important; /* Черный */
+}
+
+.custom-button {
+  background-color: rgb(50, 50, 56) !important; /* Темно-серый */
+  color: rgb(255, 255, 255) !important; /* Белый */
+  border: 2px solid rgb(255, 55, 16) !important; /* Красная рамка */
+  font-weight: 600 !important;
+}
+
+.custom-button:hover {
+  background-color: rgba(255, 55, 16, 0.9) !important; /* Красный при наведении */
+  color: rgb(255, 255, 255) !important; /* Белый */
+}
+
+.custom-paper {
+  background-color: rgb(50, 50, 56) !important; /* Темно-серый */
+  color: rgb(215, 215, 215) !important; /* Светло-серый */
+}
+
+.custom-card {
+  background-color: rgb(50, 50, 56) !important; /* Темно-серый */
+  color: rgb(215, 215, 215) !important; /* Светло-серый */
+}
+
+.custom-text-field .MuiOutlinedInput-root {
+  background-color: rgb(255, 255, 255); /* Белый */
+  color: rgb(0, 0, 0); /* Черный */
+}
+
+.custom-divider {
+  background-color: rgb(255, 55, 16) !important; /* Красный */
+}
+
+/* Стили для дерева устройств */
+.device-item {
+  color: rgb(255, 255, 255) !important; /* Белый вместо зеленого */
+  font-weight: 500;
+  padding: 8px 4px !important;
+  margin: 2px 0 !important;
+  border-radius: 4px !important;
+}
+
+.device-item:hover {
+  background-color: rgba(255, 55, 16, 0.2) !important;
+}
+
+/* Стили для свойств устройства */
+.device-property {
+  border: 1px solid rgba(255, 55, 16, 0.4);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 15px;
+  height: 80px; /* Уменьшенная высота для обычных полей */
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+/* Контейнер для деталей устройства */
+.device-details {
+  padding: 24px 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Особые стили для описания */
+.device-property.description {
+  height: 120px; /* Увеличенная высота для поля описания */
+  padding-top: 8px;
+}
+
+.device-property.description .device-property-value {
+  max-height: 100px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.device-property-label {
+  color: rgba(215, 215, 215, 0.7);
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  display: block;
+  font-weight: 500;
+  height: 18px; /* Уменьшенная высота для меток */
+  position: relative;
+  z-index: 1;
+}
+
+.device-property-value {
+  color: rgb(255, 255, 255);
+  font-weight: 500;
+  flex-grow: 1;
+  display: flex;
+  align-items: flex-start; /* Выравнивание сверху для многострочного текста */
+  overflow: auto; /* Добавляем прокрутку для длинного текста */
+  font-size: 0.95rem;
+}
+
+/* Поля ввода в режиме редактирования */
+.custom-text-field {
+  height: 100%;
+  width: 100%;
+}
+
+.custom-text-field .MuiInputBase-root {
+  height: auto !important; /* Автоматическая высота для полей ввода */
+  min-height: 40px !important; /* Минимальная высота */
+  background-color: rgb(255, 255, 255) !important; /* Белый фон */
+  border-radius: 4px !important;
+}
+
+/* Особые стили для многострочного поля */
+.device-property.description .custom-text-field .MuiInputBase-root {
+  min-height: 100px !important; /* Увеличенная минимальная высота для многострочного поля */
+}
+
+.custom-text-field .MuiInputBase-input {
+  color: #000000 !important; /* Черный текст */
+  padding: 8px 10px !important; /* Отступы внутри поля ввода */
+}
+
+.custom-text-field textarea.MuiInputBase-input {
+  height: auto !important;
+  min-height: 90px !important;
+  padding: 8px 10px !important;
+  overflow-y: auto !important;
+}
+
+.custom-text-field .MuiOutlinedInput-multiline {
+  padding: 0 !important; /* Убираем лишние отступы для многострочного поля */
+}
+
+.custom-text-field .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(255, 55, 16, 0.4) !important; /* Цвет рамки */
+}
+
+/* Стили для выделения измененных полей */
+.field-changed .MuiOutlinedInput-notchedOutline {
+  border-color: #d32f2f !important; /* Красная рамка для измененных полей */
+  border-width: 2px !important;
+}
+
+.field-changed.MuiInputBase-root {
+  background-color: rgba(255, 235, 238, 0.3) !important; /* Слегка подсвеченный фон */
+}
+
+/* Стили для подсказки с исходным значением */
+.MuiInputBase-input::placeholder {
+  color: rgba(0, 0, 0, 0.5) !important; /* Темный цвет для плейсхолдеров */
+  font-style: italic;
+}
+
+/* Стили для диалогов */
+.MuiDialog-paper.custom-paper .MuiDialogTitle-root {
+  color: rgb(255, 55, 16) !important; /* Красный */
+}
+
+.MuiDialog-paper.custom-paper .MuiDialogContent-root {
+  border-top: 1px solid rgba(255, 55, 16, 0.5) !important; /* Красный с прозрачностью */
+  border-bottom: 1px solid rgba(255, 55, 16, 0.5) !important; /* Красный с прозрачностью */
+}
+
+.MuiDialog-paper.custom-paper .MuiInputLabel-root {
+  color: rgb(215, 215, 215) !important; /* Светло-серый */
+}
+
+.MuiDialog-paper.custom-paper .MuiFormHelperText-root {
+  color: rgba(215, 215, 215, 0.7) !important; /* Светло-серый с прозрачностью */
+}
+
+/* Стили для меню */
+.MuiMenu-paper {
+  background-color: rgb(50, 50, 56) !important; /* Темно-серый */
+  color: rgb(215, 215, 215) !important; /* Светло-серый */
+}
+
+.MuiMenuItem-root:hover {
+  background-color: rgba(255, 55, 16, 0.2) !important; /* Красный с прозрачностью */
+}

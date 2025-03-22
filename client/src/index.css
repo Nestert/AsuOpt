@@ -1,0 +1,24 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: rgb(50, 50, 56); /* Темно-серый фон */
+  color: rgb(215, 215, 215); /* Светло-серый текст */
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Определение пользовательских цветов */
+:root {
+  --black: rgb(0, 0, 0);
+  --red: rgb(255, 55, 16);
+  --dark-gray: rgb(50, 50, 56);
+  --light-gray: rgb(215, 215, 215);
+  --white: rgb(255, 255, 255);
+}
