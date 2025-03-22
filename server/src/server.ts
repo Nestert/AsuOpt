@@ -5,6 +5,7 @@ import { initializeDatabase } from './config/database';
 import deviceRoutes from './routes/deviceRoutes';
 import exportRoutes from './routes/exportRoutes';
 import importRoutes from './routes/importRoutes';
+import deviceReferenceRoutes from './routes/deviceReferenceRoutes';
 import path from 'path';
 
 const app = express();
@@ -32,6 +33,7 @@ initializeDatabase()
 app.use('/api/devices', deviceRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/import', importRoutes);
+app.use('/api/device-references', deviceReferenceRoutes);
 
 // Обработка ошибок
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

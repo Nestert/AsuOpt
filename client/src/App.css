@@ -1,40 +1,168 @@
-.App {
-  text-align: center;
+/* Основные стили приложения */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #f0f2f5;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: rgb(0, 0, 0); /* Черный */
+/* Общие стили компоновки */
+.app-layout {
   min-height: 100vh;
+}
+
+.app-header {
+  background-color: #001529;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  color: white;
+  height: 64px;
+  box-shadow: 0 2px 8px rgba(0, 21, 41, 0.15);
+}
+
+.main-layout {
+  padding: 16px;
+  background-color: #f0f2f5;
+}
+
+.main-tabs {
+  background-color: white;
+  padding: 0 16px;
+}
+
+.content-layout {
+  margin-top: 16px;
+  background-color: #f0f2f5;
+}
+
+.app-sider {
+  background-color: white;
+  padding: 16px;
+  border-radius: 4px;
+  margin-right: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.app-content {
+  padding: 16px;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Стили для компонента DeviceTree */
+.device-tree-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.device-search {
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.tree-wrapper {
+  margin-top: 16px;
+  overflow: auto;
+  flex: 1;
+}
+
+.tree-node-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.tree-node-name {
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+.tree-node-description {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: rgb(255, 255, 255); /* Белый */
+  padding: 40px 0;
+  gap: 16px;
 }
 
-.App-link {
-  color: rgb(255, 55, 16); /* Красный */
+.error-message {
+  color: #ff4d4f;
+  padding: 16px;
+  border: 1px solid #ffccc7;
+  border-radius: 4px;
+  background-color: #fff2f0;
+  margin-bottom: 16px;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* Стили для компонента DeviceDetails */
+.device-details-card {
+  width: 100%;
+}
+
+/* Стили для компонента ImportData */
+.import-data-card {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.import-type-selector {
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.upload-container {
+  margin: 24px 0;
+}
+
+.import-progress {
+  margin: 16px 0;
+}
+
+.import-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Фиксы для ant-design компонентов */
+.ant-layout {
+  background: #f0f2f5;
+}
+
+.ant-layout-header h1 {
+  color: white;
+  margin: 0;
+}
+
+.ant-input-search {
+  width: 100%;
+}
+
+.ant-tree {
+  margin-top: 10px;
+}
+
+.ant-tabs-tab {
+  padding: 10px 16px;
+}
+
+.ant-tabs-content {
+  margin-top: 10px;
+}
+
+.ant-descriptions-title {
+  margin-bottom: 16px !important;
 }
 
 /* Custom theme styles */

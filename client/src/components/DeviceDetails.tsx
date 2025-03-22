@@ -1,447 +1,208 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
-  Typography,
-  TextField,
-  Button,
-  Grid,
-  Card,
-  CardContent,
-  CardActions,
-  Divider,
-  Snackbar,
-  Alert,
-  Paper,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle
-} from '@mui/material';
-import axios from 'axios';
-import '../App.css';
-import { Save as SaveIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import React, { useEffect, useState } from 'react';
+import { Button, Card, Descriptions, Empty, Spin, Tabs, Typography } from 'antd';
+import type { TabsProps } from 'antd';
+import { deviceService } from '../services/api';
+import { DeviceFullData } from '../interfaces/DeviceReference';
 
-interface Device {
-  id: number;
-  systemCode: string;
-  equipmentCode: string;
-  lineNumber: string;
-  cabinetName: string;
-  deviceDesignation: string;
-  deviceType: string;
-  description: string;
-  parentId: number | null;
-}
+const { Title, Text } = Typography;
 
 interface DeviceDetailsProps {
-  device: Device | null;
-  onDeviceUpdated?: (device: Device) => void;
-  onDeviceDeleted?: (deviceId: number) => void;
+  deviceId: number | null;
 }
 
-// Компонент для отображения отдельного свойства устройства
-const PropertyField = ({ 
-  label, 
-  value, 
-  onChange, 
-  name, 
-  editMode, 
-  multiline = false,
-  isDescription = false 
-}: { 
-  label: string; 
-  value: string; 
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void; 
-  name: string; 
-  editMode: boolean;
-  multiline?: boolean;
-  isDescription?: boolean;
-}) => {
-  return (
-    <div className={`device-property ${isDescription ? 'description' : ''}`}>
-      <Typography variant="subtitle2" className="device-property-label">
-        {label}
-      </Typography>
-      {editMode ? (
-        <TextField
-          fullWidth
-          variant="outlined"
-          value={value || ''}
-          onChange={onChange}
-          name={name}
-          size="small"
-          className="custom-text-field"
-          multiline={multiline}
-          rows={multiline ? 4 : 1}
-          margin="none"
-          InputProps={{
-            style: { 
-              color: 'white',
-              fontSize: '1rem',
-              padding: '0'
-            }
-          }}
-        />
-      ) : (
-        <div className="device-property-value">
-          {value || '–'}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const DeviceDetails: React.FC<DeviceDetailsProps> = ({ device, onDeviceUpdated, onDeviceDeleted }) => {
-  const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState<Device>({
-    id: 0,
-    systemCode: '',
-    equipmentCode: '',
-    lineNumber: '',
-    cabinetName: '',
-    deviceDesignation: '',
-    deviceType: '',
-    description: '',
-    parentId: null
-  });
-  const [originalData, setOriginalData] = useState<Device | null>(null);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
+const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId }) => {
+  const [deviceData, setDeviceData] = useState<DeviceFullData | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [wasDeleted, setWasDeleted] = useState(false);
-  const [deletedDeviceName, setDeletedDeviceName] = useState('');
+
+  console.log('DeviceDetails: deviceId =', deviceId);
 
   useEffect(() => {
-    if (device) {
-      // Убедимся что все поля определены
-      const safeDevice: Device = {
-        id: device.id,
-        systemCode: device.systemCode || '',
-        equipmentCode: device.equipmentCode || '',
-        lineNumber: device.lineNumber || '',
-        cabinetName: device.cabinetName || '',
-        deviceDesignation: device.deviceDesignation || '',
-        deviceType: device.deviceType || '',
-        description: device.description || '',
-        parentId: device.parentId
-      };
-      setFormData(safeDevice);
-      setOriginalData(safeDevice);
-    }
-  }, [device]);
-
-  // Проверка изменилось ли поле
-  const isFieldChanged = (fieldName: keyof Device): boolean => {
-    if (!originalData) return false;
-    return formData[fieldName] !== originalData[fieldName];
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleEditClick = () => {
-    setEditMode(true);
-  };
-
-  const handleSave = async () => {
-    if (!device) return;
-
-    try {
-      const response = await axios.put(`http://localhost:3001/api/devices/${device.id}`, formData);
-      setEditMode(false);
-      setError(null);
-      setSnackbarOpen(true);
+    const fetchDeviceDetails = async () => {
+      console.log('fetchDeviceDetails: запрошен deviceId =', deviceId);
       
-      if (onDeviceUpdated) {
-        onDeviceUpdated(response.data);
+      if (!deviceId) {
+        console.log('deviceId отсутствует, сброс данных');
+        setDeviceData(null);
+        return;
       }
-    } catch (err) {
-      console.error('Error updating device:', err);
-      setError('Ошибка при обновлении устройства');
-      setSnackbarOpen(true);
-    }
-  };
 
-  const handleCancel = () => {
-    if (device) {
-      const safeDevice: Device = {
-        id: device.id,
-        systemCode: device.systemCode || '',
-        equipmentCode: device.equipmentCode || '',
-        lineNumber: device.lineNumber || '',
-        cabinetName: device.cabinetName || '',
-        deviceDesignation: device.deviceDesignation || '',
-        deviceType: device.deviceType || '',
-        description: device.description || '',
-        parentId: device.parentId
-      };
-      setFormData(safeDevice);
-    }
-    setEditMode(false);
-  };
-
-  const handleCloseSnackbar = () => {
-    setSnackbarOpen(false);
-    if (wasDeleted) {
-      setWasDeleted(false);
-    }
-  };
-
-  const handleDeleteClick = () => {
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!device) return;
-
-    try {
-      // Сохраняем информацию о устройстве перед удалением
-      const deviceName = device.deviceDesignation;
-      
-      await axios.delete(`http://localhost:3001/api/devices/${device.id}`);
-      setDeleteDialogOpen(false);
+      setLoading(true);
       setError(null);
-      
-      // Устанавливаем информацию об удалении
-      setWasDeleted(true);
-      setDeletedDeviceName(deviceName);
-      setSnackbarOpen(true);
-      
-      // Сбрасываем форму
-      setFormData({
-        id: 0,
-        systemCode: '',
-        equipmentCode: '',
-        lineNumber: '',
-        cabinetName: '',
-        deviceDesignation: '',
-        deviceType: '',
-        description: '',
-        parentId: null
-      });
-      
-      // Вызываем обработчик удаления устройства
-      if (onDeviceDeleted) {
-        onDeviceDeleted(device.id);
+      try {
+        console.log('Выполняем запрос к API с deviceId =', deviceId);
+        const data = await deviceService.getDeviceById(deviceId);
+        console.log('Получены данные устройства:', data);
+        setDeviceData(data);
+      } catch (err) {
+        console.error('Ошибка при загрузке данных устройства:', err);
+        setError('Не удалось загрузить данные устройства');
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Error deleting device:', err);
-      setDeleteDialogOpen(false);
-      setError('Ошибка при удалении устройства');
-      setSnackbarOpen(true);
-    }
-  };
+    };
 
-  const handleDeleteCancel = () => {
-    setDeleteDialogOpen(false);
-  };
+    fetchDeviceDetails();
+  }, [deviceId]);
 
-  // Модифицируем компонент PropertyField для использования в рендере
-  const renderPropertyField = (
-    label: string,
-    name: keyof Device,
-    multiline = false,
-    isDescription = false
-  ) => {
-    const value = formData[name] as string;
-    const isChanged = isFieldChanged(name);
-    
+  // Рендеринг информации об устройстве
+  const renderDeviceInfo = (): React.ReactNode => {
+    console.log('renderDeviceInfo, deviceData =', deviceData);
+    if (!deviceData || !deviceData.reference) return null;
+
     return (
-      <div className={`device-property ${isDescription ? 'description' : ''}`}>
-        <Typography variant="subtitle2" className="device-property-label">
-          {label}
-        </Typography>
-        {editMode ? (
-          <TextField
-            fullWidth
-            variant="outlined"
-            value={value || ''}
-            onChange={handleChange}
-            name={name}
-            size="small"
-            className={`custom-text-field ${isChanged ? 'field-changed' : ''}`}
-            multiline={multiline}
-            rows={multiline ? 3 : 1}
-            margin="none"
-            placeholder={originalData ? (originalData[name] as string) : ''}
-            InputProps={{
-              style: { 
-                color: isChanged ? '#d32f2f' : '#000000',
-                fontSize: '0.95rem',
-                height: isDescription ? '80px' : '40px'
-              }
-            }}
-          />
-        ) : (
-          <div className="device-property-value">
-            {value || '–'}
-          </div>
+      <Descriptions title="Общая информация" bordered column={1}>
+        <Descriptions.Item label="Обозначение">
+          {deviceData.reference.posDesignation}
+        </Descriptions.Item>
+        <Descriptions.Item label="Тип устройства">
+          {deviceData.reference.deviceType}
+        </Descriptions.Item>
+        {deviceData.reference.description && (
+          <Descriptions.Item label="Описание">
+            {deviceData.reference.description}
+          </Descriptions.Item>
         )}
-      </div>
+      </Descriptions>
     );
   };
 
-  if (!device || !formData) {
+  // Рендеринг информации о КИП
+  const renderKipInfo = (): React.ReactNode => {
+    if (!deviceData || !deviceData.kip) return <Empty description="Нет данных КИП" />;
+
+    const kip = deviceData.kip;
     return (
-      <Box sx={{ p: 2 }}>
-        <Typography variant="body1">Выберите устройство из списка для просмотра детальной информации</Typography>
-      </Box>
+      <Descriptions title="Информация о КИП" bordered>
+        {kip.section && <Descriptions.Item label="Секция">{kip.section}</Descriptions.Item>}
+        {kip.unitArea && <Descriptions.Item label="Установка/Зона">{kip.unitArea}</Descriptions.Item>}
+        {kip.manufacturer && <Descriptions.Item label="Производитель">{kip.manufacturer}</Descriptions.Item>}
+        {kip.article && <Descriptions.Item label="Артикул">{kip.article}</Descriptions.Item>}
+        {kip.measureUnit && <Descriptions.Item label="Единица измерения">{kip.measureUnit}</Descriptions.Item>}
+        {kip.scale && <Descriptions.Item label="Шкала">{kip.scale}</Descriptions.Item>}
+        {kip.note && <Descriptions.Item label="Примечание">{kip.note}</Descriptions.Item>}
+        {kip.docLink && <Descriptions.Item label="Ссылка на документацию">{kip.docLink}</Descriptions.Item>}
+        {kip.responsibilityZone && <Descriptions.Item label="Зона ответственности">{kip.responsibilityZone}</Descriptions.Item>}
+        {kip.connectionScheme && <Descriptions.Item label="Схема подключения">{kip.connectionScheme}</Descriptions.Item>}
+        {kip.power && <Descriptions.Item label="Питание">{kip.power}</Descriptions.Item>}
+        {kip.plc && <Descriptions.Item label="ПЛК">{kip.plc}</Descriptions.Item>}
+        {kip.exVersion && <Descriptions.Item label="Ex-версия">{kip.exVersion}</Descriptions.Item>}
+        {kip.environmentCharacteristics && <Descriptions.Item label="Характеристики окружающей среды">{kip.environmentCharacteristics}</Descriptions.Item>}
+        {kip.signalPurpose && <Descriptions.Item label="Назначение сигнала">{kip.signalPurpose}</Descriptions.Item>}
+        {kip.controlPoints !== undefined && <Descriptions.Item label="Контрольные точки">{kip.controlPoints}</Descriptions.Item>}
+        {kip.completeness && <Descriptions.Item label="Комплектность">{kip.completeness}</Descriptions.Item>}
+        {kip.measuringLimits && <Descriptions.Item label="Пределы измерений">{kip.measuringLimits}</Descriptions.Item>}
+      </Descriptions>
+    );
+  };
+
+  // Рендеринг информации о ЗРА
+  const renderZraInfo = (): React.ReactNode => {
+    if (!deviceData || !deviceData.zra) return <Empty description="Нет данных ЗРА" />;
+
+    const zra = deviceData.zra;
+    return (
+      <Descriptions title="Информация о ЗРА" bordered>
+        {zra.unitArea && <Descriptions.Item label="Установка/Зона">{zra.unitArea}</Descriptions.Item>}
+        {zra.designType && <Descriptions.Item label="Тип конструкции">{zra.designType}</Descriptions.Item>}
+        {zra.valveType && <Descriptions.Item label="Тип клапана">{zra.valveType}</Descriptions.Item>}
+        {zra.actuatorType && <Descriptions.Item label="Тип привода">{zra.actuatorType}</Descriptions.Item>}
+        {zra.pipePosition && <Descriptions.Item label="Положение трубы">{zra.pipePosition}</Descriptions.Item>}
+        {zra.nominalDiameter && <Descriptions.Item label="Номинальный диаметр">{zra.nominalDiameter}</Descriptions.Item>}
+        {zra.pressureRating && <Descriptions.Item label="Номинальное давление">{zra.pressureRating}</Descriptions.Item>}
+        {zra.pipeMaterial && <Descriptions.Item label="Материал трубы">{zra.pipeMaterial}</Descriptions.Item>}
+        {zra.medium && <Descriptions.Item label="Среда">{zra.medium}</Descriptions.Item>}
+        {zra.positionSensor && <Descriptions.Item label="Датчик положения">{zra.positionSensor}</Descriptions.Item>}
+        {zra.solenoidType && <Descriptions.Item label="Тип соленоида">{zra.solenoidType}</Descriptions.Item>}
+        {zra.emergencyPosition && <Descriptions.Item label="Аварийное положение">{zra.emergencyPosition}</Descriptions.Item>}
+        {zra.controlPanel && <Descriptions.Item label="Панель управления">{zra.controlPanel}</Descriptions.Item>}
+        {zra.airConsumption && <Descriptions.Item label="Расход воздуха">{zra.airConsumption}</Descriptions.Item>}
+        {zra.connectionSize && <Descriptions.Item label="Размер соединения">{zra.connectionSize}</Descriptions.Item>}
+        {zra.fittingsCount !== undefined && <Descriptions.Item label="Количество фитингов">{zra.fittingsCount}</Descriptions.Item>}
+        {zra.tubeDiameter && <Descriptions.Item label="Диаметр трубы">{zra.tubeDiameter}</Descriptions.Item>}
+        {zra.limitSwitchType && <Descriptions.Item label="Тип концевого выключателя">{zra.limitSwitchType}</Descriptions.Item>}
+        {zra.positionerType && <Descriptions.Item label="Тип позиционера">{zra.positionerType}</Descriptions.Item>}
+        {zra.deviceDescription && <Descriptions.Item label="Описание устройства">{zra.deviceDescription}</Descriptions.Item>}
+        {zra.category && <Descriptions.Item label="Категория">{zra.category}</Descriptions.Item>}
+        {zra.plc && <Descriptions.Item label="ПЛК">{zra.plc}</Descriptions.Item>}
+        {zra.exVersion && <Descriptions.Item label="Ex-версия">{zra.exVersion}</Descriptions.Item>}
+        {zra.operation && <Descriptions.Item label="Управление">{zra.operation}</Descriptions.Item>}
+        {zra.note && <Descriptions.Item label="Примечание">{zra.note}</Descriptions.Item>}
+      </Descriptions>
+    );
+  };
+
+  // Отображение сообщения, когда устройство не выбрано
+  if (!deviceId) {
+    console.log('DeviceDetails: deviceId отсутствует, отображаем пустой интерфейс');
+    return (
+      <Card className="device-details-card">
+        <Empty description="Выберите устройство для просмотра подробной информации" />
+      </Card>
     );
   }
 
+  // Отображение ошибки загрузки
+  if (error) {
+    console.log('DeviceDetails: отображаем ошибку:', error);
+    return (
+      <Card className="device-details-card">
+        <div className="error-message">{error}</div>
+        <Button type="primary" onClick={() => setError(null)}>
+          Попробовать снова
+        </Button>
+      </Card>
+    );
+  }
+
+  // Отображение состояния загрузки
+  if (loading) {
+    console.log('DeviceDetails: отображаем состояние загрузки');
+    return (
+      <Card className="device-details-card">
+        <div className="loading-container">
+          <Spin size="large" />
+          <Text>Загрузка информации об устройстве...</Text>
+        </div>
+      </Card>
+    );
+  }
+
+  // Отображение данных устройства
+  console.log('DeviceDetails: рендерим данные устройства:', deviceData);
   return (
-    <div className="device-details">
-      {device ? (
+    <Card className="device-details-card">
+      {deviceData ? (
         <>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-            <Typography variant="h6" component="h2">
-              Свойства устройства
-            </Typography>
-            <div>
-              {editMode ? (
-                <>
-                  <Button
-                    variant="outlined"
-                    onClick={handleCancel}
-                    sx={{ mr: 2 }}
-                  >
-                    Отмена
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={handleSave}
-                    startIcon={<SaveIcon />}
-                  >
-                    Сохранить
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={handleDeleteClick}
-                    startIcon={<DeleteIcon />}
-                    sx={{ mr: 2 }}
-                  >
-                    Удалить
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    onClick={handleEditClick}
-                    startIcon={<EditIcon />}
-                  >
-                    Редактировать
-                  </Button>
-                </>
-              )}
-            </div>
-          </Box>
-
-
-          <Grid container spacing={4}>
-            <Grid item xs={12} md={6}>
-              {renderPropertyField("Код системы", "systemCode")}
-            </Grid>
-            <Grid item xs={12} md={6}>
-              {renderPropertyField("Код оборудования", "equipmentCode")}
-            </Grid>
-            <Grid item xs={12} md={6}>
-              {renderPropertyField("Номер линии", "lineNumber")}
-            </Grid>
-            <Grid item xs={12} md={6}>
-              {renderPropertyField("Название шкафа", "cabinetName")}
-            </Grid>
-            <Grid item xs={12} md={6}>
-              {renderPropertyField("Обозначение", "deviceDesignation")}
-            </Grid>
-            <Grid item xs={12} md={6}>
-              {renderPropertyField("Тип устройства", "deviceType")}
-            </Grid>
-            <Grid item xs={12}>
-              <Box sx={{ mt: 1 }}>
-                <div className={`device-property description`}>
-                  <Typography variant="subtitle2" className="device-property-label" sx={{ mb: 1 }}>
-                    Описание
-                  </Typography>
-                  {editMode ? (
-                    <TextField
-                      fullWidth
-                      variant="outlined"
-                      value={formData.description || ''}
-                      onChange={handleChange}
-                      name="description"
-                      size="small"
-                      className={`custom-text-field ${isFieldChanged('description') ? 'field-changed' : ''}`}
-                      multiline
-                      rows={3}
-                      margin="none"
-                      placeholder={originalData ? (originalData.description as string) : ''}
-                      InputProps={{
-                        style: { 
-                          color: isFieldChanged('description') ? '#d32f2f' : '#000000',
-                          fontSize: '0.95rem',
-                          minHeight: '80px'
-                        }
-                      }}
-                      sx={{ mt: 1 }}
-                    />
-                  ) : (
-                    <div className="device-property-value">
-                      {formData.description || '–'}
-                    </div>
-                  )}
-                </div>
-              </Box>
-            </Grid>
-          </Grid>
+          <Title level={4}>
+            {deviceData.reference.posDesignation}
+          </Title>
           
-          <Snackbar 
-            open={snackbarOpen} 
-            autoHideDuration={6000} 
-            onClose={handleCloseSnackbar}
-            anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-          >
-            <Alert onClose={handleCloseSnackbar} severity={error ? 'error' : 'success'}>
-              {error || (wasDeleted 
-                ? `Устройство "${deletedDeviceName}" успешно удалено` 
-                : 'Устройство успешно обновлено')}
-            </Alert>
-          </Snackbar>
-
-          {/* Диалог подтверждения удаления */}
-          <Dialog
-            open={deleteDialogOpen}
-            onClose={handleDeleteCancel}
-            PaperProps={{ className: 'custom-paper' }}
-          >
-            <DialogTitle>Подтверждение удаления</DialogTitle>
-            <DialogContent>
-              <DialogContentText>
-                Вы действительно хотите удалить устройство "{device.deviceDesignation}"? Это действие нельзя отменить.
-              </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={handleDeleteCancel} color="primary">
-                Отмена
-              </Button>
-              <Button onClick={handleDeleteConfirm} color="error" autoFocus>
-                Удалить
-              </Button>
-            </DialogActions>
-          </Dialog>
+          <Tabs 
+            defaultActiveKey="info"
+            items={[
+              {
+                key: 'info',
+                label: 'Общая информация',
+                children: renderDeviceInfo()
+              },
+              ...(deviceData.dataType === 'kip' ? [{
+                key: 'kip',
+                label: 'Данные КИП',
+                children: renderKipInfo()
+              }] : []),
+              ...(deviceData.dataType === 'zra' ? [{
+                key: 'zra',
+                label: 'Данные ЗРА',
+                children: renderZraInfo()
+              }] : [])
+            ]}
+          />
         </>
       ) : (
-        <Typography variant="body1">Выберите устройство для просмотра деталей</Typography>
+        <Empty description="Данные устройства не найдены" />
       )}
-    </div>
+    </Card>
   );
 };
 
