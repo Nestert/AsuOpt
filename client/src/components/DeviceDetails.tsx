@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Descriptions, Empty, Spin, Tabs, Typography } from 'antd';
+import { Button, Card, Descriptions, Empty, Spin, Tabs, Typography, message } from 'antd';
 import type { TabsProps } from 'antd';
-import { deviceService } from '../services/api';
+import { deviceService, kipService, zraService } from '../services/api';
 import { DeviceFullData } from '../interfaces/DeviceReference';
+import { EditOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
@@ -14,6 +15,8 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId }) => {
   const [deviceData, setDeviceData] = useState<DeviceFullData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editableData, setEditableData] = useState<DeviceFullData | null>(null);
 
   console.log('DeviceDetails: deviceId =', deviceId);
 
@@ -45,22 +48,99 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId }) => {
     fetchDeviceDetails();
   }, [deviceId]);
 
+  // Начать редактирование устройства
+  const startEditing = () => {
+    if (deviceData) {
+      setEditableData({...deviceData});
+      setIsEditing(true);
+    }
+  };
+
+  // Сохранить изменения
+  const saveChanges = async () => {
+    if (!editableData) return;
+
+    setLoading(true);
+    try {
+      // Сохраняем изменения в зависимости от типа устройства
+      if (editableData.dataType === 'kip' && editableData.kip) {
+        await kipService.updateKip(editableData.kip.id, editableData.kip);
+      } else if (editableData.dataType === 'zra' && editableData.zra) {
+        await zraService.updateZra(editableData.zra.id, editableData.zra);
+      }
+      
+      // Обновляем данные устройства
+      const updatedData = await deviceService.getDeviceById(deviceId!);
+      setDeviceData(updatedData);
+      message.success('Данные устройства успешно обновлены');
+      setIsEditing(false);
+    } catch (err) {
+      console.error('Ошибка при сохранении данных:', err);
+      message.error('Не удалось сохранить изменения');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Отменить редактирование
+  const cancelEditing = () => {
+    setIsEditing(false);
+    setEditableData(null);
+  };
+
+  // Обработка изменения полей устройства
+  const handleFieldChange = (section: 'reference' | 'kip' | 'zra', field: string, value: any) => {
+    if (!editableData) return;
+    
+    setEditableData({
+      ...editableData,
+      [section]: {
+        ...editableData[section],
+        [field]: value
+      }
+    });
+  };
+
   // Рендеринг информации об устройстве
   const renderDeviceInfo = (): React.ReactNode => {
     console.log('renderDeviceInfo, deviceData =', deviceData);
     if (!deviceData || !deviceData.reference) return null;
+    
+    const data = isEditing ? editableData : deviceData;
+    if (!data) return null;
 
     return (
       <Descriptions title="Общая информация" bordered column={1}>
         <Descriptions.Item label="Обозначение">
-          {deviceData.reference.posDesignation}
+          {isEditing ? (
+            <input 
+              type="text" 
+              value={data.reference.posDesignation} 
+              onChange={(e) => handleFieldChange('reference', 'posDesignation', e.target.value)}
+              className="ant-input"
+            />
+          ) : data.reference.posDesignation}
         </Descriptions.Item>
         <Descriptions.Item label="Тип устройства">
-          {deviceData.reference.deviceType}
+          {isEditing ? (
+            <input 
+              type="text" 
+              value={data.reference.deviceType} 
+              onChange={(e) => handleFieldChange('reference', 'deviceType', e.target.value)}
+              className="ant-input"
+            />
+          ) : data.reference.deviceType}
         </Descriptions.Item>
-        {deviceData.reference.description && (
+        {(data.reference.description || isEditing) && (
           <Descriptions.Item label="Описание">
-            {deviceData.reference.description}
+            {isEditing ? (
+              <input 
+                type="text" 
+                value={data.reference.description || ''} 
+                onChange={(e) => handleFieldChange('reference', 'description', e.target.value)}
+                className="ant-input"
+              />
+            ) : data.reference.description}
           </Descriptions.Item>
         )}
       </Descriptions>
@@ -69,15 +149,62 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId }) => {
 
   // Рендеринг информации о КИП
   const renderKipInfo = (): React.ReactNode => {
-    if (!deviceData || !deviceData.kip) return <Empty description="Нет данных КИП" />;
+    if (!deviceData) return <Empty description="Нет данных КИП" />;
+    
+    const data = isEditing ? editableData : deviceData;
+    if (!data || !data.kip) return <Empty description="Нет данных КИП" />;
 
-    const kip = deviceData.kip;
+    const kip = data.kip;
     return (
       <Descriptions title="Информация о КИП" bordered>
-        {kip.section && <Descriptions.Item label="Секция">{kip.section}</Descriptions.Item>}
-        {kip.unitArea && <Descriptions.Item label="Установка/Зона">{kip.unitArea}</Descriptions.Item>}
-        {kip.manufacturer && <Descriptions.Item label="Производитель">{kip.manufacturer}</Descriptions.Item>}
-        {kip.article && <Descriptions.Item label="Артикул">{kip.article}</Descriptions.Item>}
+        {(kip.section !== undefined || isEditing) && (
+          <Descriptions.Item label="Секция">
+            {isEditing ? (
+              <input 
+                type="text" 
+                value={kip.section || ''} 
+                onChange={(e) => handleFieldChange('kip', 'section', e.target.value)}
+                className="ant-input"
+              />
+            ) : kip.section}
+          </Descriptions.Item>
+        )}
+        {(kip.unitArea !== undefined || isEditing) && (
+          <Descriptions.Item label="Установка/Зона">
+            {isEditing ? (
+              <input 
+                type="text" 
+                value={kip.unitArea || ''} 
+                onChange={(e) => handleFieldChange('kip', 'unitArea', e.target.value)}
+                className="ant-input"
+              />
+            ) : kip.unitArea}
+          </Descriptions.Item>
+        )}
+        {(kip.manufacturer !== undefined || isEditing) && (
+          <Descriptions.Item label="Производитель">
+            {isEditing ? (
+              <input 
+                type="text" 
+                value={kip.manufacturer || ''} 
+                onChange={(e) => handleFieldChange('kip', 'manufacturer', e.target.value)}
+                className="ant-input"
+              />
+            ) : kip.manufacturer}
+          </Descriptions.Item>
+        )}
+        {(kip.article !== undefined || isEditing) && (
+          <Descriptions.Item label="Артикул">
+            {isEditing ? (
+              <input 
+                type="text" 
+                value={kip.article || ''} 
+                onChange={(e) => handleFieldChange('kip', 'article', e.target.value)}
+                className="ant-input"
+              />
+            ) : kip.article}
+          </Descriptions.Item>
+        )}
         {kip.measureUnit && <Descriptions.Item label="Единица измерения">{kip.measureUnit}</Descriptions.Item>}
         {kip.scale && <Descriptions.Item label="Шкала">{kip.scale}</Descriptions.Item>}
         {kip.note && <Descriptions.Item label="Примечание">{kip.note}</Descriptions.Item>}
@@ -98,14 +225,50 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId }) => {
 
   // Рендеринг информации о ЗРА
   const renderZraInfo = (): React.ReactNode => {
-    if (!deviceData || !deviceData.zra) return <Empty description="Нет данных ЗРА" />;
+    if (!deviceData) return <Empty description="Нет данных ЗРА" />;
+    
+    const data = isEditing ? editableData : deviceData;
+    if (!data || !data.zra) return <Empty description="Нет данных ЗРА" />;
 
-    const zra = deviceData.zra;
+    const zra = data.zra;
     return (
       <Descriptions title="Информация о ЗРА" bordered>
-        {zra.unitArea && <Descriptions.Item label="Установка/Зона">{zra.unitArea}</Descriptions.Item>}
-        {zra.designType && <Descriptions.Item label="Тип конструкции">{zra.designType}</Descriptions.Item>}
-        {zra.valveType && <Descriptions.Item label="Тип клапана">{zra.valveType}</Descriptions.Item>}
+        {(zra.unitArea !== undefined || isEditing) && (
+          <Descriptions.Item label="Установка/Зона">
+            {isEditing ? (
+              <input 
+                type="text" 
+                value={zra.unitArea || ''} 
+                onChange={(e) => handleFieldChange('zra', 'unitArea', e.target.value)}
+                className="ant-input"
+              />
+            ) : zra.unitArea}
+          </Descriptions.Item>
+        )}
+        {(zra.designType !== undefined || isEditing) && (
+          <Descriptions.Item label="Тип конструкции">
+            {isEditing ? (
+              <input 
+                type="text" 
+                value={zra.designType || ''} 
+                onChange={(e) => handleFieldChange('zra', 'designType', e.target.value)}
+                className="ant-input"
+              />
+            ) : zra.designType}
+          </Descriptions.Item>
+        )}
+        {(zra.valveType !== undefined || isEditing) && (
+          <Descriptions.Item label="Тип клапана">
+            {isEditing ? (
+              <input 
+                type="text" 
+                value={zra.valveType || ''} 
+                onChange={(e) => handleFieldChange('zra', 'valveType', e.target.value)}
+                className="ant-input"
+              />
+            ) : zra.valveType}
+          </Descriptions.Item>
+        )}
         {zra.actuatorType && <Descriptions.Item label="Тип привода">{zra.actuatorType}</Descriptions.Item>}
         {zra.pipePosition && <Descriptions.Item label="Положение трубы">{zra.pipePosition}</Descriptions.Item>}
         {zra.nominalDiameter && <Descriptions.Item label="Номинальный диаметр">{zra.nominalDiameter}</Descriptions.Item>}
@@ -174,9 +337,29 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId }) => {
     <Card className="device-details-card">
       {deviceData ? (
         <>
-          <Title level={4}>
-            {deviceData.reference.posDesignation}
-          </Title>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <Title level={4}>
+              {deviceData.reference.posDesignation}
+            </Title>
+            {isEditing ? (
+              <div>
+                <Button type="primary" onClick={saveChanges} style={{ marginRight: 8 }}>
+                  Сохранить
+                </Button>
+                <Button onClick={cancelEditing}>
+                  Отмена
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                type="primary" 
+                icon={<EditOutlined />} 
+                onClick={startEditing}
+              >
+                Редактировать
+              </Button>
+            )}
+          </div>
           
           <Tabs 
             defaultActiveKey="info"
