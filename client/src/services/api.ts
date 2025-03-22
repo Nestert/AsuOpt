@@ -52,6 +52,63 @@ export const deviceService = {
     }
   },
   
+  // Удалить устройство по ID
+  deleteDeviceById: async (id: number): Promise<void> => {
+    console.log(`API: вызов deleteDeviceById с id=${id}`);
+    try {
+      console.log(`API: отправляем DELETE запрос к /device-references/${id}`);
+      const response = await api.delete(`/device-references/${id}`);
+      console.log(`API: устройство с id=${id} успешно удалено, статус:`, response.status);
+      console.log(`API: ответ сервера:`, response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error(`API: ошибка в deleteDeviceById(${id}):`, error);
+      if (error.response) {
+        console.error(`API: статус ошибки:`, error.response.status);
+        console.error(`API: данные ошибки:`, error.response.data);
+      } else if (error.request) {
+        console.error(`API: запрос отправлен, но ответ не получен:`, error.request);
+      } else {
+        console.error(`API: ошибка при настройке запроса:`, error.message);
+      }
+      throw error;
+    }
+  },
+  
+  // Очистить базу данных устройств
+  clearAllDevices: async (): Promise<any> => {
+    console.log('API: вызов clearAllDevices');
+    try {
+      const response = await api.delete('/devices/clear');
+      console.log('API: база данных устройств очищена:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('API: ошибка в clearAllDevices:', error);
+      if (error.response) {
+        console.error('API: статус ошибки:', error.response.status);
+        console.error('API: данные ошибки:', error.response.data);
+      }
+      throw error;
+    }
+  },
+  
+  // Очистить базу данных справочников
+  clearAllReferences: async (): Promise<any> => {
+    console.log('API: вызов clearAllReferences');
+    try {
+      const response = await api.delete('/device-references/clear');
+      console.log('API: база данных справочников очищена:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('API: ошибка в clearAllReferences:', error);
+      if (error.response) {
+        console.error('API: статус ошибки:', error.response.status);
+        console.error('API: данные ошибки:', error.response.data);
+      }
+      throw error;
+    }
+  },
+  
   // Поиск устройств
   searchDevices: async (query: string): Promise<DeviceReference[]> => {
     console.log(`API: вызов searchDevices с query="${query}"`);

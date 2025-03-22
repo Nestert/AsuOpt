@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Empty, Input, Spin, Tree, Typography } from 'antd';
-import type { TreeProps } from 'antd';
 import {
   FolderOutlined,
   AppstoreOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
 import { deviceService } from '../services/api';
-import { TreeNode, DeviceReference } from '../interfaces/DeviceReference';
+import { DeviceReference } from '../interfaces/DeviceReference';
 
 const { Search } = Input;
 const { Text } = Typography;
 
 interface DeviceTreeProps {
   onSelectDevice: (deviceId: number) => void;
+  updateCounter?: number; // Счетчик обновлений для триггера перезагрузки дерева
 }
 
 // Интерфейс для узла нашего кастомного дерева
@@ -26,7 +26,7 @@ interface CustomTreeNode {
   isLeaf?: boolean;
 }
 
-const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice }) => {
+const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter = 0 }) => {
   const [devices, setDevices] = useState<DeviceReference[]>([]);
   const [treeData, setTreeData] = useState<CustomTreeNode[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
@@ -101,16 +101,18 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice }) => {
 
   // Загрузка устройств
   useEffect(() => {
+    console.log('DeviceTree: запускаем загрузку устройств, updateCounter =', updateCounter);
     const fetchDevices = async () => {
       setLoading(true);
       setError(null);
       try {
         const data = await deviceService.getAllDevices();
-        console.log('Загружены устройства:', data);
+        console.log('Загружены устройства:', data.length, 'элементов');
         setDevices(data);
         const customTree = buildCustomTree(data);
         setTreeData(customTree);
       } catch (err) {
+        console.error('Ошибка при загрузке устройств:', err);
         setError('Не удалось загрузить устройства');
       } finally {
         setLoading(false);
@@ -118,7 +120,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice }) => {
     };
 
     fetchDevices();
-  }, []);
+  }, [updateCounter]); // Зависимость от updateCounter для перезагрузки при изменениях
 
   // Поиск в дереве устройств
   const handleSearch = (value: string) => {

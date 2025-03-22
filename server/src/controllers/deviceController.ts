@@ -176,19 +176,33 @@ export const clearAllDevices = async (req: Request, res: Response) => {
     
     // Получаем текущее количество устройств для информации
     const countBefore = await Device.count();
+    console.log(`Найдено ${countBefore} устройств для удаления`);
     
-    // Используем более безопасный метод для SQLite
-    await Device.destroy({ 
-      where: {},  // Удаляем все записи без truncate
-      force: true // Физическое удаление (не soft delete)
-    });
+    // Начинаем транзакцию
+    const transaction = await Device.sequelize!.transaction();
     
-    console.log(`Очищена база данных. Удалено ${countBefore} устройств.`);
-    
-    res.status(200).json({ 
-      message: 'База данных успешно очищена', 
-      deletedCount: countBefore 
-    });
+    try {
+      // Используем более безопасный метод для SQLite
+      await Device.destroy({ 
+        where: {},  // Удаляем все записи без truncate
+        force: true, // Физическое удаление (не soft delete)
+        transaction // Используем транзакцию
+      });
+      
+      // Подтверждаем транзакцию
+      await transaction.commit();
+      
+      console.log(`Очищена база данных. Удалено ${countBefore} устройств.`);
+      
+      res.status(200).json({ 
+        message: 'База данных успешно очищена', 
+        deletedCount: countBefore 
+      });
+    } catch (error) {
+      // Откатываем транзакцию в случае ошибки
+      await transaction.rollback();
+      throw error;
+    }
   } catch (error) {
     console.error('Ошибка при очистке базы данных:', error);
     res.status(500).json({ 

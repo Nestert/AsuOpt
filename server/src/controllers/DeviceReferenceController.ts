@@ -64,6 +64,121 @@ export class DeviceReferenceController {
     }
   }
 
+  // Удаление устройства по ID
+  static async deleteDeviceById(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      console.log(`Сервер: запрос на удаление устройства с id=${id}, IP:${req.ip}, метод:${req.method}`);
+      
+      // Получаем устройство из справочника для проверки существования
+      const deviceRef = await DeviceReference.findByPk(id);
+      
+      if (!deviceRef) {
+        console.log(`Сервер: устройство с id=${id} не найдено`);
+        res.status(404).json({ message: 'Устройство не найдено' });
+        return;
+      }
+      
+      console.log(`Сервер: найдено устройство для удаления: ${deviceRef.posDesignation} (id=${id})`);
+      
+      // Начинаем транзакцию для обеспечения целостности данных
+      const transaction = await DeviceReference.sequelize!.transaction();
+      
+      try {
+        // Удаляем связанные данные КИП, если они есть
+        const kipResult = await Kip.destroy({
+          where: { deviceReferenceId: id },
+          transaction
+        });
+        console.log(`Сервер: удалено записей КИП: ${kipResult}`);
+        
+        // Удаляем связанные данные ЗРА, если они есть
+        const zraResult = await Zra.destroy({
+          where: { deviceReferenceId: id },
+          transaction
+        });
+        console.log(`Сервер: удалено записей ЗРА: ${zraResult}`);
+        
+        // Проверяем, есть ли связанные устройства в таблице Device
+        try {
+          const Device = require('../models/Device').Device;
+          // Удаляем связи в таблице Device, если есть
+          const deviceResult = await Device.destroy({
+            where: { 
+              // Поиск по возможным ключам связи
+              [Op.or]: [
+                { deviceReferenceId: id },
+                { referenceId: id }
+              ]
+            },
+            transaction
+          });
+          console.log(`Сервер: удалено связанных устройств: ${deviceResult}`);
+        } catch (devError) {
+          console.log('Сервер: таблица Device не найдена или не содержит связей с этим устройством');
+          console.log('Детали ошибки:', devError.message);
+        }
+        
+        // Проверяем наличие других возможных связей
+        try {
+          // Получаем все модели из sequelize
+          const models = DeviceReference.sequelize!.models;
+          
+          // Проходимся по всем моделям и ищем возможные связи с deviceReferenceId
+          for (const modelName in models) {
+            if (modelName !== 'DeviceReference' && modelName !== 'Kip' && modelName !== 'Zra' && modelName !== 'Device') {
+              const model = models[modelName];
+              // Проверяем, есть ли в модели поле deviceReferenceId
+              if (model.rawAttributes && (model.rawAttributes.deviceReferenceId || model.rawAttributes.referenceId)) {
+                const whereClause: any = {};
+                
+                if (model.rawAttributes.deviceReferenceId) {
+                  whereClause.deviceReferenceId = id;
+                } else if (model.rawAttributes.referenceId) {
+                  whereClause.referenceId = id;
+                }
+                
+                if (Object.keys(whereClause).length > 0) {
+                  const deleteResult = await model.destroy({
+                    where: whereClause,
+                    transaction
+                  });
+                  console.log(`Сервер: удалено записей из таблицы ${modelName}: ${deleteResult}`);
+                }
+              }
+            }
+          }
+        } catch (modelError) {
+          console.log('Сервер: ошибка при поиске связей в других моделях:', modelError.message);
+        }
+        
+        // Удаляем само устройство из справочника
+        await deviceRef.destroy({ transaction });
+        console.log(`Сервер: устройство с id=${id} успешно удалено`);
+        
+        // Подтверждаем транзакцию
+        await transaction.commit();
+        console.log(`Сервер: транзакция успешно завершена для id=${id}`);
+        
+        res.status(200).json({ 
+          message: 'Устройство и связанные данные успешно удалены',
+          id: id
+        });
+      } catch (txError) {
+        // Если произошла ошибка, откатываем транзакцию
+        await transaction.rollback();
+        console.error('Сервер: ошибка при выполнении транзакции удаления:', txError);
+        throw txError;
+      }
+    } catch (error) {
+      console.error('Ошибка при удалении устройства:', error);
+      res.status(500).json({ 
+        message: 'Ошибка при удалении устройства', 
+        error: error.message 
+      });
+    }
+  }
+
   // Поиск устройств по части позиционного обозначения
   static async searchDevices(req: Request, res: Response): Promise<void> {
     try {
@@ -152,6 +267,85 @@ export class DeviceReferenceController {
       res.status(500).json({ 
         message: 'Ошибка при получении дерева устройств', 
         error: error.message 
+      });
+    }
+  }
+
+  // Обновление данных устройства по ID
+  static async updateDeviceReference(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      // Получаем устройство из справочника
+      const deviceRef = await DeviceReference.findByPk(id);
+      
+      if (!deviceRef) {
+        res.status(404).json({ message: 'Устройство не найдено' });
+        return;
+      }
+      
+      // Обновляем данные устройства
+      await deviceRef.update(updateData);
+      
+      // Возвращаем обновленные данные
+      res.json({
+        message: 'Данные устройства успешно обновлены',
+        device: deviceRef
+      });
+    } catch (error) {
+      console.error('Ошибка при обновлении устройства:', error);
+      res.status(500).json({ 
+        message: 'Ошибка при обновлении устройства', 
+        error: error.message 
+      });
+    }
+  }
+
+  // Очистка всех справочников устройств
+  static async clearAllReferences(req: Request, res: Response): Promise<void> {
+    try {
+      console.log('Запрос на очистку справочников устройств');
+      
+      // Начинаем транзакцию
+      const transaction = await DeviceReference.sequelize!.transaction();
+      
+      try {
+        // Получаем количество записей для информации
+        const kipCount = await Kip.count();
+        const zraCount = await Zra.count();
+        const refCount = await DeviceReference.count();
+        
+        // Сначала удаляем связанные данные КИП и ЗРА
+        await Kip.destroy({ where: {}, force: true, transaction });
+        await Zra.destroy({ where: {}, force: true, transaction });
+        
+        // Затем удаляем сами справочники
+        await DeviceReference.destroy({ where: {}, force: true, transaction });
+        
+        // Подтверждаем транзакцию
+        await transaction.commit();
+        
+        console.log(`Очищены справочники. Удалено: ${refCount} справочников, ${kipCount} записей КИП, ${zraCount} записей ЗРА`);
+        
+        res.status(200).json({
+          message: 'Справочники устройств успешно очищены',
+          deletedCounts: {
+            references: refCount,
+            kip: kipCount,
+            zra: zraCount
+          }
+        });
+      } catch (error) {
+        // Откатываем транзакцию в случае ошибки
+        await transaction.rollback();
+        throw error;
+      }
+    } catch (error) {
+      console.error('Ошибка при очистке справочников устройств:', error);
+      res.status(500).json({ 
+        message: 'Ошибка при очистке справочников устройств', 
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   }

@@ -1,25 +1,30 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Descriptions, Empty, Spin, Tabs, Typography, message } from 'antd';
-import type { TabsProps } from 'antd';
-import { deviceService, kipService, zraService } from '../services/api';
+import { Button, Card, Descriptions, Empty, Spin, Tabs, Typography, message, Modal, Space, App } from 'antd';
+import { deviceService, } from '../services/api';
 import { DeviceFullData } from '../interfaces/DeviceReference';
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
 interface DeviceDetailsProps {
   deviceId: number | null;
+  onDeviceDeleted?: () => void; // Callback для уведомления родительского компонента о удалении
+  onDeviceUpdated?: () => void; // Callback для уведомления родительского компонента о обновлении
 }
 
-const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId }) => {
+const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted, onDeviceUpdated }) => {
   const [deviceData, setDeviceData] = useState<DeviceFullData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editableData, setEditableData] = useState<DeviceFullData | null>(null);
+  
+  // Получаем modal из App на верхнем уровне компонента
+  const { modal } = App.useApp();
 
   console.log('DeviceDetails: deviceId =', deviceId);
 
+  // Функция для прямого удаления устройства через fetch
   useEffect(() => {
     const fetchDeviceDetails = async () => {
       console.log('fetchDeviceDetails: запрошен deviceId =', deviceId);
@@ -57,35 +62,238 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId }) => {
   };
 
   // Сохранить изменения
-  const saveChanges = async () => {
-    if (!editableData) return;
+  const saveChanges = () => {
+    if (!editableData || !deviceId) return;
 
+    console.log('Начало сохранения изменений для устройства с ID=', deviceId);
     setLoading(true);
-    try {
-      // Сохраняем изменения в зависимости от типа устройства
-      if (editableData.dataType === 'kip' && editableData.kip) {
-        await kipService.updateKip(editableData.kip.id, editableData.kip);
-      } else if (editableData.dataType === 'zra' && editableData.zra) {
-        await zraService.updateZra(editableData.zra.id, editableData.zra);
-      }
+    
+    const savePromises = [];
+    
+    // Сохраняем основные данные устройства (reference)
+    if (editableData.reference && editableData.reference.id) {
+      console.log('Сохранение основных данных устройства:', editableData.reference);
       
-      // Обновляем данные устройства
-      const updatedData = await deviceService.getDeviceById(deviceId!);
-      setDeviceData(updatedData);
-      message.success('Данные устройства успешно обновлены');
-      setIsEditing(false);
-    } catch (err) {
-      console.error('Ошибка при сохранении данных:', err);
-      message.error('Не удалось сохранить изменения');
-    } finally {
-      setLoading(false);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const referencePromise = fetch(`${apiUrl}/device-references/${editableData.reference.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(editableData.reference)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Ошибка обновления основных данных: ${response.status}`);
+        }
+        console.log('Основные данные устройства успешно обновлены');
+        return response.json();
+      })
+      .catch(error => {
+        console.error('Ошибка при обновлении основных данных:', error);
+        throw error;
+      });
+      
+      savePromises.push(referencePromise);
     }
+    
+    // Сохраняем данные КИП, если есть
+    if (editableData.dataType === 'kip' && editableData.kip && editableData.kip.id) {
+      console.log('Сохранение данных КИП:', editableData.kip);
+      
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const kipPromise = fetch(`${apiUrl}/kips/${editableData.kip.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(editableData.kip)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Ошибка обновления КИП: ${response.status}`);
+        }
+        console.log('КИП успешно обновлен');
+        return response.json();
+      })
+      .catch(error => {
+        console.error('Ошибка при обновлении КИП:', error);
+        throw error;
+      });
+      
+      savePromises.push(kipPromise);
+    }
+    
+    // Сохраняем данные ЗРА, если есть
+    if (editableData.dataType === 'zra' && editableData.zra && editableData.zra.id) {
+      console.log('Сохранение данных ЗРА:', editableData.zra);
+      
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      const zraPromise = fetch(`${apiUrl}/zras/${editableData.zra.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(editableData.zra)
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Ошибка обновления ЗРА: ${response.status}`);
+        }
+        console.log('ЗРА успешно обновлен');
+        return response.json();
+      })
+      .catch(error => {
+        console.error('Ошибка при обновлении ЗРА:', error);
+        throw error;
+      });
+      
+      savePromises.push(zraPromise);
+    }
+    
+    // Обрабатываем результаты сохранения
+    Promise.all(savePromises)
+      .then(() => {
+        // Обновляем данные устройства
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+        return fetch(`${apiUrl}/device-references/${deviceId}`)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error(`Ошибка получения обновленных данных: ${response.status}`);
+            }
+            return response.json();
+          });
+      })
+      .then((updatedData) => {
+        console.log('Данные устройства обновлены:', updatedData);
+        setDeviceData(updatedData);
+        message.success('Изменения успешно сохранены');
+        setIsEditing(false);
+        
+        // Вызываем callback для обновления дерева, если он предоставлен
+        if (onDeviceUpdated) {
+          console.log('DeviceDetails: вызываем callback onDeviceUpdated для обновления дерева');
+          onDeviceUpdated();
+        } else {
+          console.log('DeviceDetails: callback onDeviceUpdated не предоставлен');
+        }
+      })
+      .catch((err) => {
+        console.error('Ошибка при сохранении данных:', err);
+        message.error(`Не удалось сохранить изменения: ${err.message || 'Неизвестная ошибка'}`);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   // Отменить редактирование
   const cancelEditing = () => {
     setIsEditing(false);
     setEditableData(null);
+  };
+
+  // Показать модальное окно подтверждения удаления
+  const showDeleteConfirm = () => {
+    if (!deviceData || !deviceId) {
+      console.error('showDeleteConfirm: отсутствует deviceData или deviceId', { deviceData, deviceId });
+      return;
+    }
+    
+    console.log('Запрос на удаление устройства:', {
+      id: deviceId,
+      posDesignation: deviceData.reference.posDesignation
+    });
+    
+    // Используем modal, полученный на верхнем уровне компонента
+    modal.confirm({
+      title: 'Вы действительно хотите удалить это устройство?',
+      icon: <ExclamationCircleOutlined />,
+      content: (
+        <div>
+          <p>Позиционное обозначение: <strong>{deviceData.reference.posDesignation}</strong></p>
+          <p>Тип устройства: <strong>{deviceData.reference.deviceType}</strong></p>
+          <p>Это действие невозможно отменить.</p>
+        </div>
+      ),
+      okText: 'Да, удалить',
+      okType: 'danger',
+      cancelText: 'Отмена',
+      onOk: () => {
+        // Явно возвращаем Promise для предотвращения двойного вызова
+        return new Promise<void>((resolve, reject) => {
+          deleteDevice()
+            .then(() => {
+              console.log('DeviceDetails: удаление завершено успешно');
+              resolve();
+            })
+            .catch((error) => {
+              console.error('DeviceDetails: ошибка при удалении в обработчике modalOk:', error);
+              reject(error);
+            });
+        });
+      }
+    });
+  };
+
+  // Реализация удаления устройства
+  const deleteDevice = async () => {
+    if (!deviceId) return;
+    
+    setLoading(true);
+    try {
+      console.log('DeviceDetails: НАЧИНАЕМ УДАЛЕНИЕ устройства с ID =', deviceId);
+      
+      // Отправляем запрос на удаление с прямым использованием fetch для диагностики
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+      console.log(`DeviceDetails: отправляем DELETE запрос на ${apiUrl}/device-references/${deviceId}`);
+      
+      const response = await fetch(`${apiUrl}/device-references/${deviceId}`, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
+      console.log('DeviceDetails: получен ответ на удаление, статус:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('DeviceDetails: ошибка удаления, статус:', response.status, 'текст:', errorText);
+        throw new Error(`Ошибка ${response.status}: ${errorText}`);
+      }
+      
+      // Парсим тело ответа если есть
+      let responseData;
+      try {
+        responseData = await response.json();
+        console.log('DeviceDetails: данные ответа на удаление:', responseData);
+      } catch (e) {
+        console.log('DeviceDetails: ответ не содержит данных JSON');
+      }
+      
+      message.success('Устройство успешно удалено');
+      console.log('DeviceDetails: устройство успешно удалено');
+      
+      // Вызываем callback для обновления родительского компонента
+      if (onDeviceDeleted) {
+        console.log('DeviceDetails: вызываем callback onDeviceDeleted');
+        onDeviceDeleted();
+      } else {
+        console.log('DeviceDetails: callback onDeviceDeleted не предоставлен!');
+      }
+      
+      // Сбрасываем выбранное устройство
+      setDeviceData(null);
+    } catch (error) {
+      console.error('DeviceDetails: ошибка при удалении устройства:', error);
+      message.error(`Не удалось удалить устройство: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Обработка изменения полей устройства
@@ -295,41 +503,59 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId }) => {
     );
   };
 
-  // Отображение сообщения, когда устройство не выбрано
-  if (!deviceId) {
-    console.log('DeviceDetails: deviceId отсутствует, отображаем пустой интерфейс');
-    return (
-      <Card className="device-details-card">
-        <Empty description="Выберите устройство для просмотра подробной информации" />
-      </Card>
-    );
-  }
-
-  // Отображение ошибки загрузки
-  if (error) {
-    console.log('DeviceDetails: отображаем ошибку:', error);
-    return (
-      <Card className="device-details-card">
-        <div className="error-message">{error}</div>
-        <Button type="primary" onClick={() => setError(null)}>
-          Попробовать снова
-        </Button>
-      </Card>
-    );
-  }
-
-  // Отображение состояния загрузки
+  // Если данных нет или идет загрузка
   if (loading) {
-    console.log('DeviceDetails: отображаем состояние загрузки');
     return (
-      <Card className="device-details-card">
-        <div className="loading-container">
-          <Spin size="large" />
-          <Text>Загрузка информации об устройстве...</Text>
-        </div>
+      <Card>
+        <Spin tip="Загрузка данных...">
+          <div style={{ padding: '50px 0' }}></div>
+        </Spin>
       </Card>
     );
   }
+
+  if (!deviceData || !deviceId) {
+    return (
+      <Card>
+        <Empty description="Выберите устройство для просмотра" />
+      </Card>
+    );
+  }
+
+  // Заголовок карточки
+  const cardTitle = (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <span>
+        {deviceData.reference.posDesignation} - {deviceData.reference.deviceType}
+      </span>
+      <Space>
+        {!isEditing ? (
+          <>
+            <Button
+              type="primary" 
+              icon={<EditOutlined />} 
+              onClick={startEditing}
+            >
+              Редактировать
+            </Button>
+            <Button
+              type="primary"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={showDeleteConfirm}
+            >
+              Удалить
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button onClick={cancelEditing}>Отмена</Button>
+            <Button type="primary" onClick={saveChanges}>Сохранить</Button>
+          </>
+        )}
+      </Space>
+    </div>
+  );
 
   // Отображение данных устройства
   console.log('DeviceDetails: рендерим данные устройства:', deviceData);
@@ -337,29 +563,7 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId }) => {
     <Card className="device-details-card">
       {deviceData ? (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <Title level={4}>
-              {deviceData.reference.posDesignation}
-            </Title>
-            {isEditing ? (
-              <div>
-                <Button type="primary" onClick={saveChanges} style={{ marginRight: 8 }}>
-                  Сохранить
-                </Button>
-                <Button onClick={cancelEditing}>
-                  Отмена
-                </Button>
-              </div>
-            ) : (
-              <Button 
-                type="primary" 
-                icon={<EditOutlined />} 
-                onClick={startEditing}
-              >
-                Редактировать
-              </Button>
-            )}
-          </div>
+          {cardTitle}
           
           <Tabs 
             defaultActiveKey="info"
