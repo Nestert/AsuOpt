@@ -52,46 +52,9 @@ body {
 }
 
 /* Стили для компонента DeviceTree */
-.device-tree-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.device-search {
-  margin-bottom: 16px;
-  width: 100%;
-}
-
-.tree-wrapper {
+.device-tree {
   margin-top: 16px;
   overflow: auto;
-  flex: 1;
-}
-
-.tree-node-title {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.tree-node-name {
-  font-weight: 500;
-  margin-right: 4px;
-}
-
-.tree-node-description {
-  font-size: 12px;
-  color: rgba(0, 0, 0, 0.45);
-}
-
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 40px 0;
-  gap: 16px;
 }
 
 .error-message {
@@ -103,17 +66,25 @@ body {
   margin-bottom: 16px;
 }
 
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  gap: 16px;
+}
+
 /* Стили для компонента DeviceDetails */
 .device-details-card {
   width: 100%;
-  overflow-x: auto; /* Добавляем горизонтальную прокрутку */
+  overflow-x: auto;
 }
 
 .device-details-card .ant-card-body {
   padding: 12px;
 }
 
-/* Обеспечиваем компактное отображение карточки */
 .device-details-card .ant-tabs-nav {
   margin-bottom: 8px;
 }
@@ -122,7 +93,6 @@ body {
   padding: 0;
 }
 
-/* Обеспечиваем правильную работу с табами внутри карточки */
 .device-details-card .ant-tabs {
   overflow: visible;
 }
@@ -131,7 +101,6 @@ body {
   overflow: auto;
 }
 
-/* Более компактные отступы для заголовка описания */
 .device-details-card .ant-descriptions-header {
   margin-bottom: 8px;
 }
@@ -142,7 +111,6 @@ body {
   margin-bottom: 8px !important;
 }
 
-/* Стили для прокрутки содержимого карточки */
 .device-details-scroll-container {
   width: 100%;
   max-width: 100%;
@@ -185,38 +153,42 @@ body {
   margin: 0;
 }
 
-.ant-input-search {
-  width: 100%;
+.ant-upload-drag-icon,
+.ant-upload-text,
+.ant-upload-hint {
+  /* Стили для компонента Upload из Ant Design */
+  display: block;
 }
 
-.ant-tree {
-  margin-top: 10px;
+/* Стили для инпутов в DeviceDetails */
+.device-edit-input {
+  width: 200% !important;
+  padding: 6px 10px !important;
+  height: 32px !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
 }
 
-.ant-tabs-tab {
-  padding: 10px 16px;
+.device-edit-textarea {
+  width: 200% !important;
+  padding: 6px 10px !important;
+  min-height: 80px !important;
+  font-size: 14px !important;
+  resize: horizontal !important;
+  box-sizing: border-box !important;
 }
 
-.ant-tabs-content {
-  margin-top: 10px;
-}
-
-.ant-descriptions-title {
-  margin-bottom: 16px !important;
-}
-
-/* Стили для компонента Description, чтобы исправить проблему с выезжающей таблицей */
+/* Стили для ant-descriptions */
 .ant-descriptions-bordered {
   width: 100%;
   overflow: auto;
   max-width: 100%;
   margin-bottom: 24px;
-  table-layout: fixed; /* Фиксированная ширина колонок */
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
 }
 
-/* Уменьшаем отступы в таблице */
 .ant-descriptions-bordered .ant-descriptions-row > th,
 .ant-descriptions-bordered .ant-descriptions-row > td {
   padding: 8px 12px;
@@ -231,10 +203,9 @@ body {
 .ant-descriptions-bordered .ant-descriptions-row {
   display: flex;
   flex-wrap: wrap;
-  margin: 0; /* Убираем внешние отступы строк */
+  margin: 0;
 }
 
-/* Компактное отображение элементов таблицы */
 .ant-descriptions-bordered .ant-descriptions-item {
   display: flex;
   width: 100%;
@@ -253,7 +224,7 @@ body {
   background-color: #fafafa;
   font-weight: 500;
   border-right: 1px solid #f0f0f0;
-  padding: 8px 12px; /* Уменьшаем отступы */
+  padding: 8px 12px;
   word-break: break-word;
   vertical-align: middle;
   display: flex;
@@ -264,286 +235,37 @@ body {
   width: 70%;
   flex-grow: 1;
   min-width: 150px;
-  padding: 8px 12px; /* Уменьшаем отступы */
+  padding: 8px 12px;
   word-break: break-word;
   display: flex;
   align-items: center;
 }
 
-/* Стили для инпутов внутри описаний - делаем их удобнее для редактирования */
-.ant-descriptions-item .ant-input {
-  width: 100%;
-  min-width: 200px;
-  padding: 8px 10px;
-  border-radius: 4px;
-  font-size: 14px;
-  height: 32px; /* Уменьшаем высоту инпута */
-  box-sizing: border-box;
-  margin: 0;
-  border: 1px solid #d9d9d9;
-  transition: all 0.3s;
+/* Material-UI компоненты */
+.custom-button {
+  background-color: rgb(50, 50, 56) !important;
+  color: rgb(255, 255, 255) !important;
+  border: 2px solid rgb(255, 55, 16) !important;
+  font-weight: 600 !important;
 }
 
-/* Специальные классы для полей ввода в DeviceDetails */
-.device-edit-input {
-  width: 200% !important;
-  padding: 6px 10px !important;
-  height: 32px !important;
-  font-size: 14px !important;
-  box-sizing: border-box !important;
+.custom-button:hover {
+  background-color: rgba(255, 55, 16, 0.9) !important;
+  color: rgb(255, 255, 255) !important;
 }
 
-.device-edit-textarea {
-  width: 200% !important;
-  padding: 6px 10px !important;
-  min-height: 80px !important;
-  font-size: 14px !important;
-  resize: horizontal !important;
-  box-sizing: border-box !important;
+.custom-text-field .MuiOutlinedInput-root {
+  background-color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
 }
 
-.ant-descriptions-item .ant-input:hover,
-.ant-descriptions-item .ant-input:focus {
-  border-color: #40a9ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-}
-
-/* Для многострочных полей */
-.ant-descriptions-item textarea.ant-input {
-  min-height: 80px; /* Увеличиваем высоту для соответствия device-edit-textarea */
-  height: auto;
-  resize: vertical;
-  line-height: 1.5;
-  padding: 8px 10px;
-}
-
-/* Стиль для режима просмотра - фиксированные колонки */
-.ant-descriptions-bordered table {
-  width: 100%;
-  table-layout: fixed;
-}
-
-.ant-descriptions-bordered th.ant-descriptions-item-label {
-  width: 25%; /* Уменьшаем ширину метки для увеличения пространства ввода */
-}
-
-.ant-descriptions-bordered td.ant-descriptions-item-content {
-  width: 75%; /* Увеличиваем ширину контента */
-}
-
-/* При печати убирать ограничения ширины */
-@media print {
-  .ant-descriptions-bordered {
-    width: 100% !important;
-    overflow: visible !important;
-  }
-}
-
-/* Обеспечиваем, чтобы описания были отзывчивыми на маленьких экранах */
+/* Медиа-запросы для адаптивности */
 @media (max-width: 768px) {
   .ant-descriptions-bordered .ant-descriptions-item {
     width: 100%;
   }
 }
 
-/* Custom theme styles */
-.custom-appbar {
-  background-color: rgb(0, 0, 0) !important; /* Черный */
-}
-
-.custom-button {
-  background-color: rgb(50, 50, 56) !important; /* Темно-серый */
-  color: rgb(255, 255, 255) !important; /* Белый */
-  border: 2px solid rgb(255, 55, 16) !important; /* Красная рамка */
-  font-weight: 600 !important;
-}
-
-.custom-button:hover {
-  background-color: rgba(255, 55, 16, 0.9) !important; /* Красный при наведении */
-  color: rgb(255, 255, 255) !important; /* Белый */
-}
-
-.custom-paper {
-  background-color: rgb(50, 50, 56) !important; /* Темно-серый */
-  color: rgb(215, 215, 215) !important; /* Светло-серый */
-}
-
-.custom-card {
-  background-color: rgb(50, 50, 56) !important; /* Темно-серый */
-  color: rgb(215, 215, 215) !important; /* Светло-серый */
-}
-
-.custom-text-field .MuiOutlinedInput-root {
-  background-color: rgb(255, 255, 255); /* Белый */
-  color: rgb(0, 0, 0); /* Черный */
-}
-
-.custom-divider {
-  background-color: rgb(255, 55, 16) !important; /* Красный */
-}
-
-/* Стили для дерева устройств */
-.device-item {
-  color: rgb(255, 255, 255) !important; /* Белый вместо зеленого */
-  font-weight: 500;
-  padding: 8px 4px !important;
-  margin: 2px 0 !important;
-  border-radius: 4px !important;
-}
-
-.device-item:hover {
-  background-color: rgba(255, 55, 16, 0.2) !important;
-}
-
-/* Стили для свойств устройства */
-.device-property {
-  border: 1px solid rgba(255, 55, 16, 0.4);
-  border-radius: 4px;
-  padding: 12px;
-  margin-bottom: 15px;
-  height: 80px; /* Уменьшенная высота для обычных полей */
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-/* Контейнер для деталей устройства */
-.device-details {
-  padding: 24px 32px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Особые стили для описания */
-.device-property.description {
-  height: 120px; /* Увеличенная высота для поля описания */
-  padding-top: 8px;
-}
-
-.device-property.description .device-property-value {
-  max-height: 100px;
-  overflow-y: auto;
-  padding-right: 5px;
-}
-
-.device-property-label {
-  color: rgba(215, 215, 215, 0.7);
-  font-size: 0.85rem;
-  margin-bottom: 6px;
-  display: block;
-  font-weight: 500;
-  height: 18px; /* Уменьшенная высота для меток */
-  position: relative;
-  z-index: 1;
-}
-
-.device-property-value {
-  color: rgb(255, 255, 255);
-  font-weight: 500;
-  flex-grow: 1;
-  display: flex;
-  align-items: flex-start; /* Выравнивание сверху для многострочного текста */
-  overflow: auto; /* Добавляем прокрутку для длинного текста */
-  font-size: 0.95rem;
-}
-
-/* Поля ввода в режиме редактирования */
-.custom-text-field {
-  height: 100%;
-  width: 100%;
-}
-
-.custom-text-field .MuiInputBase-root {
-  height: auto !important; /* Автоматическая высота для полей ввода */
-  min-height: 40px !important; /* Минимальная высота */
-  background-color: rgb(255, 255, 255) !important; /* Белый фон */
-  border-radius: 4px !important;
-}
-
-/* Особые стили для многострочного поля */
-.device-property.description .custom-text-field .MuiInputBase-root {
-  min-height: 100px !important; /* Увеличенная минимальная высота для многострочного поля */
-}
-
-.custom-text-field .MuiInputBase-input {
-  color: #000000 !important; /* Черный текст */
-  padding: 8px 10px !important; /* Отступы внутри поля ввода */
-}
-
-.custom-text-field textarea.MuiInputBase-input {
-  height: auto !important;
-  min-height: 90px !important;
-  padding: 8px 10px !important;
-  overflow-y: auto !important;
-}
-
-.custom-text-field .MuiOutlinedInput-multiline {
-  padding: 0 !important; /* Убираем лишние отступы для многострочного поля */
-}
-
-.custom-text-field .MuiOutlinedInput-notchedOutline {
-  border-color: rgba(255, 55, 16, 0.4) !important; /* Цвет рамки */
-}
-
-/* Стили для выделения измененных полей */
-.field-changed .MuiOutlinedInput-notchedOutline {
-  border-color: #d32f2f !important; /* Красная рамка для измененных полей */
-  border-width: 2px !important;
-}
-
-.field-changed.MuiInputBase-root {
-  background-color: rgba(255, 235, 238, 0.3) !important; /* Слегка подсвеченный фон */
-}
-
-/* Стили для подсказки с исходным значением */
-.MuiInputBase-input::placeholder {
-  color: rgba(0, 0, 0, 0.5) !important; /* Темный цвет для плейсхолдеров */
-  font-style: italic;
-}
-
-/* Стили для диалогов */
-.MuiDialog-paper.custom-paper .MuiDialogTitle-root {
-  color: rgb(255, 55, 16) !important; /* Красный */
-}
-
-.MuiDialog-paper.custom-paper .MuiDialogContent-root {
-  border-top: 1px solid rgba(255, 55, 16, 0.5) !important; /* Красный с прозрачностью */
-  border-bottom: 1px solid rgba(255, 55, 16, 0.5) !important; /* Красный с прозрачностью */
-}
-
-.MuiDialog-paper.custom-paper .MuiInputLabel-root {
-  color: rgb(215, 215, 215) !important; /* Светло-серый */
-}
-
-.MuiDialog-paper.custom-paper .MuiFormHelperText-root {
-  color: rgba(215, 215, 215, 0.7) !important; /* Светло-серый с прозрачностью */
-}
-
-/* Стили для меню */
-.MuiMenu-paper {
-  background-color: rgb(50, 50, 56) !important; /* Темно-серый */
-  color: rgb(215, 215, 215) !important; /* Светло-серый */
-}
-
-.MuiMenuItem-root:hover {
-  background-color: rgba(255, 55, 16, 0.2) !important; /* Красный с прозрачностью */
-}
-
-/* Для разрешений более 768px */
-@media (min-width: 768px) {
-  .ant-descriptions-bordered .ant-descriptions-item-label {
-    width: 25%; /* Сохраняем консистентность с основными стилями */
-  }
-  
-  .ant-descriptions-bordered .ant-descriptions-item-content {
-    width: 75%; /* Сохраняем консистентность с основными стилями */
-  }
-}
-
-/* Для мобильных устройств */
 @media (max-width: 767px) {
   .ant-descriptions-bordered .ant-descriptions-item-label,
   .ant-descriptions-bordered .ant-descriptions-item-content {
@@ -556,45 +278,9 @@ body {
   }
 }
 
-/* Редактирование таблицы в режиме ввода */
-.ant-descriptions-bordered {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.ant-descriptions-bordered .ant-descriptions-item {
-  border-bottom: 1px solid #f0f0f0;
-}
-
-/* Убираем лишние отступы в режиме редактирования */
-.device-details-card .ant-descriptions-view {
-  border-spacing: 0;
-}
-
-.device-details-card .ant-descriptions-row {
-  margin-bottom: 0;
-}
-
-/* Улучшаем отображение полей ввода в режиме редактирования */
-.ant-descriptions-item .ant-input,
-.ant-descriptions-item .device-edit-input,
-.ant-descriptions-item .device-edit-textarea {
-  border-radius: 4px;
-  transition: all 0.3s;
-  margin: 4px 0;
-}
-
-.ant-descriptions-item .ant-input:focus,
-.device-edit-input:focus,
-.device-edit-textarea:focus {
-  border-color: #1890ff;
-  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
-  outline: none;
-}
-
-/* Дополнительные стили для контейнера таблицы */
-.device-details-card .ant-descriptions-view {
-  border-spacing: 0;
-  max-width: 100%;
-  overflow-x: hidden;
+@media print {
+  .ant-descriptions-bordered {
+    width: 100% !important;
+    overflow: visible !important;
+  }
 }
