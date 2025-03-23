@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Descriptions, Empty, Spin, Tabs, Typography, message, Modal, Space, App } from 'antd';
+import { Button, Card, Descriptions, Empty, Spin, Tabs, Typography, Modal, Space, App } from 'antd';
 import { deviceService, } from '../services/api';
 import { DeviceFullData } from '../interfaces/DeviceReference';
 import { EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
@@ -19,8 +19,8 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
   const [isEditing, setIsEditing] = useState(false);
   const [editableData, setEditableData] = useState<DeviceFullData | null>(null);
   
-  // Получаем modal из App на верхнем уровне компонента
-  const { modal } = App.useApp();
+  // Получаем modal и message из App на верхнем уровне компонента
+  const { modal, message } = App.useApp();
 
   console.log('DeviceDetails: deviceId =', deviceId);
 
@@ -915,7 +915,7 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
   // Если данных нет или идет загрузка
   if (loading) {
     return (
-      <Card>
+      <Card styles={{ body: { padding: '24px' } }}>
         <Spin tip="Загрузка данных...">
           <div style={{ padding: '50px 0' }}></div>
         </Spin>
@@ -925,7 +925,7 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
 
   if (!deviceData || !deviceId) {
     return (
-      <Card>
+      <Card styles={{ body: { padding: '24px' } }}>
         <Empty description="Выберите устройство для просмотра" />
       </Card>
     );
@@ -978,7 +978,10 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
   // Отображение данных устройства
   console.log('DeviceDetails: рендерим данные устройства:', deviceData);
   return (
-    <Card className="device-details-card" bodyStyle={{ padding: '12px' }}>
+    <Card 
+      className="device-details-card" 
+      styles={{ body: { padding: '12px' } }}
+    >
       {deviceData ? (
         <div className="device-details-scroll-container">
           {cardTitle}

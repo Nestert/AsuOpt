@@ -135,6 +135,8 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ open, onClose, onDeviceAdded, p
                 helperText={errors.systemCode}
                 variant="outlined"
                 className="custom-text-field"
+                id="systemCode"
+                name="systemCode"
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -147,6 +149,8 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ open, onClose, onDeviceAdded, p
                 helperText={errors.equipmentCode}
                 variant="outlined"
                 className="custom-text-field"
+                id="equipmentCode"
+                name="equipmentCode"
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -157,6 +161,8 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ open, onClose, onDeviceAdded, p
                 onChange={(e) => handleChange('lineNumber', e.target.value)}
                 variant="outlined"
                 className="custom-text-field"
+                id="lineNumber"
+                name="lineNumber"
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -167,6 +173,8 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ open, onClose, onDeviceAdded, p
                 onChange={(e) => handleChange('cabinetName', e.target.value)}
                 variant="outlined"
                 className="custom-text-field"
+                id="cabinetName"
+                name="cabinetName"
               />
             </Grid>
             <Grid item xs={12}>
@@ -179,6 +187,8 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ open, onClose, onDeviceAdded, p
                 helperText={errors.deviceDesignation}
                 variant="outlined"
                 className="custom-text-field"
+                id="deviceDesignation"
+                name="deviceDesignation"
               />
             </Grid>
             <Grid item xs={12}>
@@ -191,6 +201,8 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ open, onClose, onDeviceAdded, p
                 helperText={errors.deviceType}
                 variant="outlined"
                 className="custom-text-field"
+                id="deviceType"
+                name="deviceType"
               />
             </Grid>
             <Grid item xs={12}>
@@ -203,6 +215,8 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ open, onClose, onDeviceAdded, p
                 rows={3}
                 variant="outlined"
                 className="custom-text-field"
+                id="description"
+                name="description"
               />
             </Grid>
             <Grid item xs={12}>

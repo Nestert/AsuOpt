@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Upload, Button, Select, Typography, message, Progress, Space } from 'antd';
+import { Card, Upload, Button, Select, Typography, Progress, Space, App } from 'antd';
 import { UploadOutlined, InboxOutlined } from '@ant-design/icons';
 import { importService } from '../services/api';
 import type { UploadFile } from 'antd/es/upload/interface';
@@ -19,6 +19,9 @@ const ImportData: React.FC<ImportDataProps> = ({ onImportSuccess, onImportError 
   const [uploading, setUploading] = useState(false);
   const [importType, setImportType] = useState<'kip' | 'zra'>('kip');
   const [importProgress, setImportProgress] = useState(0);
+  
+  // Получаем message из App
+  const { message } = App.useApp();
 
   // Обработчик изменения типа импорта
   const handleImportTypeChange = (value: 'kip' | 'zra') => {
@@ -105,7 +108,7 @@ const ImportData: React.FC<ImportDataProps> = ({ onImportSuccess, onImportError 
   };
 
   return (
-    <Card className="import-data-card">
+    <Card className="import-data-card" styles={{ body: { padding: '24px' } }}>
       <Title level={4}>Импорт данных</Title>
       <Text>Загрузите CSV файл с данными устройств для импорта.</Text>
 
@@ -132,6 +135,12 @@ const ImportData: React.FC<ImportDataProps> = ({ onImportSuccess, onImportError 
           accept=".csv"
           disabled={uploading}
           showUploadList={{ showRemoveIcon: !uploading }}
+          action=""
+          customRequest={({ onSuccess }) => {
+            if (onSuccess) {
+              onSuccess("ok");
+            }
+          }}
         >
           <p className="ant-upload-drag-icon">
             <InboxOutlined />

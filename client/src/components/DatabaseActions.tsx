@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button, Modal, Space, Spin, message, Alert, Typography } from 'antd';
+import { Card, Button, Modal, Space, Spin, Alert, Typography, App } from 'antd';
 import { DeleteOutlined, ExclamationCircleOutlined, ClearOutlined } from '@ant-design/icons';
 import { deviceService } from '../services/api';
 
@@ -15,6 +15,9 @@ const DatabaseActions: React.FC<DatabaseActionsProps> = ({ onDatabaseCleared }) 
   const [loading, setLoading] = useState(false);
   const [isReferencesModalVisible, setIsReferencesModalVisible] = useState(false);
   const [isDevicesModalVisible, setIsDevicesModalVisible] = useState(false);
+  
+  // Получаем message из App
+  const { message } = App.useApp();
 
   // Показать модальное окно для очистки справочников
   const showClearReferencesModal = () => {
@@ -133,7 +136,7 @@ const DatabaseActions: React.FC<DatabaseActionsProps> = ({ onDatabaseCleared }) 
 
   return (
     <>
-      <Card title={<Title level={4}>Управление базой данных</Title>}>
+      <Card title={<Title level={4}>Управление базой данных</Title>} styles={{ body: { padding: '24px' } }}>
         {loading ? (
           <Spin tip="Выполняется операция...">
             <div style={{ padding: '50px 0' }}></div>
@@ -142,7 +145,7 @@ const DatabaseActions: React.FC<DatabaseActionsProps> = ({ onDatabaseCleared }) 
           <Space direction="vertical" style={{ width: '100%' }}>
             <Text>Действия для управления данными в системе:</Text>
             
-            <Card type="inner" title="Очистка данных">
+            <Card type="inner" title="Очистка данных" styles={{ body: { padding: '16px' } }}>
               <Space wrap>
                 <Button 
                   type="primary" 

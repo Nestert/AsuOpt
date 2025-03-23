@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ConfigProvider, Layout, notification, Tabs, App } from 'antd';
+// Импортируем патч для совместимости с React 19
+import '@ant-design/v5-patch-for-react-19';
+import { ConfigProvider, Layout, Tabs, App } from 'antd';
 import ruRU from 'antd/es/locale/ru_RU';
 import DeviceTree from './components/DeviceTree';
 import DeviceDetails from './components/DeviceDetails';
@@ -9,10 +11,13 @@ import './App.css';
 
 const { Header, Sider, Content } = Layout;
 
-// Основной компонент приложения
-const AppComponent: React.FC = () => {
+// Внутренний компонент, который будет иметь доступ к контексту App
+const InnerApp: React.FC = () => {
   const [selectedDeviceId, setSelectedDeviceId] = useState<number | null>(null);
   const [treeUpdateCounter, setTreeUpdateCounter] = useState<number>(0);
+  
+  // Теперь notification доступен внутри компонента App
+  const { notification } = App.useApp();
   
   // Проверяем конфигурацию API при загрузке
   useEffect(() => {
@@ -104,6 +109,76 @@ const AppComponent: React.FC = () => {
   };
 
   return (
+    <Layout className="app-layout">
+      <Header className="app-header">
+        <h1>АСУ-Оптимизация</h1>
+      </Header>
+      
+      <Layout className="main-layout">
+        <Tabs 
+          defaultActiveKey="devices" 
+          onChange={handleTabChange}
+          type="card"
+          className="main-tabs"
+          items={[
+            {
+              key: 'devices',
+              label: 'Устройства',
+              children: (
+                <Layout className="content-layout">
+                  <Sider width={350} className="app-sider">
+                    <DeviceTree 
+                      onSelectDevice={handleDeviceSelect}
+                      updateCounter={treeUpdateCounter}
+                    />
+                  </Sider>
+                  <Content className="app-content">
+                    <DeviceDetails 
+                      deviceId={selectedDeviceId}
+                      onDeviceDeleted={handleDeviceDeleted}
+                      onDeviceUpdated={handleDeviceUpdated}
+                    />
+                  </Content>
+                </Layout>
+              )
+            },
+            {
+              key: 'import',
+              label: 'Импорт данных',
+              children: (
+                <Layout className="content-layout">
+                  <Content className="app-content">
+                    <ImportData 
+                      onImportSuccess={handleImportSuccess} 
+                      onImportError={handleImportError} 
+                    />
+                  </Content>
+                </Layout>
+              )
+            },
+            {
+              key: 'database',
+              label: 'Управление БД',
+              children: (
+                <Layout className="content-layout">
+                  <Content className="app-content">
+                    <DatabaseActions 
+                      onDatabaseCleared={handleDatabaseCleared}
+                    />
+                  </Content>
+                </Layout>
+              )
+            }
+          ]}
+        />
+      </Layout>
+    </Layout>
+  );
+};
+
+// Основной компонент приложения
+const AppComponent: React.FC = () => {
+  return (
     <ConfigProvider 
       locale={ruRU}
       theme={{
@@ -114,70 +189,7 @@ const AppComponent: React.FC = () => {
       }}
     >
       <App>
-        <Layout className="app-layout">
-          <Header className="app-header">
-            <h1>АСУ-Оптимизация</h1>
-          </Header>
-          
-          <Layout className="main-layout">
-            <Tabs 
-              defaultActiveKey="devices" 
-              onChange={handleTabChange}
-              type="card"
-              className="main-tabs"
-              items={[
-                {
-                  key: 'devices',
-                  label: 'Устройства',
-                  children: (
-                    <Layout className="content-layout">
-                      <Sider width={350} className="app-sider">
-                        <DeviceTree 
-                          onSelectDevice={handleDeviceSelect}
-                          updateCounter={treeUpdateCounter}
-                        />
-                      </Sider>
-                      <Content className="app-content">
-                        <DeviceDetails 
-                          deviceId={selectedDeviceId}
-                          onDeviceDeleted={handleDeviceDeleted}
-                          onDeviceUpdated={handleDeviceUpdated}
-                        />
-                      </Content>
-                    </Layout>
-                  )
-                },
-                {
-                  key: 'import',
-                  label: 'Импорт данных',
-                  children: (
-                    <Layout className="content-layout">
-                      <Content className="app-content">
-                        <ImportData 
-                          onImportSuccess={handleImportSuccess} 
-                          onImportError={handleImportError} 
-                        />
-                      </Content>
-                    </Layout>
-                  )
-                },
-                {
-                  key: 'database',
-                  label: 'Управление БД',
-                  children: (
-                    <Layout className="content-layout">
-                      <Content className="app-content">
-                        <DatabaseActions 
-                          onDatabaseCleared={handleDatabaseCleared}
-                        />
-                      </Content>
-                    </Layout>
-                  )
-                }
-              ]}
-            />
-          </Layout>
-        </Layout>
+        <InnerApp />
       </App>
     </ConfigProvider>
   );
