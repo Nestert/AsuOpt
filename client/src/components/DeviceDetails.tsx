@@ -156,16 +156,14 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
     
     // Обрабатываем результаты сохранения
     Promise.all(savePromises)
-      .then(() => {
+      .then(async () => {
         // Обновляем данные устройства
         const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-        return fetch(`${apiUrl}/device-references/${deviceId}`)
-          .then(response => {
+        const response = await fetch(`${apiUrl}/device-references/${deviceId}`);
             if (!response.ok) {
               throw new Error(`Ошибка получения обновленных данных: ${response.status}`);
             }
-            return response.json();
-          });
+        return await response.json();
       })
       .then((updatedData) => {
         console.log('Данные устройства обновлены:', updatedData);
@@ -318,14 +316,16 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
     if (!data) return null;
 
     return (
-      <Descriptions title="Общая информация" bordered column={1}>
+      <Descriptions title="Общая информация" bordered column={1} size="small">
         <Descriptions.Item label="Обозначение">
           {isEditing ? (
             <input 
               type="text" 
+              id="posDesignation"
+              name="posDesignation"
               value={data.reference.posDesignation} 
               onChange={(e) => handleFieldChange('reference', 'posDesignation', e.target.value)}
-              className="ant-input"
+              className="ant-input device-edit-input"
             />
           ) : data.reference.posDesignation}
         </Descriptions.Item>
@@ -333,20 +333,23 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
           {isEditing ? (
             <input 
               type="text" 
+              id="deviceType"
+              name="deviceType"
               value={data.reference.deviceType} 
               onChange={(e) => handleFieldChange('reference', 'deviceType', e.target.value)}
-              className="ant-input"
+              className="ant-input device-edit-input"
             />
           ) : data.reference.deviceType}
         </Descriptions.Item>
         {(data.reference.description || isEditing) && (
           <Descriptions.Item label="Описание">
             {isEditing ? (
-              <input 
-                type="text" 
+              <textarea 
+                id="description"
+                name="description"
                 value={data.reference.description || ''} 
                 onChange={(e) => handleFieldChange('reference', 'description', e.target.value)}
-                className="ant-input"
+                className="ant-input device-edit-textarea"
               />
             ) : data.reference.description}
           </Descriptions.Item>
@@ -364,15 +367,17 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
 
     const kip = data.kip;
     return (
-      <Descriptions title="Информация о КИП" bordered>
+      <Descriptions title="Информация о КИП" bordered column={1} size="small">
         {(kip.section !== undefined || isEditing) && (
           <Descriptions.Item label="Секция">
             {isEditing ? (
               <input 
                 type="text" 
+                id="kipSection"
+                name="kipSection"
                 value={kip.section || ''} 
                 onChange={(e) => handleFieldChange('kip', 'section', e.target.value)}
-                className="ant-input"
+                className="ant-input device-edit-input"
               />
             ) : kip.section}
           </Descriptions.Item>
@@ -382,9 +387,11 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
             {isEditing ? (
               <input 
                 type="text" 
+                id="kipUnitArea"
+                name="kipUnitArea"
                 value={kip.unitArea || ''} 
                 onChange={(e) => handleFieldChange('kip', 'unitArea', e.target.value)}
-                className="ant-input"
+                className="ant-input device-edit-input"
               />
             ) : kip.unitArea}
           </Descriptions.Item>
@@ -394,9 +401,11 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
             {isEditing ? (
               <input 
                 type="text" 
+                id="kipManufacturer"
+                name="kipManufacturer"
                 value={kip.manufacturer || ''} 
                 onChange={(e) => handleFieldChange('kip', 'manufacturer', e.target.value)}
-                className="ant-input"
+                className="ant-input device-edit-input"
               />
             ) : kip.manufacturer}
           </Descriptions.Item>
@@ -406,27 +415,181 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
             {isEditing ? (
               <input 
                 type="text" 
+                id="kipArticle"
+                name="kipArticle"
                 value={kip.article || ''} 
                 onChange={(e) => handleFieldChange('kip', 'article', e.target.value)}
-                className="ant-input"
+                className="ant-input device-edit-input"
               />
             ) : kip.article}
           </Descriptions.Item>
         )}
-        {kip.measureUnit && <Descriptions.Item label="Единица измерения">{kip.measureUnit}</Descriptions.Item>}
-        {kip.scale && <Descriptions.Item label="Шкала">{kip.scale}</Descriptions.Item>}
-        {kip.note && <Descriptions.Item label="Примечание">{kip.note}</Descriptions.Item>}
-        {kip.docLink && <Descriptions.Item label="Ссылка на документацию">{kip.docLink}</Descriptions.Item>}
-        {kip.responsibilityZone && <Descriptions.Item label="Зона ответственности">{kip.responsibilityZone}</Descriptions.Item>}
-        {kip.connectionScheme && <Descriptions.Item label="Схема подключения">{kip.connectionScheme}</Descriptions.Item>}
-        {kip.power && <Descriptions.Item label="Питание">{kip.power}</Descriptions.Item>}
-        {kip.plc && <Descriptions.Item label="ПЛК">{kip.plc}</Descriptions.Item>}
-        {kip.exVersion && <Descriptions.Item label="Ex-версия">{kip.exVersion}</Descriptions.Item>}
-        {kip.environmentCharacteristics && <Descriptions.Item label="Характеристики окружающей среды">{kip.environmentCharacteristics}</Descriptions.Item>}
-        {kip.signalPurpose && <Descriptions.Item label="Назначение сигнала">{kip.signalPurpose}</Descriptions.Item>}
-        {kip.controlPoints !== undefined && <Descriptions.Item label="Контрольные точки">{kip.controlPoints}</Descriptions.Item>}
-        {kip.completeness && <Descriptions.Item label="Комплектность">{kip.completeness}</Descriptions.Item>}
-        {kip.measuringLimits && <Descriptions.Item label="Пределы измерений">{kip.measuringLimits}</Descriptions.Item>}
+        <Descriptions.Item label="Единица измерения">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="kipMeasureUnit"
+              name="kipMeasureUnit"
+              value={kip.measureUnit || ''} 
+              onChange={(e) => handleFieldChange('kip', 'measureUnit', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : kip.measureUnit || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Шкала">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="kipScale"
+              name="kipScale"
+              value={kip.scale || ''} 
+              onChange={(e) => handleFieldChange('kip', 'scale', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : kip.scale || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Примечание">
+          {isEditing ? (
+            <textarea 
+              id="kipNote"
+              name="kipNote"
+              value={kip.note || ''} 
+              onChange={(e) => handleFieldChange('kip', 'note', e.target.value)}
+              className="ant-input device-edit-textarea"
+            />
+          ) : kip.note || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Зона ответственности">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="kipResponsibilityZone"
+              name="kipResponsibilityZone"
+              value={kip.responsibilityZone || ''} 
+              onChange={(e) => handleFieldChange('kip', 'responsibilityZone', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : kip.responsibilityZone || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Схема подключения">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="kipConnectionScheme"
+              name="kipConnectionScheme"
+              value={kip.connectionScheme || ''} 
+              onChange={(e) => handleFieldChange('kip', 'connectionScheme', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : kip.connectionScheme || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="ПЛК">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="kipPlc"
+              name="kipPlc"
+              value={kip.plc || ''} 
+              onChange={(e) => handleFieldChange('kip', 'plc', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : kip.plc || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Ex-версия">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="kipExVersion"
+              name="kipExVersion"
+              value={kip.exVersion || ''} 
+              onChange={(e) => handleFieldChange('kip', 'exVersion', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : kip.exVersion || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Контрольные точки">
+          {isEditing ? (
+            <input 
+              type="number" 
+              id="kipControlPoints"
+              name="kipControlPoints"
+              value={kip.controlPoints || 0} 
+              onChange={(e) => handleFieldChange('kip', 'controlPoints', parseInt(e.target.value, 10) || 0)}
+              className="ant-input device-edit-input"
+            />
+          ) : kip.controlPoints !== undefined ? kip.controlPoints : '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Комплектность">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="kipCompleteness"
+              name="kipCompleteness"
+              value={kip.completeness || ''} 
+              onChange={(e) => handleFieldChange('kip', 'completeness', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : kip.completeness || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Пределы измерений">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="kipMeasuringLimits"
+              name="kipMeasuringLimits"
+              value={kip.measuringLimits || ''} 
+              onChange={(e) => handleFieldChange('kip', 'measuringLimits', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : kip.measuringLimits || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Питание">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="kipPower"
+              name="kipPower"
+              value={kip.power || ''} 
+              onChange={(e) => handleFieldChange('kip', 'power', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : kip.power || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Ссылка на документацию">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="kipDocLink"
+              name="kipDocLink"
+              value={kip.docLink || ''} 
+              onChange={(e) => handleFieldChange('kip', 'docLink', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : kip.docLink || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Характеристики окружающей среды">
+          {isEditing ? (
+            <textarea 
+              id="kipEnvironmentCharacteristics"
+              name="kipEnvironmentCharacteristics"
+              value={kip.environmentCharacteristics || ''} 
+              onChange={(e) => handleFieldChange('kip', 'environmentCharacteristics', e.target.value)}
+              className="ant-input device-edit-textarea"
+            />
+          ) : kip.environmentCharacteristics || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Назначение сигнала">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="kipSignalPurpose"
+              name="kipSignalPurpose"
+              value={kip.signalPurpose || ''} 
+              onChange={(e) => handleFieldChange('kip', 'signalPurpose', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : kip.signalPurpose || '—'}
+        </Descriptions.Item>
       </Descriptions>
     );
   };
@@ -440,15 +603,17 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
 
     const zra = data.zra;
     return (
-      <Descriptions title="Информация о ЗРА" bordered>
+      <Descriptions title="Информация о ЗРА" bordered column={1} size="small">
         {(zra.unitArea !== undefined || isEditing) && (
           <Descriptions.Item label="Установка/Зона">
             {isEditing ? (
               <input 
                 type="text" 
+                id="zraUnitArea"
+                name="zraUnitArea"
                 value={zra.unitArea || ''} 
                 onChange={(e) => handleFieldChange('zra', 'unitArea', e.target.value)}
-                className="ant-input"
+                className="ant-input device-edit-input"
               />
             ) : zra.unitArea}
           </Descriptions.Item>
@@ -458,9 +623,11 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
             {isEditing ? (
               <input 
                 type="text" 
+                id="zraDesignType"
+                name="zraDesignType"
                 value={zra.designType || ''} 
                 onChange={(e) => handleFieldChange('zra', 'designType', e.target.value)}
-                className="ant-input"
+                className="ant-input device-edit-input"
               />
             ) : zra.designType}
           </Descriptions.Item>
@@ -470,35 +637,277 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
             {isEditing ? (
               <input 
                 type="text" 
+                id="zraValveType"
+                name="zraValveType"
                 value={zra.valveType || ''} 
                 onChange={(e) => handleFieldChange('zra', 'valveType', e.target.value)}
-                className="ant-input"
+                className="ant-input device-edit-input"
               />
             ) : zra.valveType}
           </Descriptions.Item>
         )}
-        {zra.actuatorType && <Descriptions.Item label="Тип привода">{zra.actuatorType}</Descriptions.Item>}
-        {zra.pipePosition && <Descriptions.Item label="Положение трубы">{zra.pipePosition}</Descriptions.Item>}
-        {zra.nominalDiameter && <Descriptions.Item label="Номинальный диаметр">{zra.nominalDiameter}</Descriptions.Item>}
-        {zra.pressureRating && <Descriptions.Item label="Номинальное давление">{zra.pressureRating}</Descriptions.Item>}
-        {zra.pipeMaterial && <Descriptions.Item label="Материал трубы">{zra.pipeMaterial}</Descriptions.Item>}
-        {zra.medium && <Descriptions.Item label="Среда">{zra.medium}</Descriptions.Item>}
-        {zra.positionSensor && <Descriptions.Item label="Датчик положения">{zra.positionSensor}</Descriptions.Item>}
-        {zra.solenoidType && <Descriptions.Item label="Тип соленоида">{zra.solenoidType}</Descriptions.Item>}
-        {zra.emergencyPosition && <Descriptions.Item label="Аварийное положение">{zra.emergencyPosition}</Descriptions.Item>}
-        {zra.controlPanel && <Descriptions.Item label="Панель управления">{zra.controlPanel}</Descriptions.Item>}
-        {zra.airConsumption && <Descriptions.Item label="Расход воздуха">{zra.airConsumption}</Descriptions.Item>}
-        {zra.connectionSize && <Descriptions.Item label="Размер соединения">{zra.connectionSize}</Descriptions.Item>}
-        {zra.fittingsCount !== undefined && <Descriptions.Item label="Количество фитингов">{zra.fittingsCount}</Descriptions.Item>}
-        {zra.tubeDiameter && <Descriptions.Item label="Диаметр трубы">{zra.tubeDiameter}</Descriptions.Item>}
-        {zra.limitSwitchType && <Descriptions.Item label="Тип концевого выключателя">{zra.limitSwitchType}</Descriptions.Item>}
-        {zra.positionerType && <Descriptions.Item label="Тип позиционера">{zra.positionerType}</Descriptions.Item>}
-        {zra.deviceDescription && <Descriptions.Item label="Описание устройства">{zra.deviceDescription}</Descriptions.Item>}
-        {zra.category && <Descriptions.Item label="Категория">{zra.category}</Descriptions.Item>}
-        {zra.plc && <Descriptions.Item label="ПЛК">{zra.plc}</Descriptions.Item>}
-        {zra.exVersion && <Descriptions.Item label="Ex-версия">{zra.exVersion}</Descriptions.Item>}
-        {zra.operation && <Descriptions.Item label="Управление">{zra.operation}</Descriptions.Item>}
-        {zra.note && <Descriptions.Item label="Примечание">{zra.note}</Descriptions.Item>}
+        <Descriptions.Item label="Тип привода">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraActuatorType"
+              name="zraActuatorType"
+              value={zra.actuatorType || ''}
+              onChange={(e) => handleFieldChange('zra', 'actuatorType', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.actuatorType || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Положение трубы">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraPipePosition"
+              name="zraPipePosition"
+              value={zra.pipePosition || ''}
+              onChange={(e) => handleFieldChange('zra', 'pipePosition', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.pipePosition || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Номинальный диаметр">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraNominalDiameter"
+              name="zraNominalDiameter"
+              value={zra.nominalDiameter || ''}
+              onChange={(e) => handleFieldChange('zra', 'nominalDiameter', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.nominalDiameter || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Номинальное давление">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraPressureRating"
+              name="zraPressureRating"
+              value={zra.pressureRating || ''}
+              onChange={(e) => handleFieldChange('zra', 'pressureRating', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.pressureRating || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Материал трубы">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraPipeMaterial"
+              name="zraPipeMaterial"
+              value={zra.pipeMaterial || ''}
+              onChange={(e) => handleFieldChange('zra', 'pipeMaterial', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.pipeMaterial || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Среда">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraMedium"
+              name="zraMedium"
+              value={zra.medium || ''}
+              onChange={(e) => handleFieldChange('zra', 'medium', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.medium || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Датчик положения">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraPositionSensor"
+              name="zraPositionSensor"
+              value={zra.positionSensor || ''}
+              onChange={(e) => handleFieldChange('zra', 'positionSensor', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.positionSensor || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Тип соленоида">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraSolenoidType"
+              name="zraSolenoidType"
+              value={zra.solenoidType || ''}
+              onChange={(e) => handleFieldChange('zra', 'solenoidType', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.solenoidType || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Аварийное положение">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraEmergencyPosition"
+              name="zraEmergencyPosition"
+              value={zra.emergencyPosition || ''}
+              onChange={(e) => handleFieldChange('zra', 'emergencyPosition', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.emergencyPosition || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Панель управления">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraControlPanel"
+              name="zraControlPanel"
+              value={zra.controlPanel || ''}
+              onChange={(e) => handleFieldChange('zra', 'controlPanel', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.controlPanel || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Расход воздуха">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraAirConsumption"
+              name="zraAirConsumption"
+              value={zra.airConsumption || ''}
+              onChange={(e) => handleFieldChange('zra', 'airConsumption', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.airConsumption || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Размер соединения">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraConnectionSize"
+              name="zraConnectionSize"
+              value={zra.connectionSize || ''}
+              onChange={(e) => handleFieldChange('zra', 'connectionSize', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.connectionSize || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Количество фитингов">
+          {isEditing ? (
+            <input 
+              type="number" 
+              id="zraFittingsCount"
+              name="zraFittingsCount"
+              value={zra.fittingsCount || 0}
+              onChange={(e) => handleFieldChange('zra', 'fittingsCount', parseInt(e.target.value, 10) || 0)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.fittingsCount !== undefined ? zra.fittingsCount : '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Диаметр трубы">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraTubeDiameter"
+              name="zraTubeDiameter"
+              value={zra.tubeDiameter || ''}
+              onChange={(e) => handleFieldChange('zra', 'tubeDiameter', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.tubeDiameter || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Тип концевого выключателя">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraLimitSwitchType"
+              name="zraLimitSwitchType"
+              value={zra.limitSwitchType || ''}
+              onChange={(e) => handleFieldChange('zra', 'limitSwitchType', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.limitSwitchType || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Тип позиционера">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraPositionerType"
+              name="zraPositionerType"
+              value={zra.positionerType || ''}
+              onChange={(e) => handleFieldChange('zra', 'positionerType', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.positionerType || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Описание устройства">
+          {isEditing ? (
+            <textarea 
+              id="zraDeviceDescription"
+              name="zraDeviceDescription"
+              value={zra.deviceDescription || ''}
+              onChange={(e) => handleFieldChange('zra', 'deviceDescription', e.target.value)}
+              className="ant-input device-edit-textarea"
+            />
+          ) : zra.deviceDescription || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Категория">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraCategory"
+              name="zraCategory"
+              value={zra.category || ''}
+              onChange={(e) => handleFieldChange('zra', 'category', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.category || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="ПЛК">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraPlc"
+              name="zraPlc"
+              value={zra.plc || ''}
+              onChange={(e) => handleFieldChange('zra', 'plc', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.plc || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Ex-версия">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraExVersion"
+              name="zraExVersion"
+              value={zra.exVersion || ''}
+              onChange={(e) => handleFieldChange('zra', 'exVersion', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.exVersion || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Управление">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="zraOperation"
+              name="zraOperation"
+              value={zra.operation || ''}
+              onChange={(e) => handleFieldChange('zra', 'operation', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : zra.operation || '—'}
+        </Descriptions.Item>
+        <Descriptions.Item label="Примечание">
+          {isEditing ? (
+            <textarea 
+              id="zraNote"
+              name="zraNote"
+              value={zra.note || ''}
+              onChange={(e) => handleFieldChange('zra', 'note', e.target.value)}
+              className="ant-input device-edit-textarea"
+            />
+          ) : zra.note || '—'}
+        </Descriptions.Item>
       </Descriptions>
     );
   };
@@ -524,17 +933,25 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
 
   // Заголовок карточки
   const cardTitle = (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-      <span>
+    <div style={{ 
+      display: 'flex', 
+      justifyContent: 'space-between', 
+      alignItems: 'center', 
+      marginBottom: '12px',
+      paddingBottom: '8px',
+      borderBottom: '1px solid #f0f0f0'
+    }}>
+      <span style={{ fontWeight: 500, fontSize: '16px' }}>
         {deviceData.reference.posDesignation} - {deviceData.reference.deviceType}
       </span>
-      <Space>
+      <Space size="small">
         {!isEditing ? (
           <>
             <Button
               type="primary" 
               icon={<EditOutlined />} 
               onClick={startEditing}
+              size="small"
             >
               Редактировать
             </Button>
@@ -543,14 +960,15 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
               danger
               icon={<DeleteOutlined />}
               onClick={showDeleteConfirm}
+              size="small"
             >
               Удалить
             </Button>
           </>
         ) : (
           <>
-            <Button onClick={cancelEditing}>Отмена</Button>
-            <Button type="primary" onClick={saveChanges}>Сохранить</Button>
+            <Button onClick={cancelEditing} size="small">Отмена</Button>
+            <Button type="primary" onClick={saveChanges} size="small">Сохранить</Button>
           </>
         )}
       </Space>
@@ -560,9 +978,9 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
   // Отображение данных устройства
   console.log('DeviceDetails: рендерим данные устройства:', deviceData);
   return (
-    <Card className="device-details-card">
+    <Card className="device-details-card" bodyStyle={{ padding: '12px' }}>
       {deviceData ? (
-        <>
+        <div className="device-details-scroll-container">
           {cardTitle}
           
           <Tabs 
@@ -585,7 +1003,7 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
               }] : [])
             ]}
           />
-        </>
+        </div>
       ) : (
         <Empty description="Данные устройства не найдены" />
       )}

@@ -212,6 +212,8 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ open, onClose, onDeviceAdded, p
                   value={formData.parentId === null ? '' : formData.parentId}
                   onChange={(e) => handleChange('parentId', e.target.value === '' ? null : Number(e.target.value))}
                   label="Родительское устройство"
+                  id="parentId"
+                  name="parentId"
                 >
                   <MenuItem value="">Нет (корневое устройство)</MenuItem>
                   {parentDevices

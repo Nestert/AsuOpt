@@ -106,6 +106,46 @@ body {
 /* Стили для компонента DeviceDetails */
 .device-details-card {
   width: 100%;
+  overflow-x: auto; /* Добавляем горизонтальную прокрутку */
+}
+
+.device-details-card .ant-card-body {
+  padding: 12px;
+}
+
+/* Обеспечиваем компактное отображение карточки */
+.device-details-card .ant-tabs-nav {
+  margin-bottom: 8px;
+}
+
+.device-details-card .ant-tabs-tabpane {
+  padding: 0;
+}
+
+/* Обеспечиваем правильную работу с табами внутри карточки */
+.device-details-card .ant-tabs {
+  overflow: visible;
+}
+
+.device-details-card .ant-tabs-content {
+  overflow: auto;
+}
+
+/* Более компактные отступы для заголовка описания */
+.device-details-card .ant-descriptions-header {
+  margin-bottom: 8px;
+}
+
+.device-details-card .ant-descriptions-title {
+  font-size: 16px;
+  line-height: 1.4;
+  margin-bottom: 8px !important;
+}
+
+/* Стили для прокрутки содержимого карточки */
+.device-details-scroll-container {
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Стили для компонента ImportData */
@@ -163,6 +203,147 @@ body {
 
 .ant-descriptions-title {
   margin-bottom: 16px !important;
+}
+
+/* Стили для компонента Description, чтобы исправить проблему с выезжающей таблицей */
+.ant-descriptions-bordered {
+  width: 100%;
+  overflow: auto;
+  max-width: 100%;
+  margin-bottom: 24px;
+  table-layout: fixed; /* Фиксированная ширина колонок */
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Уменьшаем отступы в таблице */
+.ant-descriptions-bordered .ant-descriptions-row > th,
+.ant-descriptions-bordered .ant-descriptions-row > td {
+  padding: 8px 12px;
+}
+
+.ant-descriptions-bordered .ant-descriptions-view {
+  width: 100%;
+  border-radius: 5px;
+  border: 1px solid #f0f0f0;
+}
+
+.ant-descriptions-bordered .ant-descriptions-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0; /* Убираем внешние отступы строк */
+}
+
+/* Компактное отображение элементов таблицы */
+.ant-descriptions-bordered .ant-descriptions-item {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-descriptions-bordered .ant-descriptions-item:last-child {
+  border-bottom: none;
+}
+
+.ant-descriptions-bordered .ant-descriptions-item-label {
+  width: 30%;
+  min-width: 150px;
+  flex-shrink: 0;
+  background-color: #fafafa;
+  font-weight: 500;
+  border-right: 1px solid #f0f0f0;
+  padding: 8px 12px; /* Уменьшаем отступы */
+  word-break: break-word;
+  vertical-align: middle;
+  display: flex;
+  align-items: center;
+}
+
+.ant-descriptions-bordered .ant-descriptions-item-content {
+  width: 70%;
+  flex-grow: 1;
+  min-width: 150px;
+  padding: 8px 12px; /* Уменьшаем отступы */
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+}
+
+/* Стили для инпутов внутри описаний - делаем их удобнее для редактирования */
+.ant-descriptions-item .ant-input {
+  width: 100%;
+  min-width: 200px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  height: 32px; /* Уменьшаем высоту инпута */
+  box-sizing: border-box;
+  margin: 0;
+  border: 1px solid #d9d9d9;
+  transition: all 0.3s;
+}
+
+/* Специальные классы для полей ввода в DeviceDetails */
+.device-edit-input {
+  width: 200% !important;
+  padding: 6px 10px !important;
+  height: 32px !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
+}
+
+.device-edit-textarea {
+  width: 200% !important;
+  padding: 6px 10px !important;
+  min-height: 80px !important;
+  font-size: 14px !important;
+  resize: horizontal !important;
+  box-sizing: border-box !important;
+}
+
+.ant-descriptions-item .ant-input:hover,
+.ant-descriptions-item .ant-input:focus {
+  border-color: #40a9ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+/* Для многострочных полей */
+.ant-descriptions-item textarea.ant-input {
+  min-height: 80px; /* Увеличиваем высоту для соответствия device-edit-textarea */
+  height: auto;
+  resize: vertical;
+  line-height: 1.5;
+  padding: 8px 10px;
+}
+
+/* Стиль для режима просмотра - фиксированные колонки */
+.ant-descriptions-bordered table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.ant-descriptions-bordered th.ant-descriptions-item-label {
+  width: 25%; /* Уменьшаем ширину метки для увеличения пространства ввода */
+}
+
+.ant-descriptions-bordered td.ant-descriptions-item-content {
+  width: 75%; /* Увеличиваем ширину контента */
+}
+
+/* При печати убирать ограничения ширины */
+@media print {
+  .ant-descriptions-bordered {
+    width: 100% !important;
+    overflow: visible !important;
+  }
+}
+
+/* Обеспечиваем, чтобы описания были отзывчивыми на маленьких экранах */
+@media (max-width: 768px) {
+  .ant-descriptions-bordered .ant-descriptions-item {
+    width: 100%;
+  }
 }
 
 /* Custom theme styles */
@@ -349,4 +530,71 @@ body {
 
 .MuiMenuItem-root:hover {
   background-color: rgba(255, 55, 16, 0.2) !important; /* Красный с прозрачностью */
+}
+
+/* Для разрешений более 768px */
+@media (min-width: 768px) {
+  .ant-descriptions-bordered .ant-descriptions-item-label {
+    width: 25%; /* Сохраняем консистентность с основными стилями */
+  }
+  
+  .ant-descriptions-bordered .ant-descriptions-item-content {
+    width: 75%; /* Сохраняем консистентность с основными стилями */
+  }
+}
+
+/* Для мобильных устройств */
+@media (max-width: 767px) {
+  .ant-descriptions-bordered .ant-descriptions-item-label,
+  .ant-descriptions-bordered .ant-descriptions-item-content {
+    width: 100%;
+    display: block;
+  }
+  
+  .ant-descriptions-bordered .ant-descriptions-item {
+    flex-direction: column;
+  }
+}
+
+/* Редактирование таблицы в режиме ввода */
+.ant-descriptions-bordered {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.ant-descriptions-bordered .ant-descriptions-item {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+/* Убираем лишние отступы в режиме редактирования */
+.device-details-card .ant-descriptions-view {
+  border-spacing: 0;
+}
+
+.device-details-card .ant-descriptions-row {
+  margin-bottom: 0;
+}
+
+/* Улучшаем отображение полей ввода в режиме редактирования */
+.ant-descriptions-item .ant-input,
+.ant-descriptions-item .device-edit-input,
+.ant-descriptions-item .device-edit-textarea {
+  border-radius: 4px;
+  transition: all 0.3s;
+  margin: 4px 0;
+}
+
+.ant-descriptions-item .ant-input:focus,
+.device-edit-input:focus,
+.device-edit-textarea:focus {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+  outline: none;
+}
+
+/* Дополнительные стили для контейнера таблицы */
+.device-details-card .ant-descriptions-view {
+  border-spacing: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }

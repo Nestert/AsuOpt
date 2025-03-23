@@ -116,6 +116,7 @@ const ImportData: React.FC<ImportDataProps> = ({ onImportSuccess, onImportError 
           onChange={handleImportTypeChange} 
           disabled={uploading}
           style={{ width: 200 }}
+          id="importType"
         >
           <Option value="kip">КИП (Контрольно-измерительные приборы)</Option>
           <Option value="zra">ЗРА (Запорно-регулирующая арматура)</Option>
