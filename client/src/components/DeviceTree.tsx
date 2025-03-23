@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Empty, Input, Spin, Tree, Typography, Button } from 'antd';
+import { Empty, Input, Spin, Tree, Typography, Button, Select } from 'antd';
 import {
   FolderOutlined,
   AppstoreOutlined,
   SearchOutlined,
   PlusOutlined,
+  FilterOutlined,
 } from '@ant-design/icons';
 import { deviceService } from '../services/api';
 import { DeviceReference } from '../interfaces/DeviceReference';
@@ -12,6 +13,7 @@ import AddDeviceForm from './AddDeviceForm';
 
 const { Search } = Input;
 const { Text } = Typography;
+const { Option } = Select;
 
 interface DeviceTreeProps {
   onSelectDevice: (deviceId: number) => void;
@@ -25,6 +27,7 @@ interface CustomTreeNode {
   children: CustomTreeNode[];
   originalId?: number; // Оригинальный ID устройства, если это лист
   posDesignation?: string; // Полное обозначение позиции, если это лист
+  deviceType?: string; // Тип устройства, если это лист
   isLeaf?: boolean;
 }
 
@@ -33,11 +36,14 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   const [treeData, setTreeData] = useState<CustomTreeNode[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [searchValue, setSearchValue] = useState('');
+  const [deviceTypeFilter, setDeviceTypeFilter] = useState<string>('');
+  const [deviceTypes, setDeviceTypes] = useState<string[]>([]);
   const [autoExpandParent, setAutoExpandParent] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isAddDeviceVisible, setIsAddDeviceVisible] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
+  const [filteredDevices, setFilteredDevices] = useState<DeviceReference[]>([]);
 
   // Функция для разбиения строки posDesignation на части
   const parsePosDesignation = (posDesignation: string): string[] => {
@@ -81,6 +87,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
           if (isLastPart) {
             childNode.originalId = device.id;
             childNode.posDesignation = device.posDesignation;
+            childNode.deviceType = device.deviceType;
           }
           
           currentNode.children.push(childNode);
@@ -113,6 +120,12 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
         const data = await deviceService.getAllDevices();
         console.log('Загружены устройства:', data.length, 'элементов');
         setDevices(data);
+        setFilteredDevices(data);
+        
+        // Извлекаем уникальные типы устройств для фильтра
+        const types = Array.from(new Set(data.map(device => device.deviceType).filter(Boolean)));
+        setDeviceTypes(types);
+        
         const customTree = buildCustomTree(data);
         setTreeData(customTree);
       } catch (err) {
@@ -125,6 +138,29 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
 
     fetchDevices();
   }, [updateCounter]); // Зависимость от updateCounter для перезагрузки при изменениях
+
+  // Эффект для фильтрации устройств при изменении фильтра
+  useEffect(() => {
+    if (!deviceTypeFilter) {
+      setFilteredDevices(devices);
+    } else {
+      const filtered = devices.filter(device => device.deviceType === deviceTypeFilter);
+      setFilteredDevices(filtered);
+    }
+    
+    // Обновляем дерево с отфильтрованными устройствами
+    const customTree = buildCustomTree(filteredDevices);
+    setTreeData(customTree);
+    
+    // Сбрасываем развернутые узлы при изменении фильтра
+    setExpandedKeys([]);
+    
+  }, [deviceTypeFilter, devices]);
+
+  // Обработчик изменения фильтра типа устройства
+  const handleDeviceTypeChange = (value: string) => {
+    setDeviceTypeFilter(value);
+  };
 
   // Поиск в дереве устройств
   const handleSearch = (value: string) => {
@@ -163,6 +199,14 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     searchTree(treeData);
     setExpandedKeys(Array.from(new Set(expandKeys)));
     setAutoExpandParent(true);
+  };
+
+  // Сброс всех фильтров
+  const resetFilters = () => {
+    setSearchValue('');
+    setDeviceTypeFilter('');
+    setExpandedKeys([]);
+    setAutoExpandParent(false);
   };
 
   // Обработка развертывания узлов дерева
@@ -215,8 +259,22 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
         const data = await deviceService.getAllDevices();
         console.log('Загружены устройства после добавления:', data.length, 'элементов');
         setDevices(data);
-        const customTree = buildCustomTree(data);
-        setTreeData(customTree);
+        
+        // Обновляем список типов устройств
+        const types = Array.from(new Set(data.map(device => device.deviceType).filter(Boolean)));
+        setDeviceTypes(types);
+        
+        // Применяем текущий фильтр
+        if (!deviceTypeFilter) {
+          setFilteredDevices(data);
+          const customTree = buildCustomTree(data);
+          setTreeData(customTree);
+        } else {
+          const filtered = data.filter(device => device.deviceType === deviceTypeFilter);
+          setFilteredDevices(filtered);
+          const customTree = buildCustomTree(filtered);
+          setTreeData(customTree);
+        }
       } catch (err) {
         console.error('Ошибка при загрузке устройств после добавления:', err);
       } finally {
@@ -298,25 +356,43 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
 
   return (
     <div className="device-tree-container">
-      <div className="device-tree-header">
+      <div className="device-tree-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
         <Search 
           placeholder="Поиск устройств" 
           allowClear 
           enterButton={<SearchOutlined />}
           onSearch={handleSearch}
-          style={{ width: '70%' }}
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          style={{ flex: '1', minWidth: '120px', maxWidth: '300px' }}
         />
+        <Select
+          placeholder="Тип устройства"
+          allowClear
+          style={{ flex: '1', minWidth: '120px', maxWidth: '180px' }}
+          value={deviceTypeFilter || undefined}
+          onChange={handleDeviceTypeChange}
+        >
+          {deviceTypes.map(type => (
+            <Option key={type} value={type}>{type}</Option>
+          ))}
+        </Select>
+        <Button 
+          icon={<FilterOutlined />} 
+          onClick={resetFilters}
+        >
+          Сброс
+        </Button>
         <Button 
           type="primary" 
           icon={<PlusOutlined />} 
           onClick={showAddDeviceForm}
-          style={{ marginLeft: '10px' }}
         >
           Добавить
         </Button>
       </div>
       
-      {devices.length > 0 ? (
+      {filteredDevices.length > 0 ? (
         <Tree
           showIcon
           expandedKeys={expandedKeys}

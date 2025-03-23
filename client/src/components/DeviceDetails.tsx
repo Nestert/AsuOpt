@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Descriptions, Empty, Spin, Tabs, Typography, Modal, Space, App } from 'antd';
+import { Button, Card, Descriptions, Empty, Spin, Tabs, Typography, Space, App } from 'antd';
 import { deviceService, } from '../services/api';
 import { DeviceFullData } from '../interfaces/DeviceReference';
 import { EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 
-const { Title, Text } = Typography;
 
 interface DeviceDetailsProps {
   deviceId: number | null;
