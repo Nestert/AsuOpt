@@ -94,6 +94,22 @@ const InnerApp: React.FC = () => {
     }, 500);
   };
 
+  // Обработчик добавления устройства
+  const handleDeviceAdded = () => {
+    console.log('App: handleDeviceAdded вызван');
+    notification.success({
+      message: 'Устройство добавлено',
+      description: 'Новое устройство успешно добавлено',
+      duration: 5
+    });
+    
+    // Обновляем дерево устройств с небольшой задержкой
+    setTimeout(() => {
+      setTreeUpdateCounter(prev => prev + 1);
+      console.log('App: дерево устройств обновлено после добавления устройства');
+    }, 500);
+  };
+
   // Обработчик очистки базы данных
   const handleDatabaseCleared = () => {
     console.log('App: handleDatabaseCleared вызван');

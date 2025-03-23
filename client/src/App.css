@@ -57,13 +57,35 @@ body {
   overflow: auto;
 }
 
-.error-message {
-  color: #ff4d4f;
-  padding: 16px;
-  border: 1px solid #ffccc7;
-  border-radius: 4px;
-  background-color: #fff2f0;
+.device-tree-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.device-tree-header {
+  display: flex;
+  align-items: center;
   margin-bottom: 16px;
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 16px;
+}
+
+.error-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 20px;
+  text-align: center;
 }
 
 .loading-container {

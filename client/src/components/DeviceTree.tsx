@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Empty, Input, Spin, Tree, Typography } from 'antd';
+import { Empty, Input, Spin, Tree, Typography, Button } from 'antd';
 import {
   FolderOutlined,
   AppstoreOutlined,
   SearchOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
 import { deviceService } from '../services/api';
 import { DeviceReference } from '../interfaces/DeviceReference';
+import AddDeviceForm from './AddDeviceForm';
 
 const { Search } = Input;
 const { Text } = Typography;
@@ -34,6 +36,8 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   const [autoExpandParent, setAutoExpandParent] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isAddDeviceVisible, setIsAddDeviceVisible] = useState(false);
+  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
 
   // Функция для разбиения строки posDesignation на части
   const parsePosDesignation = (posDesignation: string): string[] => {
@@ -180,10 +184,47 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
         const deviceId = selectedNode.originalId;
         console.log('onSelect: выбрано устройство с ID =', deviceId);
         onSelectDevice(deviceId);
+        // Сохраняем ID выбранного устройства как потенциального родителя
+        setSelectedParentId(deviceId);
       } else {
         console.log('onSelect: выбран не лист дерева, действие не требуется');
+        setSelectedParentId(null);
       }
     }
+  };
+
+  // Показать форму добавления устройства
+  const showAddDeviceForm = () => {
+    setIsAddDeviceVisible(true);
+  };
+
+  // Скрыть форму добавления устройства
+  const hideAddDeviceForm = () => {
+    setIsAddDeviceVisible(false);
+  };
+
+  // Обработчик успешного добавления устройства
+  const handleDeviceAdded = () => {
+    console.log('DeviceTree: устройство успешно добавлено, обновляем дерево');
+    // Закрываем форму
+    hideAddDeviceForm();
+    // Увеличиваем счетчик обновлений, чтобы перезагрузить дерево
+    const fetchDevices = async () => {
+      setLoading(true);
+      try {
+        const data = await deviceService.getAllDevices();
+        console.log('Загружены устройства после добавления:', data.length, 'элементов');
+        setDevices(data);
+        const customTree = buildCustomTree(data);
+        setTreeData(customTree);
+      } catch (err) {
+        console.error('Ошибка при загрузке устройств после добавления:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDevices();
   };
 
   // Функция для рендеринга заголовка узла с подсветкой поискового запроса
@@ -248,35 +289,51 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   // Отображение состояния загрузки
   if (loading) {
     return (
-      <div className="loading-container">
+      <div className="loading-spinner">
         <Spin size="large" />
-        <Text>Загрузка дерева устройств...</Text>
+        <Text>Загрузка устройств...</Text>
       </div>
     );
   }
 
-  // Отображение пустого сообщения, если нет данных
-  if (treeData.length === 0) {
-    return <Empty description="Нет доступных устройств" />;
-  }
-
-  const processedTreeData = processTreeData(treeData);
-
   return (
-    <div className="device-tree">
-      <Search
-        style={{ marginBottom: 8 }}
-        placeholder="Поиск устройств"
-        onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleSearch(e.target.value)}
-        suffix={<SearchOutlined />}
-      />
-      <Tree
-        showIcon
-        onExpand={onExpand}
-        expandedKeys={expandedKeys}
-        autoExpandParent={autoExpandParent}
-        onSelect={onSelect}
-        treeData={processedTreeData}
+    <div className="device-tree-container">
+      <div className="device-tree-header">
+        <Search 
+          placeholder="Поиск устройств" 
+          allowClear 
+          enterButton={<SearchOutlined />}
+          onSearch={handleSearch}
+          style={{ width: '70%' }}
+        />
+        <Button 
+          type="primary" 
+          icon={<PlusOutlined />} 
+          onClick={showAddDeviceForm}
+          style={{ marginLeft: '10px' }}
+        >
+          Добавить
+        </Button>
+      </div>
+      
+      {devices.length > 0 ? (
+        <Tree
+          showIcon
+          expandedKeys={expandedKeys}
+          autoExpandParent={autoExpandParent}
+          onExpand={onExpand}
+          onSelect={onSelect}
+          treeData={processTreeData(treeData)}
+        />
+      ) : (
+        <Empty description="Устройства не найдены" />
+      )}
+
+      <AddDeviceForm 
+        visible={isAddDeviceVisible}
+        onCancel={hideAddDeviceForm}
+        onSuccess={handleDeviceAdded}
+        parentId={selectedParentId}
       />
     </div>
   );

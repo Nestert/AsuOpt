@@ -52,6 +52,19 @@ export const deviceService = {
     }
   },
   
+  // Создать новое устройство
+  createDevice: async (deviceData: any): Promise<DeviceFullData> => {
+    console.log('API: вызов createDevice с данными:', deviceData);
+    try {
+      const response = await api.post('/device-references', deviceData);
+      console.log('API: createDevice получен ответ:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в createDevice:', error);
+      throw error;
+    }
+  },
+  
   // Удалить устройство по ID
   deleteDeviceById: async (id: number): Promise<void> => {
     console.log(`API: вызов deleteDeviceById с id=${id}`);

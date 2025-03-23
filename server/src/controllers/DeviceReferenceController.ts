@@ -349,4 +349,57 @@ export class DeviceReferenceController {
       });
     }
   }
+
+  // Создание нового устройства
+  static async createDeviceReference(req: Request, res: Response): Promise<void> {
+    try {
+      console.log('DeviceReferenceController: запрос на создание устройства, данные:', req.body);
+      const { reference, kip, zra, dataType } = req.body;
+      
+      // Начинаем транзакцию
+      const transaction = await DeviceReference.sequelize!.transaction();
+      
+      try {
+        // Создаем запись в DeviceReference
+        const deviceRef = await DeviceReference.create(reference, { transaction });
+        console.log('DeviceReferenceController: создана запись в DeviceReference, id:', deviceRef.id);
+        
+        // В зависимости от типа данных создаем соответствующую запись
+        if (dataType === 'kip' && kip) {
+          // Добавляем id устройства в данные КИП
+          const kipData = { ...kip, deviceReferenceId: deviceRef.id };
+          await Kip.create(kipData, { transaction });
+          console.log('DeviceReferenceController: создана запись в Kip');
+        } else if (dataType === 'zra' && zra) {
+          // Добавляем id устройства в данные ЗРА
+          const zraData = { ...zra, deviceReferenceId: deviceRef.id };
+          await Zra.create(zraData, { transaction });
+          console.log('DeviceReferenceController: создана запись в Zra');
+        }
+        
+        // Фиксируем транзакцию
+        await transaction.commit();
+        
+        // Возвращаем полные данные устройства
+        const fullDevice = {
+          reference: deviceRef,
+          kip: dataType === 'kip' ? await Kip.findOne({ where: { deviceReferenceId: deviceRef.id } }) : null,
+          zra: dataType === 'zra' ? await Zra.findOne({ where: { deviceReferenceId: deviceRef.id } }) : null,
+          dataType
+        };
+        
+        res.status(201).json(fullDevice);
+      } catch (error) {
+        // Откатываем транзакцию в случае ошибки
+        await transaction.rollback();
+        throw error;
+      }
+    } catch (error) {
+      console.error('Ошибка при создании устройства:', error);
+      res.status(500).json({ 
+        message: 'Ошибка при создании устройства', 
+        error: error.message 
+      });
+    }
+  }
 } 

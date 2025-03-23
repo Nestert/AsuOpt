@@ -24,4 +24,7 @@ router.put('/:id', DeviceReferenceController.updateDeviceReference);
 // Удаление устройства по ID
 router.delete('/:id', DeviceReferenceController.deleteDeviceById);
 
+// Создание нового устройства
+router.post('/', DeviceReferenceController.createDeviceReference);
+
 export default router; 
