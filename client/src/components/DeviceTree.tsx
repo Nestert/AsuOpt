@@ -141,15 +141,17 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
 
   // Эффект для фильтрации устройств при изменении фильтра
   useEffect(() => {
+    let filtered;
     if (!deviceTypeFilter) {
-      setFilteredDevices(devices);
+      filtered = devices;
     } else {
-      const filtered = devices.filter(device => device.deviceType === deviceTypeFilter);
-      setFilteredDevices(filtered);
+      filtered = devices.filter(device => device.deviceType === deviceTypeFilter);
     }
     
     // Обновляем дерево с отфильтрованными устройствами
-    const customTree = buildCustomTree(filteredDevices);
+    const customTree = buildCustomTree(filtered);
+    
+    setFilteredDevices(filtered);
     setTreeData(customTree);
     
     // Сбрасываем развернутые узлы при изменении фильтра
@@ -258,23 +260,13 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
       try {
         const data = await deviceService.getAllDevices();
         console.log('Загружены устройства после добавления:', data.length, 'элементов');
-        setDevices(data);
         
         // Обновляем список типов устройств
         const types = Array.from(new Set(data.map(device => device.deviceType).filter(Boolean)));
         setDeviceTypes(types);
         
-        // Применяем текущий фильтр
-        if (!deviceTypeFilter) {
-          setFilteredDevices(data);
-          const customTree = buildCustomTree(data);
-          setTreeData(customTree);
-        } else {
-          const filtered = data.filter(device => device.deviceType === deviceTypeFilter);
-          setFilteredDevices(filtered);
-          const customTree = buildCustomTree(filtered);
-          setTreeData(customTree);
-        }
+        // Устанавливаем новые данные, фильтрация произойдет в useEffect
+        setDevices(data);
       } catch (err) {
         console.error('Ошибка при загрузке устройств после добавления:', err);
       } finally {
