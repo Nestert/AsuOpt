@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { DeviceReference, TreeNode, DeviceFullData } from '../interfaces/DeviceReference';
+import { Signal, DeviceSignal, SignalSummary } from '../interfaces/Signal';
+import { DeviceTypeSignal, SignalsSummary } from '../interfaces/DeviceTypeSignal';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
@@ -211,6 +213,209 @@ export const importService = {
     });
     return response.data;
   },
+};
+
+// Сервис для работы с сигналами
+export const signalService = {
+  // Получить все сигналы
+  getAllSignals: async (): Promise<Signal[]> => {
+    try {
+      const response = await api.get('/signals');
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в getAllSignals:', error);
+      throw error;
+    }
+  },
+  
+  // Получить сигналы по типу
+  getSignalsByType: async (type: 'AI' | 'AO' | 'DI' | 'DO'): Promise<Signal[]> => {
+    try {
+      const response = await api.get(`/signals/type/${type}`);
+      return response.data;
+    } catch (error) {
+      console.error(`API: ошибка в getSignalsByType(${type}):`, error);
+      throw error;
+    }
+  },
+  
+  // Получить сводку по сигналам
+  getSignalsSummary: async (): Promise<SignalSummary[]> => {
+    try {
+      const response = await api.get('/signals/summary');
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в getSignalsSummary:', error);
+      throw error;
+    }
+  },
+  
+  // Получить сигналы для конкретного устройства
+  getDeviceSignals: async (deviceId: number): Promise<DeviceSignal[]> => {
+    try {
+      const response = await api.get(`/signals/device/${deviceId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`API: ошибка в getDeviceSignals(${deviceId}):`, error);
+      throw error;
+    }
+  },
+  
+  // Создать новый сигнал
+  createSignal: async (signalData: Omit<Signal, 'id' | 'createdAt' | 'updatedAt'>): Promise<Signal> => {
+    try {
+      const response = await api.post('/signals', signalData);
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в createSignal:', error);
+      throw error;
+    }
+  },
+  
+  // Обновить сигнал
+  updateSignal: async (id: number, signalData: Partial<Signal>): Promise<Signal> => {
+    try {
+      const response = await api.put(`/signals/${id}`, signalData);
+      return response.data;
+    } catch (error) {
+      console.error(`API: ошибка в updateSignal(${id}):`, error);
+      throw error;
+    }
+  },
+  
+  // Удалить сигнал
+  deleteSignal: async (id: number): Promise<void> => {
+    try {
+      await api.delete(`/signals/${id}`);
+    } catch (error) {
+      console.error(`API: ошибка в deleteSignal(${id}):`, error);
+      throw error;
+    }
+  },
+  
+  // Назначить сигнал устройству
+  assignSignalToDevice: async (deviceId: number, signalId: number, count: number): Promise<DeviceSignal> => {
+    try {
+      console.log(`Отправка запроса assignSignalToDevice: deviceId=${deviceId}, signalId=${signalId}, count=${count}`);
+      const response = await api.post('/signals/assign', { deviceId, signalId, count });
+      console.log('Успешный ответ от assignSignalToDevice:', response.data);
+      return response.data;
+    } catch (error: any) {
+      // Выводим более подробную информацию об ошибке
+      const errorMessage = error.response?.data?.error || 'Неизвестная ошибка';
+      const statusCode = error.response?.status || 'Неизвестный код';
+      console.error(`API: ошибка в assignSignalToDevice(${deviceId}, ${signalId}): ${statusCode} - ${errorMessage}`, error);
+      throw error;
+    }
+  },
+  
+  // Удалить назначение сигнала устройству
+  removeSignalFromDevice: async (deviceId: number, signalId: number): Promise<void> => {
+    try {
+      await api.delete(`/signals/device/${deviceId}/signal/${signalId}`);
+    } catch (error) {
+      console.error(`API: ошибка в removeSignalFromDevice(${deviceId}, ${signalId}):`, error);
+      throw error;
+    }
+  }
+};
+
+// Сервис для работы с сигналами типов устройств
+export const deviceTypeSignalService = {
+  // Получить все записи о сигналах типов устройств
+  getAllDeviceTypeSignals: async (): Promise<DeviceTypeSignal[]> => {
+    try {
+      const response = await api.get('/device-type-signals');
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в getAllDeviceTypeSignals:', error);
+      throw error;
+    }
+  },
+  
+  // Получить список уникальных типов устройств
+  getUniqueDeviceTypes: async (): Promise<string[]> => {
+    try {
+      const response = await api.get('/device-type-signals/unique-device-types');
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в getUniqueDeviceTypes:', error);
+      throw error;
+    }
+  },
+  
+  // Получить список уникальных типов устройств из справочника DeviceReference
+  getUniqueDeviceTypesFromReference: async (): Promise<string[]> => {
+    try {
+      console.log('API: вызов getUniqueDeviceTypesFromReference');
+      const response = await api.get('/device-type-signals/unique-device-types-reference');
+      console.log('API: getUniqueDeviceTypesFromReference получены данные:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в getUniqueDeviceTypesFromReference:', error);
+      throw error;
+    }
+  },
+  
+  // Получить сводную таблицу сигналов
+  getSignalsSummary: async (): Promise<SignalsSummary> => {
+    try {
+      const response = await api.get('/device-type-signals/summary');
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в getSignalsSummary:', error);
+      throw error;
+    }
+  },
+  
+  // Получить запись для конкретного типа устройства
+  getDeviceTypeSignalByType: async (deviceType: string): Promise<DeviceTypeSignal> => {
+    try {
+      const response = await api.get(`/device-type-signals/type/${deviceType}`);
+      return response.data;
+    } catch (error) {
+      console.error(`API: ошибка в getDeviceTypeSignalByType(${deviceType}):`, error);
+      throw error;
+    }
+  },
+  
+  // Обновить или создать запись для типа устройства
+  updateDeviceTypeSignal: async (deviceTypeSignal: DeviceTypeSignal): Promise<DeviceTypeSignal> => {
+    try {
+      const response = await api.post('/device-type-signals', deviceTypeSignal);
+      return response.data;
+    } catch (error) {
+      console.error(`API: ошибка в updateDeviceTypeSignal:`, error);
+      throw error;
+    }
+  },
+  
+  // Удалить запись для типа устройства
+  deleteDeviceTypeSignal: async (deviceType: string): Promise<void> => {
+    try {
+      await api.delete(`/device-type-signals/type/${deviceType}`);
+    } catch (error) {
+      console.error(`API: ошибка в deleteDeviceTypeSignal(${deviceType}):`, error);
+      throw error;
+    }
+  },
+  
+  // Очистить все записи в таблице сигналов типов устройств
+  clearAllDeviceTypeSignals: async (): Promise<void> => {
+    try {
+      console.log('API: вызов clearAllDeviceTypeSignals');
+      const response = await api.delete('/device-type-signals/clear');
+      console.log('API: таблица сигналов типов устройств очищена:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('API: ошибка в clearAllDeviceTypeSignals:', error);
+      if (error.response) {
+        console.error('API: статус ошибки:', error.response.status);
+        console.error('API: данные ошибки:', error.response.data);
+      }
+      throw error;
+    }
+  }
 };
 
 export default api; 

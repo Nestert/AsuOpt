@@ -7,6 +7,7 @@ import DeviceTree from './components/DeviceTree';
 import DeviceDetails from './components/DeviceDetails';
 import ImportData from './components/ImportData';
 import DatabaseActions from './components/DatabaseActions';
+import SignalManagement from './components/SignalManagement';
 import './App.css';
 
 const { Header, Sider, Content } = Layout;
@@ -154,6 +155,17 @@ const InnerApp: React.FC = () => {
                       onDeviceDeleted={handleDeviceDeleted}
                       onDeviceUpdated={handleDeviceUpdated}
                     />
+                  </Content>
+                </Layout>
+              )
+            },
+            {
+              key: 'signals',
+              label: 'Сигналы',
+              children: (
+                <Layout className="content-layout">
+                  <Content className="app-content">
+                    <SignalManagement />
                   </Content>
                 </Layout>
               )

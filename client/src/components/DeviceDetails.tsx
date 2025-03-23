@@ -3,6 +3,7 @@ import { Button, Card, Descriptions, Empty, Spin, Tabs, Typography, Space, App }
 import { deviceService, } from '../services/api';
 import { DeviceFullData } from '../interfaces/DeviceReference';
 import { EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
+import DeviceSignals from './DeviceSignals';
 
 
 interface DeviceDetailsProps {
@@ -1002,7 +1003,12 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
                 key: 'zra',
                 label: 'Данные ЗРА',
                 children: renderZraInfo()
-              }] : [])
+              }] : []),
+              {
+                key: 'signals',
+                label: 'Сигналы',
+                children: <DeviceSignals deviceId={deviceId} />
+              }
             ]}
           />
         </div>

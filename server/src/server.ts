@@ -8,6 +8,8 @@ import importRoutes from './routes/importRoutes';
 import deviceReferenceRoutes from './routes/deviceReferenceRoutes';
 import kipRoutes from './routes/kipRoutes';
 import zraRoutes from './routes/zraRoutes';
+import signalRoutes from './routes/signalRoutes';
+import deviceTypeSignalRoutes from './routes/deviceTypeSignalRoutes';
 import path from 'path';
 
 const app = express();
@@ -44,11 +46,13 @@ initializeDatabase()
 
 // Маршруты
 app.use('/api/devices', deviceRoutes);
-app.use('/api/export', exportRoutes);
+app.use('/api/exports', exportRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/device-references', deviceReferenceRoutes);
-app.use('/api/kips', kipRoutes);
-app.use('/api/zras', zraRoutes);
+app.use('/api/kip', kipRoutes);
+app.use('/api/zra', zraRoutes);
+app.use('/api/signals', signalRoutes);
+app.use('/api/device-type-signals', deviceTypeSignalRoutes);
 
 // Обработка ошибок
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

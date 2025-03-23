@@ -4,6 +4,9 @@ import { Device } from '../models/Device';
 import { DeviceReference } from '../models/DeviceReference';
 import { Kip } from '../models/Kip';
 import { Zra } from '../models/Zra';
+import { Signal } from '../models/Signal';
+import { DeviceSignal } from '../models/DeviceSignal';
+import { DeviceTypeSignal } from '../models/DeviceTypeSignal';
 
 const dbPath = path.join(__dirname, '../../database.sqlite');
 
@@ -33,11 +36,16 @@ const initializeDatabase = async () => {
     DeviceReference.initialize(sequelize);
     Kip.initialize(sequelize);
     Zra.initialize(sequelize);
+    Signal.initialize(sequelize);
+    DeviceSignal.initialize(sequelize);
+    DeviceTypeSignal.initialize(sequelize);
     
     // Устанавливаем ассоциации между моделями
     Device.associate();
     Kip.associate();
     Zra.associate();
+    Signal.associate();
+    DeviceSignal.associate();
 
     // Синхронизируем модели с базой данных
     // SQLite не поддерживает полноценно alter: true, используем force: false
