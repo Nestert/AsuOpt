@@ -4,6 +4,7 @@ export interface DeviceReference {
   posDesignation: string;
   deviceType: string;
   description?: string;
+  parentSystem?: string;
   createdAt?: string;
   updatedAt?: string;
 }

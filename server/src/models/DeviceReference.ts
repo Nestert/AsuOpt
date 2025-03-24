@@ -5,6 +5,7 @@ interface DeviceReferenceAttributes {
   posDesignation: string; // Позиционное обозначение
   deviceType: string;     // Тип устройства
   description?: string;   // Описание (опционально)
+  parentSystem?: string;  // Родительская система (опционально)
 }
 
 export class DeviceReference extends Model<DeviceReferenceAttributes> implements DeviceReferenceAttributes {
@@ -12,6 +13,7 @@ export class DeviceReference extends Model<DeviceReferenceAttributes> implements
   public posDesignation!: string;
   public deviceType!: string;
   public description!: string;
+  public parentSystem!: string;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -35,6 +37,10 @@ export class DeviceReference extends Model<DeviceReferenceAttributes> implements
         },
         description: {
           type: DataTypes.TEXT,
+          allowNull: true,
+        },
+        parentSystem: {
+          type: DataTypes.STRING,
           allowNull: true,
         },
       },

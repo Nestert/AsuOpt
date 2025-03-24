@@ -341,6 +341,18 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
             />
           ) : data.reference.deviceType}
         </Descriptions.Item>
+        <Descriptions.Item label="Родительская система">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="parentSystem"
+              name="parentSystem"
+              value={data.reference.parentSystem || ''} 
+              onChange={(e) => handleFieldChange('reference', 'parentSystem', e.target.value)}
+              className="ant-input device-edit-input"
+            />
+          ) : data.reference.parentSystem || '-'}
+        </Descriptions.Item>
         {(data.reference.description || isEditing) && (
           <Descriptions.Item label="Описание">
             {isEditing ? (
