@@ -20,6 +20,9 @@ const upload = multer({ storage });
 // Маршруты импорта
 router.post('/kip', upload.single('file'), ImportController.importKip);
 router.post('/zra', upload.single('file'), ImportController.importZra);
+router.post('/signal-categories', upload.single('file'), ImportController.importSignalCategories);
+router.post('/assign-signals/:deviceType', ImportController.assignSignalsToDevicesByType);
+router.post('/assign-signals-all', ImportController.assignSignalsToAllDeviceTypes);
 router.post('/temp', ImportController.importFromTemp);
 router.get('/stats', ImportController.getStats);
 

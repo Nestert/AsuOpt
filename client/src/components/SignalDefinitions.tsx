@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, Popconfirm, Card, Row, Col, Statistic } from 'antd';
-import { signalService } from '../services/api';
+import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, Popconfirm, Card, Row, Col, Statistic, Upload } from 'antd';
+import { signalService, importService } from '../services/api';
 import { Signal, SignalSummary } from '../interfaces/Signal';
-import { PlusOutlined, ExclamationCircleOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PlusOutlined, ExclamationCircleOutlined, EditOutlined, DeleteOutlined, UploadOutlined, LinkOutlined } from '@ant-design/icons';
+import type { UploadFile } from 'antd/es/upload/interface';
+import { RcFile } from 'antd/es/upload';
 
-const { Title, Text } = Typography;
+const { Title, Paragraph } = Typography;
 const { Option } = Select;
+const { Dragger } = Upload;
 
 const SignalDefinitions: React.FC = () => {
   const [signals, setSignals] = useState<Signal[]>([]);
@@ -15,11 +18,17 @@ const SignalDefinitions: React.FC = () => {
   const [form] = Form.useForm();
   const [currentSignal, setCurrentSignal] = useState<Signal | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isImportModalVisible, setIsImportModalVisible] = useState(false);
+  const [fileList, setFileList] = useState<UploadFile[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [deviceTypes, setDeviceTypes] = useState<string[]>([]);
+  const [selectedDeviceType, setSelectedDeviceType] = useState<string>('');
 
   // Загрузка данных при монтировании компонента
   useEffect(() => {
     fetchSignals();
     fetchSummary();
+    fetchDeviceTypes();
   }, []);
 
   // Получение всех сигналов
@@ -45,6 +54,22 @@ const SignalDefinitions: React.FC = () => {
     }
   };
 
+  // Получение уникальных типов устройств из сигналов
+  const fetchDeviceTypes = async () => {
+    try {
+      // Здесь нужно реализовать API для получения типов устройств
+      // Временно будем извлекать типы из категорий сигналов
+      const signals = await signalService.getAllSignals();
+      const uniqueCategories = signals
+        .map(signal => signal.category)
+        .filter((category): category is string => !!category)
+        .filter((value, index, self) => self.indexOf(value) === index);
+      setDeviceTypes(uniqueCategories);
+    } catch (error) {
+      message.error('Не удалось загрузить типы устройств');
+    }
+  };
+
   // Добавление нового сигнала
   const handleAddSignal = () => {
     setIsEditing(false);
@@ -60,7 +85,10 @@ const SignalDefinitions: React.FC = () => {
     form.setFieldsValue({
       name: signal.name,
       type: signal.type,
-      description: signal.description
+      description: signal.description,
+      category: signal.category,
+      connectionType: signal.connectionType,
+      voltage: signal.voltage
     });
     setIsModalVisible(true);
   };
@@ -100,6 +128,88 @@ const SignalDefinitions: React.FC = () => {
     }
   };
 
+  // Показ модального окна импорта
+  const showImportModal = () => {
+    setFileList([]);
+    setIsImportModalVisible(true);
+  };
+
+  // Перед загрузкой ограничиваем только CSV файлы
+  const beforeUpload = (file: RcFile) => {
+    const isCSV = file.type === 'text/csv' || file.name.endsWith('.csv');
+    if (!isCSV) {
+      message.error('Можно загружать только файлы CSV!');
+    }
+    return isCSV || Upload.LIST_IGNORE;
+  };
+
+  // Обработчик изменения списка файлов
+  const handleChange = ({ fileList }: { fileList: UploadFile[] }) => {
+    setFileList(fileList.slice(-1)); // Ограничиваем до 1 файла
+  };
+
+  // Импорт сигналов из CSV
+  const handleImportSignals = async () => {
+    if (fileList.length === 0) {
+      message.error('Пожалуйста, выберите файл для импорта');
+      return;
+    }
+
+    const file = fileList[0].originFileObj;
+    if (!file) {
+      message.error('Не удалось получить файл');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const result = await importService.importSignalCategoriesFromCsv(file);
+      if (result.success) {
+        message.success(result.message);
+        setIsImportModalVisible(false);
+        fetchSignals();
+        fetchSummary();
+        fetchDeviceTypes();
+      } else {
+        message.error(result.message);
+      }
+    } catch (error) {
+      message.error('Ошибка при импорте сигналов');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Показ модального окна назначения сигналов
+  const showAssignModal = () => {
+    Modal.confirm({
+      title: 'Назначение сигналов',
+      content: 'Вы уверены, что хотите назначить сигналы всем типам устройств? Это может занять некоторое время.',
+      okText: 'Да, назначить',
+      cancelText: 'Отмена',
+      onOk: () => handleAssignSignalsToAllTypes()
+    });
+  };
+
+  // Назначение сигналов всем типам устройств
+  const handleAssignSignalsToAllTypes = async () => {
+    setLoading(true);
+    try {
+      const result = await importService.assignSignalsToAllDeviceTypes();
+      if (result.success) {
+        message.success(result.message);
+        fetchSignals();
+        fetchSummary();
+      } else {
+        message.error(result.message);
+      }
+    } catch (error) {
+      message.error('Ошибка при назначении сигналов устройствам');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Колонки для таблицы сигналов
   const columns = [
     {
@@ -118,6 +228,33 @@ const SignalDefinitions: React.FC = () => {
         { text: 'DO', value: 'DO' },
       ],
       onFilter: (value: any, record: Signal) => record.type === value,
+    },
+    {
+      title: 'Категория',
+      dataIndex: 'category',
+      key: 'category',
+      filters: signals
+        .map(signal => signal.category)
+        .filter((category): category is string => !!category)
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .map(cat => ({ text: cat, value: cat })),
+      onFilter: (value: any, record: Signal) => record.category === value,
+    },
+    {
+      title: 'Тип подключения',
+      dataIndex: 'connectionType',
+      key: 'connectionType',
+      filters: signals
+        .map(signal => signal.connectionType)
+        .filter((type): type is string => !!type)
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .map(type => ({ text: type, value: type })),
+      onFilter: (value: any, record: Signal) => record.connectionType === value,
+    },
+    {
+      title: 'Напряжение',
+      dataIndex: 'voltage',
+      key: 'voltage',
     },
     {
       title: 'Описание',
@@ -182,14 +319,26 @@ const SignalDefinitions: React.FC = () => {
         </Row>
       </Card>
       
-      {/* Кнопка добавления нового сигнала */}
-      <div style={{ marginBottom: 16 }}>
+      {/* Кнопки действий */}
+      <div style={{ marginBottom: 16, display: 'flex', gap: '8px' }}>
         <Button 
           type="primary" 
           icon={<PlusOutlined />} 
           onClick={handleAddSignal}
         >
           Добавить сигнал
+        </Button>
+        <Button 
+          icon={<UploadOutlined />} 
+          onClick={showImportModal}
+        >
+          Импорт из CSV
+        </Button>
+        <Button 
+          icon={<LinkOutlined />} 
+          onClick={showAssignModal}
+        >
+          Назначить сигналы всем типам
         </Button>
       </div>
       
@@ -237,12 +386,73 @@ const SignalDefinitions: React.FC = () => {
           </Form.Item>
           
           <Form.Item
+            name="category"
+            label="Категория"
+          >
+            <Input placeholder="Введите категорию сигнала" />
+          </Form.Item>
+          
+          <Form.Item
+            name="connectionType"
+            label="Тип подключения"
+          >
+            <Input placeholder="Например: 2-провод, 4-провод" />
+          </Form.Item>
+          
+          <Form.Item
+            name="voltage"
+            label="Напряжение"
+          >
+            <Input placeholder="Например: 4-20mA, 24V" />
+          </Form.Item>
+          
+          <Form.Item
             name="description"
             label="Описание"
           >
             <Input.TextArea placeholder="Введите описание сигнала" rows={4} />
           </Form.Item>
         </Form>
+      </Modal>
+      
+      {/* Модальное окно импорта из CSV */}
+      <Modal
+        title="Импорт сигналов из CSV"
+        open={isImportModalVisible}
+        onOk={handleImportSignals}
+        onCancel={() => setIsImportModalVisible(false)}
+        okText="Импортировать"
+        cancelText="Отмена"
+        okButtonProps={{ loading: uploading }}
+      >
+        <Paragraph>
+          Загрузите CSV файл с категориями сигналов для импорта. Файл должен содержать столбцы: Категория, Вид сигнала, Тип подключения, Напряжение, Описание сигнала.
+        </Paragraph>
+        
+        <Dragger
+          fileList={fileList}
+          onChange={handleChange}
+          beforeUpload={beforeUpload}
+          maxCount={1}
+          accept=".csv"
+          disabled={uploading}
+          showUploadList={{ showRemoveIcon: !uploading }}
+          customRequest={({ onSuccess }) => {
+            if (onSuccess) {
+              setTimeout(() => {
+                onSuccess("ok");
+              }, 0);
+            }
+          }}
+        >
+          <p className="ant-upload-drag-icon">
+            <UploadOutlined />
+          </p>
+          <p className="ant-upload-text">Нажмите или перетащите файл CSV в эту область</p>
+          <p className="ant-upload-hint">
+            Поддерживаются только CSV файлы с корректной структурой
+          </p>
+        </Dragger>
       </Modal>
     </div>
   );

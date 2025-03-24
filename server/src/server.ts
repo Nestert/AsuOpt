@@ -10,6 +10,7 @@ import kipRoutes from './routes/kipRoutes';
 import zraRoutes from './routes/zraRoutes';
 import signalRoutes from './routes/signalRoutes';
 import deviceTypeSignalRoutes from './routes/deviceTypeSignalRoutes';
+import databaseRoutes from './routes/databaseRoutes';
 import path from 'path';
 
 const app = express();
@@ -53,6 +54,7 @@ app.use('/api/kip', kipRoutes);
 app.use('/api/zra', zraRoutes);
 app.use('/api/signals', signalRoutes);
 app.use('/api/device-type-signals', deviceTypeSignalRoutes);
+app.use('/api/database', databaseRoutes);
 
 // Обработка ошибок
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

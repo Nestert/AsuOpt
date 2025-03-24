@@ -50,6 +50,71 @@ export class ImportController {
   }
   
   /**
+   * Импорт категорий сигналов из CSV файла
+   */
+  static async importSignalCategories(req: Request, res: Response): Promise<void> {
+    try {
+      if (!req.file) {
+        res.status(400).json({ success: false, message: 'Файл не найден' });
+        return;
+      }
+      
+      const filePath = req.file.path;
+      const result = await ImportService.importSignalCategoriesFromCsv(filePath);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Ошибка в контроллере импорта категорий сигналов:', error);
+      res.status(500).json({
+        success: false,
+        message: `Ошибка при импорте: ${error.message}`
+      });
+    }
+  }
+  
+  /**
+   * Назначение сигналов устройствам по типу устройства
+   */
+  static async assignSignalsToDevicesByType(req: Request, res: Response): Promise<void> {
+    try {
+      const { deviceType } = req.params;
+      
+      if (!deviceType) {
+        res.status(400).json({ success: false, message: 'Не указан тип устройства' });
+        return;
+      }
+      
+      const result = await ImportService.assignSignalsToDevicesByType(deviceType);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Ошибка в контроллере назначения сигналов:', error);
+      res.status(500).json({
+        success: false,
+        message: `Ошибка при назначении сигналов: ${error.message}`
+      });
+    }
+  }
+  
+  /**
+   * Назначение сигналов всем типам устройств
+   */
+  static async assignSignalsToAllDeviceTypes(req: Request, res: Response): Promise<void> {
+    try {
+      console.log('Начато назначение сигналов всем типам устройств');
+      const result = await ImportService.assignSignalsToAllDeviceTypes();
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Ошибка в контроллере назначения сигналов всем типам устройств:', error);
+      res.status(500).json({
+        success: false,
+        message: `Ошибка при назначении сигналов: ${error.message}`
+      });
+    }
+  }
+  
+  /**
    * Импорт файлов из временной директории
    */
   static async importFromTemp(req: Request, res: Response): Promise<void> {

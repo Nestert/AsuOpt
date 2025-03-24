@@ -196,22 +196,91 @@ export const zraService = {
 
 // Сервис для работы с импортом данных
 export const importService = {
-  importKipData: async (formData: FormData) => {
-    const response = await api.post('/import/kip', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+  // Импорт данных КИП из CSV файла
+  importKipFromCsv: async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const response = await api.post('/import/kip', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в importKipFromCsv:', error);
+      throw error;
+    }
   },
   
-  importZraData: async (formData: FormData) => {
-    const response = await api.post('/import/zra', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    return response.data;
+  // Импорт данных ЗРА из CSV файла
+  importZraFromCsv: async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const response = await api.post('/import/zra', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в importZraFromCsv:', error);
+      throw error;
+    }
+  },
+  
+  // Импорт категорий сигналов из CSV файла
+  importSignalCategoriesFromCsv: async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const response = await api.post('/import/signal-categories', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в importSignalCategoriesFromCsv:', error);
+      throw error;
+    }
+  },
+  
+  // Назначение сигналов устройствам определенного типа
+  assignSignalsToDevicesByType: async (deviceType: string): Promise<{ success: boolean; message: string; count?: number }> => {
+    try {
+      const response = await api.post(`/import/assign-signals/${deviceType}`);
+      return response.data;
+    } catch (error) {
+      console.error(`API: ошибка в assignSignalsToDevicesByType(${deviceType}):`, error);
+      throw error;
+    }
+  },
+  
+  // Назначение сигналов всем типам устройств
+  assignSignalsToAllDeviceTypes: async (): Promise<{ success: boolean; message: string; count?: number }> => {
+    try {
+      const response = await api.post('/import/assign-signals-all');
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в assignSignalsToAllDeviceTypes:', error);
+      throw error;
+    }
+  },
+  
+  // Получение статистики импорта
+  getImportStats: async (): Promise<any> => {
+    try {
+      const response = await api.get('/import/stats');
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в getImportStats:', error);
+      throw error;
+    }
   },
 };
 
@@ -317,6 +386,18 @@ export const signalService = {
       console.error(`API: ошибка в removeSignalFromDevice(${deviceId}, ${signalId}):`, error);
       throw error;
     }
+  },
+  
+  // Удалить все сигналы
+  clearAllSignals: async (): Promise<any> => {
+    try {
+      const response = await api.delete('/signals/clear');
+      console.log('API: все сигналы удалены:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в clearAllSignals:', error);
+      throw error;
+    }
   }
 };
 
@@ -413,6 +494,33 @@ export const deviceTypeSignalService = {
         console.error('API: статус ошибки:', error.response.status);
         console.error('API: данные ошибки:', error.response.data);
       }
+      throw error;
+    }
+  }
+};
+
+// Сервис для работы с базой данных
+export const databaseService = {
+  // Получить список всех таблиц
+  getAllTables: async (): Promise<string[]> => {
+    try {
+      const response = await api.get('/database/tables');
+      console.log('API: получен список таблиц:', response.data);
+      return response.data.tables || [];
+    } catch (error) {
+      console.error('API: ошибка в getAllTables:', error);
+      throw error;
+    }
+  },
+  
+  // Очистить конкретную таблицу
+  clearTable: async (tableName: string): Promise<any> => {
+    try {
+      const response = await api.delete(`/database/tables/${tableName}`);
+      console.log(`API: таблица ${tableName} очищена:`, response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`API: ошибка в clearTable(${tableName}):`, error);
       throw error;
     }
   }

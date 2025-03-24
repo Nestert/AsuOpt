@@ -6,6 +6,9 @@ interface SignalAttributes {
   type: string; // AI, AO, DI, DO
   description: string;
   totalCount: number;
+  category?: string; // Категория устройства
+  connectionType?: string; // Тип подключения (2-провод, 4-провод и т.д.)
+  voltage?: string; // Напряжение (4-20mA, 24V)
 }
 
 export class Signal extends Model<SignalAttributes> implements SignalAttributes {
@@ -14,6 +17,9 @@ export class Signal extends Model<SignalAttributes> implements SignalAttributes 
   public type!: string;
   public description!: string;
   public totalCount!: number;
+  public category!: string;
+  public connectionType!: string;
+  public voltage!: string;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -45,6 +51,18 @@ export class Signal extends Model<SignalAttributes> implements SignalAttributes 
           type: DataTypes.INTEGER,
           allowNull: false,
           defaultValue: 0
+        },
+        category: {
+          type: DataTypes.STRING,
+          allowNull: true,
+        },
+        connectionType: {
+          type: DataTypes.STRING,
+          allowNull: true,
+        },
+        voltage: {
+          type: DataTypes.STRING,
+          allowNull: true,
         }
       },
       {

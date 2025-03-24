@@ -71,9 +71,9 @@ const ImportData: React.FC<ImportDataProps> = ({ onImportSuccess, onImportError 
     try {
       let response;
       if (importType === 'kip') {
-        response = await importService.importKipData(formData);
+        response = await importService.importKipFromCsv(file);
       } else {
-        response = await importService.importZraData(formData);
+        response = await importService.importZraFromCsv(file);
       }
 
       // Завершаем прогресс
@@ -83,7 +83,7 @@ const ImportData: React.FC<ImportDataProps> = ({ onImportSuccess, onImportError 
       message.success(`Данные ${importType === 'kip' ? 'КИП' : 'ЗРА'} успешно импортированы`);
       
       if (onImportSuccess) {
-        onImportSuccess(`Успешно импортировано ${response.importedCount || 0} записей ${importType === 'kip' ? 'КИП' : 'ЗРА'}`);
+        onImportSuccess(`Успешно импортировано ${response.count || 0} записей ${importType === 'kip' ? 'КИП' : 'ЗРА'}`);
       }
 
       // Сбрасываем состояние

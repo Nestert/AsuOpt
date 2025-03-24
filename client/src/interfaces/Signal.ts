@@ -4,6 +4,9 @@ export interface Signal {
   type: 'AI' | 'AO' | 'DI' | 'DO';
   description: string;
   totalCount: number;
+  category?: string;
+  connectionType?: string;
+  voltage?: string;
   createdAt?: string;
   updatedAt?: string;
 }

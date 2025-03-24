@@ -36,10 +36,29 @@ export const getSignalsByType = async (req: Request, res: Response) => {
 // Создание нового сигнала
 export const createSignal = async (req: Request, res: Response) => {
   try {
-    const { name, type, description, totalCount } = req.body;
+    const { name, type, description, totalCount, category, connectionType, voltage } = req.body;
+    
+    // Преобразуем тип сигнала к допустимому формату (AI, AO, DI, DO)
+    let signalType = type.trim().toUpperCase();
+    
+    // Преобразование нестандартных типов в стандартные
+    if (signalType === 'SNMP' || signalType === 'MODBUS' || signalType === 'TCP') {
+      // Предполагаем, что это цифровой вход
+      signalType = 'DI';
+    } else if (!['AI', 'AO', 'DI', 'DO'].includes(signalType)) {
+      // Если тип не соответствует стандартным, определяем по контексту
+      if (signalType.includes('ANALOG') || signalType.includes('АНАЛОГ')) {
+        signalType = signalType.includes('INPUT') || signalType.includes('ВХОД') ? 'AI' : 'AO';
+      } else if (signalType.includes('DIGITAL') || signalType.includes('ЦИФР')) {
+        signalType = signalType.includes('INPUT') || signalType.includes('ВХОД') ? 'DI' : 'DO';
+      } else {
+        // По умолчанию - цифровой вход
+        signalType = 'DI';
+      }
+    }
     
     // Проверка, что тип сигнала допустим
-    if (!['AI', 'AO', 'DI', 'DO'].includes(type)) {
+    if (!['AI', 'AO', 'DI', 'DO'].includes(signalType)) {
       return res.status(400).json({ error: 'Недопустимый тип сигнала. Разрешены только AI, AO, DI, DO' });
     }
     
@@ -47,7 +66,7 @@ export const createSignal = async (req: Request, res: Response) => {
     const existingSignal = await Signal.findOne({
       where: {
         name,
-        type
+        type: signalType
       }
     });
     
@@ -57,9 +76,12 @@ export const createSignal = async (req: Request, res: Response) => {
     
     const signal = await Signal.create({
       name,
-      type,
+      type: signalType,
       description: description || '',
-      totalCount: totalCount || 0
+      totalCount: totalCount || 0,
+      category,
+      connectionType,
+      voltage
     });
     
     return res.status(201).json(signal);
@@ -342,4 +364,40 @@ async function deviceExistsInAnyTable(deviceId: number): Promise<boolean> {
   
   const deviceRef = await DeviceReference.findByPk(deviceId);
   return !!deviceRef;
-} 
+}
+
+// Удаление всех сигналов
+export const clearAllSignals = async (req: Request, res: Response) => {
+  try {
+    // Получаем текущее количество сигналов
+    const countBefore = await Signal.count();
+    console.log(`Найдено ${countBefore} сигналов для удаления`);
+    
+    // Удаляем все связи сигналов с устройствами
+    await DeviceSignal.destroy({ 
+      where: {},
+      force: true
+    });
+    
+    // Удаляем все сигналы
+    await Signal.destroy({ 
+      where: {},
+      force: true
+    });
+    
+    console.log(`Очищены все сигналы. Удалено ${countBefore} сигналов.`);
+    
+    res.status(200).json({ 
+      success: true,
+      message: 'Все сигналы успешно удалены', 
+      deletedCount: countBefore 
+    });
+  } catch (error) {
+    console.error('Ошибка при удалении сигналов:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Ошибка сервера при удалении сигналов',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+}; 

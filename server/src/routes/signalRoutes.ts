@@ -58,4 +58,10 @@ router.delete('/device/:deviceId/signal/:signalId', (req: Request, res: Response
     .catch(next);
 });
 
+// Удаление всех сигналов
+router.delete('/clear', (req: Request, res: Response, next: NextFunction) => {
+  signalController.clearAllSignals(req, res)
+    .catch(next);
+});
+
 export default router; 
