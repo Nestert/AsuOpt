@@ -103,7 +103,7 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
       console.log('Сохранение данных КИП:', editableData.kip);
       
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-      const kipPromise = fetch(`${apiUrl}/kips/${editableData.kip.id}`, {
+      const kipPromise = fetch(`${apiUrl}/kip/${editableData.kip.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +131,7 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
       console.log('Сохранение данных ЗРА:', editableData.zra);
       
       const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-      const zraPromise = fetch(`${apiUrl}/zras/${editableData.zra.id}`, {
+      const zraPromise = fetch(`${apiUrl}/zra/${editableData.zra.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
