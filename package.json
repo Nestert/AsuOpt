@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "@types/react": "^18.3.19",
+    "@types/react-dom": "^18.3.5",
+    "antd": "^5.24.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

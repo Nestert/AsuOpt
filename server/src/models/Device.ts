@@ -88,5 +88,7 @@ export class Device extends Model<DeviceAttributes> implements DeviceAttributes 
       foreignKey: 'parentId',
       as: 'parent',
     });
+    
+    // Связь с DeviceSignal будет добавлена после инициализации DeviceSignal
   }
 } 

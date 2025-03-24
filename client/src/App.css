@@ -1,224 +1,308 @@
-.App {
-  text-align: center;
+/* Основные стили приложения */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background-color: #f0f2f5;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: rgb(0, 0, 0); /* Черный */
+/* Общие стили компоновки */
+.app-layout {
   min-height: 100vh;
+}
+
+.app-header {
+  background-color: #001529;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  color: white;
+  height: 64px;
+  box-shadow: 0 2px 8px rgba(0, 21, 41, 0.15);
+}
+
+.main-layout {
+  padding: 16px;
+  background-color: #f0f2f5;
+}
+
+.main-tabs {
+  background-color: white;
+  padding: 0 16px;
+}
+
+.content-layout {
+  margin-top: 16px;
+  background-color: #f0f2f5;
+}
+
+.app-sider {
+  background-color: white;
+  padding: 16px;
+  border-radius: 4px;
+  margin-right: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.app-content {
+  padding: 16px;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Стили для компонента DeviceTree */
+.device-tree {
+  margin-top: 16px;
+  overflow: auto;
+}
+
+.device-tree-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+}
+
+.device-tree-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.loading-spinner {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: rgb(255, 255, 255); /* Белый */
+  height: 100%;
+  gap: 16px;
 }
 
-.App-link {
-  color: rgb(255, 55, 16); /* Красный */
+.error-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 20px;
+  text-align: center;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+  gap: 16px;
 }
 
-/* Custom theme styles */
-.custom-appbar {
-  background-color: rgb(0, 0, 0) !important; /* Черный */
+/* Стили для компонента DeviceDetails */
+.device-details-card {
+  width: 100%;
+  overflow-x: auto;
 }
 
+.device-details-card .ant-card-body {
+  padding: 12px;
+}
+
+.device-details-card .ant-tabs-nav {
+  margin-bottom: 8px;
+}
+
+.device-details-card .ant-tabs-tabpane {
+  padding: 0;
+}
+
+.device-details-card .ant-tabs {
+  overflow: visible;
+}
+
+.device-details-card .ant-tabs-content {
+  overflow: auto;
+}
+
+.device-details-card .ant-descriptions-header {
+  margin-bottom: 8px;
+}
+
+.device-details-card .ant-descriptions-title {
+  font-size: 16px;
+  line-height: 1.4;
+  margin-bottom: 8px !important;
+}
+
+.device-details-scroll-container {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* Стили для компонента ImportData */
+.import-data-card {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.import-type-selector {
+  margin: 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.upload-container {
+  margin: 24px 0;
+}
+
+.import-progress {
+  margin: 16px 0;
+}
+
+.import-actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Фиксы для ant-design компонентов */
+.ant-layout {
+  background: #f0f2f5;
+}
+
+.ant-layout-header h1 {
+  color: white;
+  margin: 0;
+}
+
+.ant-upload-drag-icon,
+.ant-upload-text,
+.ant-upload-hint {
+  /* Стили для компонента Upload из Ant Design */
+  display: block;
+}
+
+/* Стили для инпутов в DeviceDetails */
+.device-edit-input {
+  width: 200% !important;
+  padding: 6px 10px !important;
+  height: 32px !important;
+  font-size: 14px !important;
+  box-sizing: border-box !important;
+}
+
+.device-edit-textarea {
+  width: 200% !important;
+  padding: 6px 10px !important;
+  min-height: 80px !important;
+  font-size: 14px !important;
+  resize: horizontal !important;
+  box-sizing: border-box !important;
+}
+
+/* Стили для ant-descriptions */
+.ant-descriptions-bordered {
+  width: 100%;
+  overflow: auto;
+  max-width: 100%;
+  margin-bottom: 24px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.ant-descriptions-bordered .ant-descriptions-row > th,
+.ant-descriptions-bordered .ant-descriptions-row > td {
+  padding: 8px 12px;
+}
+
+.ant-descriptions-bordered .ant-descriptions-view {
+  width: 100%;
+  border-radius: 5px;
+  border: 1px solid #f0f0f0;
+}
+
+.ant-descriptions-bordered .ant-descriptions-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.ant-descriptions-bordered .ant-descriptions-item {
+  display: flex;
+  width: 100%;
+  margin: 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.ant-descriptions-bordered .ant-descriptions-item:last-child {
+  border-bottom: none;
+}
+
+.ant-descriptions-bordered .ant-descriptions-item-label {
+  width: 30%;
+  min-width: 150px;
+  flex-shrink: 0;
+  background-color: #fafafa;
+  font-weight: 500;
+  border-right: 1px solid #f0f0f0;
+  padding: 8px 12px;
+  word-break: break-word;
+  vertical-align: middle;
+  display: flex;
+  align-items: center;
+}
+
+.ant-descriptions-bordered .ant-descriptions-item-content {
+  width: 70%;
+  flex-grow: 1;
+  min-width: 150px;
+  padding: 8px 12px;
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+}
+
+/* Material-UI компоненты */
 .custom-button {
-  background-color: rgb(50, 50, 56) !important; /* Темно-серый */
-  color: rgb(255, 255, 255) !important; /* Белый */
-  border: 2px solid rgb(255, 55, 16) !important; /* Красная рамка */
+  background-color: rgb(50, 50, 56) !important;
+  color: rgb(255, 255, 255) !important;
+  border: 2px solid rgb(255, 55, 16) !important;
   font-weight: 600 !important;
 }
 
 .custom-button:hover {
-  background-color: rgba(255, 55, 16, 0.9) !important; /* Красный при наведении */
-  color: rgb(255, 255, 255) !important; /* Белый */
-}
-
-.custom-paper {
-  background-color: rgb(50, 50, 56) !important; /* Темно-серый */
-  color: rgb(215, 215, 215) !important; /* Светло-серый */
-}
-
-.custom-card {
-  background-color: rgb(50, 50, 56) !important; /* Темно-серый */
-  color: rgb(215, 215, 215) !important; /* Светло-серый */
+  background-color: rgba(255, 55, 16, 0.9) !important;
+  color: rgb(255, 255, 255) !important;
 }
 
 .custom-text-field .MuiOutlinedInput-root {
-  background-color: rgb(255, 255, 255); /* Белый */
-  color: rgb(0, 0, 0); /* Черный */
+  background-color: rgb(255, 255, 255);
+  color: rgb(0, 0, 0);
 }
 
-.custom-divider {
-  background-color: rgb(255, 55, 16) !important; /* Красный */
+/* Медиа-запросы для адаптивности */
+@media (max-width: 768px) {
+  .ant-descriptions-bordered .ant-descriptions-item {
+    width: 100%;
+  }
 }
 
-/* Стили для дерева устройств */
-.device-item {
-  color: rgb(255, 255, 255) !important; /* Белый вместо зеленого */
-  font-weight: 500;
-  padding: 8px 4px !important;
-  margin: 2px 0 !important;
-  border-radius: 4px !important;
+@media (max-width: 767px) {
+  .ant-descriptions-bordered .ant-descriptions-item-label,
+  .ant-descriptions-bordered .ant-descriptions-item-content {
+    width: 100%;
+    display: block;
+  }
+  
+  .ant-descriptions-bordered .ant-descriptions-item {
+    flex-direction: column;
+  }
 }
 
-.device-item:hover {
-  background-color: rgba(255, 55, 16, 0.2) !important;
-}
-
-/* Стили для свойств устройства */
-.device-property {
-  border: 1px solid rgba(255, 55, 16, 0.4);
-  border-radius: 4px;
-  padding: 12px;
-  margin-bottom: 15px;
-  height: 80px; /* Уменьшенная высота для обычных полей */
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-/* Контейнер для деталей устройства */
-.device-details {
-  padding: 24px 32px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Особые стили для описания */
-.device-property.description {
-  height: 120px; /* Увеличенная высота для поля описания */
-  padding-top: 8px;
-}
-
-.device-property.description .device-property-value {
-  max-height: 100px;
-  overflow-y: auto;
-  padding-right: 5px;
-}
-
-.device-property-label {
-  color: rgba(215, 215, 215, 0.7);
-  font-size: 0.85rem;
-  margin-bottom: 6px;
-  display: block;
-  font-weight: 500;
-  height: 18px; /* Уменьшенная высота для меток */
-  position: relative;
-  z-index: 1;
-}
-
-.device-property-value {
-  color: rgb(255, 255, 255);
-  font-weight: 500;
-  flex-grow: 1;
-  display: flex;
-  align-items: flex-start; /* Выравнивание сверху для многострочного текста */
-  overflow: auto; /* Добавляем прокрутку для длинного текста */
-  font-size: 0.95rem;
-}
-
-/* Поля ввода в режиме редактирования */
-.custom-text-field {
-  height: 100%;
-  width: 100%;
-}
-
-.custom-text-field .MuiInputBase-root {
-  height: auto !important; /* Автоматическая высота для полей ввода */
-  min-height: 40px !important; /* Минимальная высота */
-  background-color: rgb(255, 255, 255) !important; /* Белый фон */
-  border-radius: 4px !important;
-}
-
-/* Особые стили для многострочного поля */
-.device-property.description .custom-text-field .MuiInputBase-root {
-  min-height: 100px !important; /* Увеличенная минимальная высота для многострочного поля */
-}
-
-.custom-text-field .MuiInputBase-input {
-  color: #000000 !important; /* Черный текст */
-  padding: 8px 10px !important; /* Отступы внутри поля ввода */
-}
-
-.custom-text-field textarea.MuiInputBase-input {
-  height: auto !important;
-  min-height: 90px !important;
-  padding: 8px 10px !important;
-  overflow-y: auto !important;
-}
-
-.custom-text-field .MuiOutlinedInput-multiline {
-  padding: 0 !important; /* Убираем лишние отступы для многострочного поля */
-}
-
-.custom-text-field .MuiOutlinedInput-notchedOutline {
-  border-color: rgba(255, 55, 16, 0.4) !important; /* Цвет рамки */
-}
-
-/* Стили для выделения измененных полей */
-.field-changed .MuiOutlinedInput-notchedOutline {
-  border-color: #d32f2f !important; /* Красная рамка для измененных полей */
-  border-width: 2px !important;
-}
-
-.field-changed.MuiInputBase-root {
-  background-color: rgba(255, 235, 238, 0.3) !important; /* Слегка подсвеченный фон */
-}
-
-/* Стили для подсказки с исходным значением */
-.MuiInputBase-input::placeholder {
-  color: rgba(0, 0, 0, 0.5) !important; /* Темный цвет для плейсхолдеров */
-  font-style: italic;
-}
-
-/* Стили для диалогов */
-.MuiDialog-paper.custom-paper .MuiDialogTitle-root {
-  color: rgb(255, 55, 16) !important; /* Красный */
-}
-
-.MuiDialog-paper.custom-paper .MuiDialogContent-root {
-  border-top: 1px solid rgba(255, 55, 16, 0.5) !important; /* Красный с прозрачностью */
-  border-bottom: 1px solid rgba(255, 55, 16, 0.5) !important; /* Красный с прозрачностью */
-}
-
-.MuiDialog-paper.custom-paper .MuiInputLabel-root {
-  color: rgb(215, 215, 215) !important; /* Светло-серый */
-}
-
-.MuiDialog-paper.custom-paper .MuiFormHelperText-root {
-  color: rgba(215, 215, 215, 0.7) !important; /* Светло-серый с прозрачностью */
-}
-
-/* Стили для меню */
-.MuiMenu-paper {
-  background-color: rgb(50, 50, 56) !important; /* Темно-серый */
-  color: rgb(215, 215, 215) !important; /* Светло-серый */
-}
-
-.MuiMenuItem-root:hover {
-  background-color: rgba(255, 55, 16, 0.2) !important; /* Красный с прозрачностью */
+@media print {
+  .ant-descriptions-bordered {
+    width: 100% !important;
+    overflow: visible !important;
+  }
 }

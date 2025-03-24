@@ -1,367 +1,409 @@
-import React, { useState, useEffect } from 'react';
-import { TreeView } from '@mui/lab';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import LinkIcon from '@mui/icons-material/Link';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowRightIcon from '@mui/icons-material/KeyboardArrowRight';
-import { Box, TextField, InputAdornment, Typography, Button, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import axios from 'axios';
-import '../App.css';
+import React, { useEffect, useState } from 'react';
+import { Empty, Input, Spin, Tree, Typography, Button, Select } from 'antd';
+import {
+  FolderOutlined,
+  AppstoreOutlined,
+  SearchOutlined,
+  PlusOutlined,
+  FilterOutlined,
+} from '@ant-design/icons';
+import { deviceService } from '../services/api';
+import { DeviceReference } from '../interfaces/DeviceReference';
+import AddDeviceForm from './AddDeviceForm';
 
-// Интерфейс для устройства
-interface Device {
-  id: number;
-  systemCode: string;
-  equipmentCode: string;
-  lineNumber: string;
-  cabinetName: string;
-  deviceDesignation: string;
-  deviceType: string;
-  description: string;
-  parentId: number | null;
-  children?: Device[];
-}
-
-// Интерфейс для узла древовидной структуры
-interface TreeNode {
-  id: string;
-  name: string;
-  devices: Device[];
-  children: Record<string, TreeNode>;
-  originalDevice?: Device;
-}
+const { Search } = Input;
+const { Text } = Typography;
+const { Option } = Select;
 
 interface DeviceTreeProps {
-  onSelectDevice: (device: Device) => void;
+  onSelectDevice: (deviceId: number) => void;
+  updateCounter?: number; // Счетчик обновлений для триггера перезагрузки дерева
 }
 
-const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice }) => {
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredDevices, setFilteredDevices] = useState<Device[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+// Интерфейс для узла нашего кастомного дерева
+interface CustomTreeNode {
+  id: string;
+  name: string;
+  children: CustomTreeNode[];
+  originalId?: number; // Оригинальный ID устройства, если это лист
+  posDesignation?: string; // Полное обозначение позиции, если это лист
+  deviceType?: string; // Тип устройства, если это лист
+  isLeaf?: boolean;
+}
+
+const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter = 0 }) => {
+  const [devices, setDevices] = useState<DeviceReference[]>([]);
+  const [treeData, setTreeData] = useState<CustomTreeNode[]>([]);
+  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  const [searchValue, setSearchValue] = useState('');
+  const [deviceTypeFilter, setDeviceTypeFilter] = useState<string>('');
+  const [deviceTypes, setDeviceTypes] = useState<string[]>([]);
+  const [autoExpandParent, setAutoExpandParent] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Состояние для структуры дерева
-  const [treeStructure, setTreeStructure] = useState<TreeNode | null>(null);
-  const [expandedNodes, setExpandedNodes] = useState<{[key: string]: boolean}>({});
-  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [isAddDeviceVisible, setIsAddDeviceVisible] = useState(false);
+  const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
+  const [filteredDevices, setFilteredDevices] = useState<DeviceReference[]>([]);
 
-  // Строит дерево из кодов оборудования
-  const buildTreeFromCodes = (devices: Device[]) => {
-    const root: TreeNode = {
-      id: 'root',
-      name: 'Root',
-      devices: [],
-      children: {}
-    };
-
-    devices.forEach(device => {
-      const code = device.equipmentCode;
-      if (!code) return;
-      
-      // Разбиваем код на части по дефису
-      const parts = code.split('-');
-      let currentNode = root;
-      
-      // Обрабатываем первую часть (может содержать точки)
-      if (parts.length > 0 && parts[0]) {
-        // Разбиваем первую часть по точкам
-        const firstPartSegments = parts[0].split('.');
-        
-        // Обрабатываем каждый сегмент первой части как отдельный уровень
-        let currentPath = '';
-        firstPartSegments.forEach((segment, index) => {
-          currentPath = currentPath ? `${currentPath}.${segment}` : segment;
-          if (!currentNode.children[segment]) {
-            currentNode.children[segment] = {
-              id: currentPath,
-              name: segment,
-              devices: [],
-              children: {}
-            };
-          }
-          currentNode = currentNode.children[segment];
-        });
-      }
-      
-      // Обрабатываем вторую часть (после первого дефиса)
-      if (parts.length > 1 && parts[1]) {
-        const nodeId = `${parts[0]}-${parts[1]}`;
-        if (!currentNode.children[parts[1]]) {
-          currentNode.children[parts[1]] = {
-            id: nodeId,
-            name: parts[1],
-            devices: [],
-            children: {}
-          };
-        }
-        currentNode = currentNode.children[parts[1]];
-      }
-      
-      // Обрабатываем третью часть (после второго дефиса)
-      if (parts.length > 2 && parts[2]) {
-        const nodeId = `${parts[0]}-${parts[1]}-${parts[2]}`;
-        if (!currentNode.children[parts[2]]) {
-          currentNode.children[parts[2]] = {
-            id: nodeId,
-            name: parts[2],
-            devices: [],
-            children: {}
-          };
-        }
-        currentNode = currentNode.children[parts[2]];
-      }
-      
-      // Обрабатываем последнюю часть (после третьего дефиса)
-      if (parts.length > 3 && parts[3]) {
-        // Разбиваем последнюю часть по точкам
-        const lastParts = parts[3].split('.');
-        
-        // Обрабатываем первый сегмент последней части
-        const firstSegmentId = `${parts[0]}-${parts[1]}-${parts[2]}-${lastParts[0]}`;
-        if (!currentNode.children[lastParts[0]]) {
-          currentNode.children[lastParts[0]] = {
-            id: firstSegmentId,
-            name: lastParts[0],
-            devices: [],
-            children: {},
-            originalDevice: lastParts.length === 1 ? device : undefined
-          };
-        }
-        currentNode = currentNode.children[lastParts[0]];
-        
-        // Обрабатываем оставшиеся сегменты если есть точки
-        if (lastParts.length > 1) {
-          for (let i = 1; i < lastParts.length; i++) {
-            const segmentId = `${parts[0]}-${parts[1]}-${parts[2]}-${lastParts.slice(0, i + 1).join('.')}`;
-            if (!currentNode.children[lastParts[i]]) {
-              currentNode.children[lastParts[i]] = {
-                id: segmentId,
-                name: lastParts[i],
-                devices: [],
-                children: {},
-                originalDevice: i === lastParts.length - 1 ? device : undefined
-              };
-            }
-            currentNode = currentNode.children[lastParts[i]];
-          }
-        }
-      }
-      
-      // Добавляем устройство к текущему узлу
-      currentNode.devices.push(device);
-    });
-    
-    return root;
+  // Функция для разбиения строки posDesignation на части
+  const parsePosDesignation = (posDesignation: string): string[] => {
+    // Регулярное выражение для разбиения по разделителям (все, что не буквы и не цифры)
+    return posDesignation
+      .split(/[^a-zA-Z0-9]+/)
+      .filter(part => part.length > 0); // Убираем пустые части
   };
 
-  // Загрузка данных
-  useEffect(() => {
-    const fetchDevices = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get('http://localhost:3001/api/devices/tree');
-        console.log('Данные от API:', response.data);
-        console.log('Количество устройств:', response.data.length);
+  // Функция построения кастомного дерева
+  const buildCustomTree = (devices: DeviceReference[]): CustomTreeNode[] => {
+    const rootNode: CustomTreeNode = {
+      id: 'root',
+      name: 'Устройства',
+      children: []
+    };
+
+    // Перебираем все устройства
+    devices.forEach(device => {
+      const parts = parsePosDesignation(device.posDesignation);
+      let currentNode = rootNode;
+
+      // Строим путь в дереве для каждой части
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        const isLastPart = i === parts.length - 1;
         
-        if (Array.isArray(response.data) && response.data.length > 0) {
-          // Добавляем проверки наличия необходимых полей
-          const validDevices = response.data.map(device => ({
-            ...device,
-            deviceDesignation: device.deviceDesignation || 'Без названия',
-            deviceType: device.deviceType || 'Не указан',
-            children: Array.isArray(device.children) ? device.children : []
-          }));
+        // Ищем существующий узел для текущей части
+        let childNode = currentNode.children.find(child => child.name === part);
+        
+        if (!childNode) {
+          // Создаем новый узел, если он не найден
+          childNode = {
+            id: `${currentNode.id}_${part}`,
+            name: part,
+            children: [],
+            isLeaf: isLastPart
+          };
           
-          setDevices(validDevices);
-          setFilteredDevices(validDevices);
+          // Если это последняя часть, добавляем оригинальный ID и полное posDesignation
+          if (isLastPart) {
+            childNode.originalId = device.id;
+            childNode.posDesignation = device.posDesignation;
+            childNode.deviceType = device.deviceType;
+          }
           
-          // Строим древовидную структуру
-          const tree = buildTreeFromCodes(validDevices);
-          setTreeStructure(tree);
-        } else {
-          console.error('Получены неверные данные:', response.data);
-          setError('Получены некорректные данные от сервера');
+          currentNode.children.push(childNode);
         }
         
-        setLoading(false);
+        currentNode = childNode;
+      }
+    });
+
+    // Сортируем узлы по имени на каждом уровне
+    const sortNodes = (nodes: CustomTreeNode[]): CustomTreeNode[] => {
+      return nodes
+        .map(node => ({
+          ...node,
+          children: sortNodes(node.children)
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    };
+
+    return sortNodes(rootNode.children);
+  };
+
+  // Загрузка устройств
+  useEffect(() => {
+    console.log('DeviceTree: запускаем загрузку устройств, updateCounter =', updateCounter);
+    const fetchDevices = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await deviceService.getAllDevices();
+        console.log('Загружены устройства:', data.length, 'элементов');
+        setDevices(data);
+        setFilteredDevices(data);
+        
+        // Извлекаем уникальные типы устройств для фильтра
+        const types = Array.from(new Set(data.map(device => device.deviceType).filter(Boolean)));
+        setDeviceTypes(types);
+        
+        const customTree = buildCustomTree(data);
+        setTreeData(customTree);
       } catch (err) {
         console.error('Ошибка при загрузке устройств:', err);
         setError('Не удалось загрузить устройства');
+      } finally {
         setLoading(false);
       }
     };
 
     fetchDevices();
-  }, []);
+  }, [updateCounter]); // Зависимость от updateCounter для перезагрузки при изменениях
 
-  // Поиск устройств
+  // Эффект для фильтрации устройств при изменении фильтра
   useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredDevices(devices);
-      // Перестраиваем дерево с полным набором устройств
-      const tree = buildTreeFromCodes(devices);
-      setTreeStructure(tree);
+    let filtered;
+    if (!deviceTypeFilter) {
+      filtered = devices;
+    } else {
+      filtered = devices.filter(device => device.deviceType === deviceTypeFilter);
+    }
+    
+    // Обновляем дерево с отфильтрованными устройствами
+    const customTree = buildCustomTree(filtered);
+    
+    setFilteredDevices(filtered);
+    setTreeData(customTree);
+    
+    // Сбрасываем развернутые узлы при изменении фильтра
+    setExpandedKeys([]);
+    
+  }, [deviceTypeFilter, devices]);
+
+  // Обработчик изменения фильтра типа устройства
+  const handleDeviceTypeChange = (value: string) => {
+    setDeviceTypeFilter(value);
+  };
+
+  // Поиск в дереве устройств
+  const handleSearch = (value: string) => {
+    setSearchValue(value);
+    if (!value) {
+      setExpandedKeys([]);
+      setAutoExpandParent(false);
       return;
     }
 
-    const searchTermLower = searchTerm.toLowerCase();
+    const expandKeys: React.Key[] = [];
+    
+    // Рекурсивный поиск в дереве
+    const searchTree = (nodes: CustomTreeNode[], parentKey: string = '') => {
+      nodes.forEach(node => {
+        const nodeKey = node.id;
+        
+        // Если узел содержит искомый текст, добавляем его и все родительские узлы
+        if (node.name.toLowerCase().includes(value.toLowerCase()) || 
+            (node.posDesignation && node.posDesignation.toLowerCase().includes(value.toLowerCase()))) {
+          expandKeys.push(nodeKey);
+          
+          // Добавляем родительский ключ, если он существует
+          if (parentKey) {
+            expandKeys.push(parentKey);
+          }
+        }
+        
+        // Рекурсивно ищем в дочерних узлах
+        if (node.children && node.children.length > 0) {
+          searchTree(node.children, nodeKey);
+        }
+      });
+    };
+    
+    searchTree(treeData);
+    setExpandedKeys(Array.from(new Set(expandKeys)));
+    setAutoExpandParent(true);
+  };
 
-    // Функция для поиска в устройствах
-    const filteredResults = devices.filter(device => 
-      device.systemCode.toLowerCase().includes(searchTermLower) ||
-      device.equipmentCode.toLowerCase().includes(searchTermLower) ||
-      device.deviceDesignation.toLowerCase().includes(searchTermLower) ||
-      device.deviceType.toLowerCase().includes(searchTermLower) ||
-      (device.description && device.description.toLowerCase().includes(searchTermLower))
-    );
-    
-    setFilteredDevices(filteredResults);
-    
-    // Перестраиваем дерево с отфильтрованными устройствами
-    const tree = buildTreeFromCodes(filteredResults);
-    setTreeStructure(tree);
-  }, [searchTerm, devices]);
+  // Сброс всех фильтров
+  const resetFilters = () => {
+    setSearchValue('');
+    setDeviceTypeFilter('');
+    setExpandedKeys([]);
+    setAutoExpandParent(false);
+  };
+
+  // Обработка развертывания узлов дерева
+  const onExpand = (expandedKeysValue: React.Key[]) => {
+    setExpandedKeys(expandedKeysValue);
+    setAutoExpandParent(false);
+  };
 
   // Обработка выбора устройства
-  const handleSelectDevice = (device: Device) => {
-    setSelectedDevice(device);
-    onSelectDevice(device);
+  const onSelect = (selectedKeys: React.Key[], info: any) => {
+    if (selectedKeys.length > 0) {
+      console.log('onSelect: выбраны ключи =', selectedKeys);
+      
+      // Получаем информацию о выбранном узле
+      const selectedNode = info.node;
+      
+      // Проверяем, что узел является листом и имеет originalId
+      if (selectedNode.isLeaf && selectedNode.originalId) {
+        const deviceId = selectedNode.originalId;
+        console.log('onSelect: выбрано устройство с ID =', deviceId);
+        onSelectDevice(deviceId);
+        // Сохраняем ID выбранного устройства как потенциального родителя
+        setSelectedParentId(deviceId);
+      } else {
+        console.log('onSelect: выбран не лист дерева, действие не требуется');
+        setSelectedParentId(null);
+      }
+    }
   };
 
-  // Обработка разворачивания/сворачивания узла
-  const handleToggleNode = (nodeId: string) => {
-    setExpandedNodes(prev => ({
-      ...prev,
-      [nodeId]: !prev[nodeId]
-    }));
+  // Показать форму добавления устройства
+  const showAddDeviceForm = () => {
+    setIsAddDeviceVisible(true);
   };
 
-  // Рендеринг древовидной структуры
-  const renderTreeNode = (node: TreeNode, isRoot = false) => {
-    const nodeId = node.id;
-    const isExpanded = expandedNodes[nodeId] || false;
-    const hasChildren = Object.keys(node.children).length > 0;
+  // Скрыть форму добавления устройства
+  const hideAddDeviceForm = () => {
+    setIsAddDeviceVisible(false);
+  };
+
+  // Обработчик успешного добавления устройства
+  const handleDeviceAdded = () => {
+    console.log('DeviceTree: устройство успешно добавлено, обновляем дерево');
+    // Закрываем форму
+    hideAddDeviceForm();
+    // Увеличиваем счетчик обновлений, чтобы перезагрузить дерево
+    const fetchDevices = async () => {
+      setLoading(true);
+      try {
+        const data = await deviceService.getAllDevices();
+        console.log('Загружены устройства после добавления:', data.length, 'элементов');
+        
+        // Обновляем список типов устройств
+        const types = Array.from(new Set(data.map(device => device.deviceType).filter(Boolean)));
+        setDeviceTypes(types);
+        
+        // Устанавливаем новые данные, фильтрация произойдет в useEffect
+        setDevices(data);
+      } catch (err) {
+        console.error('Ошибка при загрузке устройств после добавления:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDevices();
+  };
+
+  // Функция для рендеринга заголовка узла с подсветкой поискового запроса
+  const renderTitle = (node: CustomTreeNode) => {
+    const name = node.name;
     
-    // Пропускаем корневой узел
-    if (isRoot) {
-      return (
-        <List sx={{ padding: 0 }}>
-          {Object.values(node.children).map(childNode => (
-            renderTreeNode(childNode)
-          ))}
-        </List>
-      );
+    // Для листьев показываем полное обозначение позиции
+    const displayText = node.isLeaf && node.posDesignation ? node.posDesignation : name;
+    
+    if (!searchValue || displayText.toLowerCase().indexOf(searchValue.toLowerCase()) === -1) {
+      return <span>{displayText}</span>;
     }
     
+    const index = displayText.toLowerCase().indexOf(searchValue.toLowerCase());
+    const beforeStr = displayText.substring(0, index);
+    const matchStr = displayText.substring(index, index + searchValue.length);
+    const afterStr = displayText.substring(index + searchValue.length);
+    
     return (
-      <React.Fragment key={nodeId}>
-        <ListItem 
-          sx={{ 
-            py: 0.75, 
-            cursor: 'pointer',
-            borderRadius: '4px',
-            mb: 0.5,
-            transition: 'all 0.2s ease'
-          }}
-          className="device-item"
-          onClick={() => {
-            if (hasChildren) {
-              handleToggleNode(nodeId);
-            } else if (node.originalDevice) {
-              handleSelectDevice(node.originalDevice);
-            } else if (node.devices.length === 1) {
-              handleSelectDevice(node.devices[0]);
-            }
-          }}
-        >
-          {hasChildren ? (
-            <ListItemIcon sx={{ minWidth: 36, color: 'inherit' }}>
-              {isExpanded ? <KeyboardArrowDownIcon /> : <KeyboardArrowRightIcon />}
-            </ListItemIcon>
-          ) : (
-            <ListItemIcon sx={{ minWidth: 36, color: 'inherit' }}>
-              <LinkIcon fontSize="small" />
-            </ListItemIcon>
-          )}
-          <ListItemText 
-            primary={node.name} 
-            primaryTypographyProps={{ 
-              variant: 'body2', 
-              sx: { 
-                fontWeight: isExpanded ? 600 : 400,
-                fontSize: '0.95rem',
-                lineHeight: 1.5
-              } 
-            }}
-          />
-        </ListItem>
-        
-        {hasChildren && isExpanded && (
-          <List sx={{ pl: 3.5, mt: 0.5, pt: 0, mb: 1 }}>
-            {Object.values(node.children).map(childNode => (
-              renderTreeNode(childNode)
-            ))}
-          </List>
-        )}
-      </React.Fragment>
+      <span>
+        {beforeStr}
+        <span style={{ color: '#f50' }}>{matchStr}</span>
+        {afterStr}
+      </span>
     );
   };
 
-  if (loading) {
-    return <div>Загрузка...</div>;
+  // Функция для преобразования данных в формат, понятный компоненту Tree
+  const processTreeData = (nodes: CustomTreeNode[]): { title: React.ReactNode, key: string, icon: React.ReactNode, children?: any[], isLeaf?: boolean, originalId?: number }[] => {
+    return nodes.map(node => {
+      const title = renderTitle(node);
+      
+      if (node.children && node.children.length > 0) {
+        return {
+          title,
+          key: node.id,
+          icon: <FolderOutlined />,
+          children: processTreeData(node.children),
+          isLeaf: false
+        };
+      }
+      
+      return {
+        title,
+        key: node.id,
+        icon: <AppstoreOutlined />,
+        isLeaf: true,
+        originalId: node.originalId
+      };
+    });
+  };
+
+  // Отображение ошибки загрузки
+  if (error) {
+    return (
+      <div className="error-message">
+        <Text type="danger">{error}</Text>
+      </div>
+    );
   }
 
-  if (error) {
-    return <div>Ошибка: {error}</div>;
+  // Отображение состояния загрузки
+  if (loading) {
+    return (
+      <div className="loading-spinner">
+        <Spin size="large" />
+        <Text>Загрузка устройств...</Text>
+      </div>
+    );
   }
 
   return (
-    <Box>
-      {/* Поле поиска */}
-      <TextField
-        fullWidth
-        placeholder="Поиск устройств..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        margin="dense"
-        variant="outlined"
-        size="small"
-        className="custom-text-field"
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon />
-            </InputAdornment>
-          ),
-        }}
-        sx={{ mb: 3 }}
+    <div className="device-tree-container">
+      <div className="device-tree-header" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+        <Search 
+          placeholder="Поиск устройств" 
+          allowClear 
+          enterButton={<SearchOutlined />}
+          onSearch={handleSearch}
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          style={{ flex: '1', minWidth: '120px', maxWidth: '300px' }}
+        />
+        <Select
+          placeholder="Тип устройства"
+          allowClear
+          style={{ flex: '1', minWidth: '120px', maxWidth: '180px' }}
+          value={deviceTypeFilter || undefined}
+          onChange={handleDeviceTypeChange}
+        >
+          {deviceTypes.map(type => (
+            <Option key={type} value={type}>{type}</Option>
+          ))}
+        </Select>
+        <Button 
+          icon={<FilterOutlined />} 
+          onClick={resetFilters}
+        >
+          Сброс
+        </Button>
+        <Button 
+          type="primary" 
+          icon={<PlusOutlined />} 
+          onClick={showAddDeviceForm}
+        >
+          Добавить
+        </Button>
+      </div>
+      
+      {filteredDevices.length > 0 ? (
+        <Tree
+          showIcon
+          expandedKeys={expandedKeys}
+          autoExpandParent={autoExpandParent}
+          onExpand={onExpand}
+          onSelect={onSelect}
+          treeData={processTreeData(treeData)}
+        />
+      ) : (
+        <Empty description="Устройства не найдены" />
+      )}
+
+      <AddDeviceForm 
+        visible={isAddDeviceVisible}
+        onCancel={hideAddDeviceForm}
+        onSuccess={handleDeviceAdded}
+        parentId={selectedParentId}
       />
-
-      {/* Сообщение об ошибке */}
-      {error && (
-        <Typography color="error" sx={{ mb: 2 }}>
-          {error}
-        </Typography>
-      )}
-
-      {/* Индикатор загрузки */}
-      {loading && (
-        <Typography sx={{ mb: 2 }}>
-          Загрузка устройств...
-        </Typography>
-      )}
-
-      {/* Древовидная структура */}
-      {!loading && !error && treeStructure && (
-        <Box sx={{ mt: 2, px: 1 }}>
-          {renderTreeNode(treeStructure, true)}
-        </Box>
-      )}
-    </Box>
+    </div>
   );
 };
 
