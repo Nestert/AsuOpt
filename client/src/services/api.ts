@@ -21,6 +21,19 @@ export const deviceService = {
     try {
       const response = await api.get('/device-references');
       console.log('API: getAllDevices получены данные:', response.data);
+      
+      // Дополнительная проверка и отладка полей для фильтрации
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        console.log('API: Пример данных устройства:', response.data[0]);
+        const systemCodes = response.data.map(device => device.systemCode).filter(Boolean);
+        const plcTypes = response.data.map(device => device.plcType).filter(Boolean);
+        const exVersions = response.data.map(device => device.exVersion).filter(Boolean);
+        
+        console.log('API: Уникальные systemCode:', Array.from(new Set(systemCodes)));
+        console.log('API: Уникальные plcType:', Array.from(new Set(plcTypes)));
+        console.log('API: Уникальные exVersion:', Array.from(new Set(exVersions)));
+      }
+      
       return response.data;
     } catch (error) {
       console.error('API: ошибка в getAllDevices:', error);

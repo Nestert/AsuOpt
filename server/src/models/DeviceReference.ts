@@ -6,6 +6,9 @@ interface DeviceReferenceAttributes {
   deviceType: string;     // Тип устройства
   description?: string;   // Описание (опционально)
   parentSystem?: string;  // Родительская система (опционально)
+  systemCode?: string;    // Код системы (опционально)
+  plcType?: string;       // Тип ПЛК (опционально)
+  exVersion?: string;     // Ex-версия (опционально)
 }
 
 export class DeviceReference extends Model<DeviceReferenceAttributes> implements DeviceReferenceAttributes {
@@ -14,6 +17,9 @@ export class DeviceReference extends Model<DeviceReferenceAttributes> implements
   public deviceType!: string;
   public description!: string;
   public parentSystem!: string;
+  public systemCode!: string;
+  public plcType!: string;
+  public exVersion!: string;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -40,6 +46,18 @@ export class DeviceReference extends Model<DeviceReferenceAttributes> implements
           allowNull: true,
         },
         parentSystem: {
+          type: DataTypes.STRING,
+          allowNull: true,
+        },
+        systemCode: {
+          type: DataTypes.STRING,
+          allowNull: true,
+        },
+        plcType: {
+          type: DataTypes.STRING,
+          allowNull: true,
+        },
+        exVersion: {
           type: DataTypes.STRING,
           allowNull: true,
         },

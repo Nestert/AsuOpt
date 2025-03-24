@@ -5,6 +5,9 @@ export interface DeviceReference {
   deviceType: string;
   description?: string;
   parentSystem?: string;
+  systemCode?: string;
+  plcType?: string;
+  exVersion?: string;
   createdAt?: string;
   updatedAt?: string;
 }

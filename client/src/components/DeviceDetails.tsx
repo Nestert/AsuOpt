@@ -315,6 +315,10 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
     const data = isEditing ? editableData : deviceData;
     if (!data) return null;
 
+    // Получаем информацию о ПЛК из соответствующего раздела
+    const plcInfo = data.dataType === 'kip' && data.kip ? data.kip.plc : 
+                  data.dataType === 'zra' && data.zra ? data.zra.plc : null;
+
     return (
       <Descriptions title="Общая информация" bordered column={1} size="small">
         <Descriptions.Item label="Обозначение">
@@ -352,6 +356,19 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
               className="ant-input device-edit-input"
             />
           ) : data.reference.parentSystem || '-'}
+        </Descriptions.Item>
+        <Descriptions.Item label="ПЛК">
+          {isEditing ? (
+            <input 
+              type="text" 
+              id="plcInfo"
+              name="plcInfo"
+              value={plcInfo || ''} 
+              onChange={(e) => handleFieldChange(data.dataType === 'kip' ? 'kip' : 'zra', 'plc', e.target.value)}
+              className="ant-input device-edit-input"
+              disabled={!data.dataType || data.dataType === 'unknown'}
+            />
+          ) : plcInfo || '-'}
         </Descriptions.Item>
         {(data.reference.description || isEditing) && (
           <Descriptions.Item label="Описание">
