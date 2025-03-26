@@ -336,6 +336,22 @@ export const importService = {
   },
 };
 
+// Сервис для экспорта данных
+export const exportService = {
+  // Экспорт данных сигналов в Excel
+  exportSignalsToExcel: async (columns: string[], include_plc: boolean = false): Promise<Blob> => {
+    try {
+      const response = await api.post('/exports/signals', { columns, include_plc }, {
+        responseType: 'blob' // Важно для получения файла
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в exportSignalsToExcel:', error);
+      throw error;
+    }
+  }
+};
+
 // Сервис для работы с сигналами
 export const signalService = {
   // Получить все сигналы

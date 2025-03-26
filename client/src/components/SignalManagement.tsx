@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Tabs } from 'antd';
 import SignalTable from './SignalTable';
 import SignalDefinitions from './SignalDefinitions';
+import SignalExport from './SignalExport';
 
 const SignalManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState('summary');
@@ -25,6 +26,11 @@ const SignalManagement: React.FC = () => {
             key: 'definitions',
             label: 'Типы сигналов',
             children: <SignalDefinitions />
+          },
+          {
+            key: 'export',
+            label: 'Экспорт сигналов',
+            children: <SignalExport />
           }
         ]}
       />

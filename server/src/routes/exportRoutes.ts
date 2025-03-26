@@ -9,4 +9,10 @@ router.get('/excel', (req: Request, res: Response, next: NextFunction) => {
     .catch(next);
 });
 
+// Экспорт сигналов в Excel
+router.post('/signals', (req: Request, res: Response, next: NextFunction) => {
+  exportController.exportSignalsToExcel(req, res)
+    .catch(next);
+});
+
 export default router; 
