@@ -192,6 +192,10 @@ export class Zra extends Model<ZraAttributes> implements ZraAttributes {
   }
 
   public static associate(): void {
+    // Импортируем модель здесь, чтобы избежать циклических зависимостей
+    const { DeviceReference } = require('./DeviceReference');
+    
+    // Каждая запись ZRA принадлежит одному устройству из справочника
     Zra.belongsTo(DeviceReference, {
       foreignKey: 'deviceReferenceId',
       as: 'deviceReference',

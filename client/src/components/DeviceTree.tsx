@@ -155,12 +155,44 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
         }).filter(Boolean))) as string[];
         setSystems(systemCodes);
         
-        // Извлекаем уникальные типы ПЛК
-        const plcs = Array.from(new Set(data.map(device => device.plcType).filter(Boolean))) as string[];
+        // Извлекаем уникальные типы ПЛК, учитывая все возможные источники
+        const allPlcValues = data.flatMap(device => {
+          const values = [];
+          
+          // Из основного объекта
+          if (device.plcType) values.push(device.plcType);
+          
+          // Из kip, если есть
+          // @ts-ignore
+          if (device.kip?.plc) values.push(device.kip.plc);
+          
+          // Из zra, если есть
+          // @ts-ignore
+          if (device.zra?.plc) values.push(device.zra.plc);
+          
+          return values;
+        });
+        const plcs = Array.from(new Set(allPlcValues)) as string[];
         setPlcTypes(plcs);
         
-        // Извлекаем уникальные Ex-версии
-        const exVers = Array.from(new Set(data.map(device => device.exVersion).filter(Boolean))) as string[];
+        // Извлекаем уникальные Ex-версии, учитывая все возможные источники
+        const allExVersionValues = data.flatMap(device => {
+          const values = [];
+          
+          // Из основного объекта
+          if (device.exVersion) values.push(device.exVersion);
+          
+          // Из kip, если есть
+          // @ts-ignore
+          if (device.kip?.exVersion) values.push(device.kip.exVersion);
+          
+          // Из zra, если есть
+          // @ts-ignore
+          if (device.zra?.exVersion) values.push(device.zra.exVersion);
+          
+          return values;
+        });
+        const exVers = Array.from(new Set(allExVersionValues)) as string[];
         setExVersions(exVers);
         
         const customTree = buildCustomTree(data);
@@ -195,12 +227,34 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     
     // Применяем фильтр по типу ПЛК
     if (plcFilter) {
-      filtered = filtered.filter(device => device.plcType === plcFilter);
+      filtered = filtered.filter(device => {
+        // Проверяем совпадение с plcType в основном объекте
+        if (device.plcType === plcFilter) return true;
+        
+        // Дополнительная проверка: устройство может содержать скрытое поле с данными kip или zra
+        // @ts-ignore (игнорируем отсутствие типизации для этих полей)
+        const kipPlc = device.kip?.plc;
+        // @ts-ignore
+        const zraPlc = device.zra?.plc;
+        
+        return kipPlc === plcFilter || zraPlc === plcFilter;
+      });
     }
     
     // Применяем фильтр по Ex-версии
     if (exVersionFilter) {
-      filtered = filtered.filter(device => device.exVersion === exVersionFilter);
+      filtered = filtered.filter(device => {
+        // Проверяем совпадение с exVersion в основном объекте
+        if (device.exVersion === exVersionFilter) return true;
+        
+        // Дополнительная проверка: устройство может содержать скрытое поле с данными kip или zra
+        // @ts-ignore (игнорируем отсутствие типизации для этих полей)
+        const kipExVersion = device.kip?.exVersion;
+        // @ts-ignore
+        const zraExVersion = device.zra?.exVersion;
+        
+        return kipExVersion === exVersionFilter || zraExVersion === exVersionFilter;
+      });
     }
     
     // Отладочный вывод

@@ -151,6 +151,10 @@ export class Kip extends Model<KipAttributes> implements KipAttributes {
   }
 
   public static associate(): void {
+    // Импортируем модель здесь, чтобы избежать циклических зависимостей
+    const { DeviceReference } = require('./DeviceReference');
+    
+    // Каждая запись KIP принадлежит одному устройству из справочника
     Kip.belongsTo(DeviceReference, {
       foreignKey: 'deviceReferenceId',
       as: 'deviceReference',

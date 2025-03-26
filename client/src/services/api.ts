@@ -25,9 +25,48 @@ export const deviceService = {
       // Дополнительная проверка и отладка полей для фильтрации
       if (response.data && Array.isArray(response.data) && response.data.length > 0) {
         console.log('API: Пример данных устройства:', response.data[0]);
+        
+        // Проверяем наличие полей plcType и exVersion, а также соответствующих полей в kip/zra
         const systemCodes = response.data.map(device => device.systemCode).filter(Boolean);
         const plcTypes = response.data.map(device => device.plcType).filter(Boolean);
         const exVersions = response.data.map(device => device.exVersion).filter(Boolean);
+        
+        // Проверяем наличие вложенных данных kip/zra
+        const hasKipData = response.data.some(device => device.kip);
+        const hasZraData = response.data.some(device => device.zra);
+        
+        console.log('API: Наличие вложенных данных - kip:', hasKipData, 'zra:', hasZraData);
+        
+        // Если есть вложенные данные, проверяем поля plc и exVersion
+        if (hasKipData) {
+          const kipPlcValues = response.data
+            .filter(device => device.kip)
+            .map(device => device.kip.plc)
+            .filter(Boolean);
+          
+          const kipExVersions = response.data
+            .filter(device => device.kip)
+            .map(device => device.kip.exVersion)
+            .filter(Boolean);
+          
+          console.log('API: Уникальные kipPlc:', Array.from(new Set(kipPlcValues)));
+          console.log('API: Уникальные kipExVersion:', Array.from(new Set(kipExVersions)));
+        }
+        
+        if (hasZraData) {
+          const zraPlcValues = response.data
+            .filter(device => device.zra)
+            .map(device => device.zra.plc)
+            .filter(Boolean);
+          
+          const zraExVersions = response.data
+            .filter(device => device.zra)
+            .map(device => device.zra.exVersion)
+            .filter(Boolean);
+          
+          console.log('API: Уникальные zraPlc:', Array.from(new Set(zraPlcValues)));
+          console.log('API: Уникальные zraExVersion:', Array.from(new Set(zraExVersions)));
+        }
         
         console.log('API: Уникальные systemCode:', Array.from(new Set(systemCodes)));
         console.log('API: Уникальные plcType:', Array.from(new Set(plcTypes)));

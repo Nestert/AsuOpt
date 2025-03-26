@@ -75,4 +75,25 @@ export class DeviceReference extends Model<DeviceReferenceAttributes> implements
       }
     );
   }
+  
+  // Определение ассоциаций с другими моделями
+  public static associate(): void {
+    // Импортируем модели здесь, чтобы избежать циклических зависимостей
+    const { Kip } = require('./Kip');
+    const { Zra } = require('./Zra');
+    
+    // Один девайс в справочнике имеет одну запись КИП
+    DeviceReference.hasOne(Kip, {
+      foreignKey: 'deviceReferenceId',
+      as: 'kip',
+      onDelete: 'CASCADE'
+    });
+    
+    // Один девайс в справочнике имеет одну запись ЗРА
+    DeviceReference.hasOne(Zra, {
+      foreignKey: 'deviceReferenceId',
+      as: 'zra',
+      onDelete: 'CASCADE'
+    });
+  }
 } 

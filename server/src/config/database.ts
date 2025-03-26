@@ -42,6 +42,7 @@ const initializeDatabase = async () => {
     
     // Устанавливаем ассоциации между моделями
     Device.associate();
+    DeviceReference.associate();
     Kip.associate();
     Zra.associate();
     Signal.associate();

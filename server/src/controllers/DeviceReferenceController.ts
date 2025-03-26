@@ -8,9 +8,31 @@ export class DeviceReferenceController {
   // Получение всех устройств из справочника
   static async getAllDevices(req: Request, res: Response): Promise<void> {
     try {
+      console.log('getAllDevices: получаем все устройства с полной информацией');
+      
+      // Получаем устройства с включением связанных данных KIP и ZRA
       const devices = await DeviceReference.findAll({
-        order: [['posDesignation', 'ASC']]
+        order: [['posDesignation', 'ASC']],
+        include: [
+          {
+            model: Kip,
+            as: 'kip',
+            required: false,
+          },
+          {
+            model: Zra,
+            as: 'zra',
+            required: false,
+          }
+        ]
       });
+      
+      console.log(`getAllDevices: Получено ${devices.length} устройств`);
+      
+      // Для диагностики: подсчет устройств с данными KIP и ZRA
+      const withKip = devices.filter(device => device.get('kip')).length;
+      const withZra = devices.filter(device => device.get('zra')).length;
+      console.log(`getAllDevices: С данными KIP: ${withKip}, с данными ZRA: ${withZra}`);
       
       res.json(devices);
     } catch (error) {
