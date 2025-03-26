@@ -10,6 +10,7 @@ import {
 import { deviceService } from '../services/api';
 import { DeviceReference } from '../interfaces/DeviceReference';
 import AddDeviceForm from './AddDeviceForm';
+import DeviceFilters, { DeviceFilters as DeviceFiltersType } from './DeviceFilters';
 
 const { Search } = Input;
 const { Text } = Typography;
@@ -39,10 +40,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   const [treeData, setTreeData] = useState<CustomTreeNode[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [searchValue, setSearchValue] = useState('');
-  const [deviceTypeFilter, setDeviceTypeFilter] = useState<string>('');
-  const [systemFilter, setSystemFilter] = useState<string>('');
-  const [plcFilter, setPlcFilter] = useState<string>('');
-  const [exVersionFilter, setExVersionFilter] = useState<string>('');
+  const [advancedFilters, setAdvancedFilters] = useState<DeviceFiltersType>({});
   const [deviceTypes, setDeviceTypes] = useState<string[]>([]);
   const [systems, setSystems] = useState<string[]>([]);
   const [plcTypes, setPlcTypes] = useState<string[]>([]);
@@ -53,6 +51,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   const [isAddDeviceVisible, setIsAddDeviceVisible] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
   const [filteredDevices, setFilteredDevices] = useState<DeviceReference[]>([]);
+  const [isAdvancedFilterVisible, setIsAdvancedFilterVisible] = useState(false);
 
   // Функция для разбиения строки posDesignation на части
   const parsePosDesignation = (posDesignation: string): string[] => {
@@ -210,66 +209,115 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
 
   // Эффект для фильтрации устройств при изменении фильтров
   useEffect(() => {
-    let filtered = devices;
+    if (!devices || devices.length === 0) return;
     
-    // Применяем фильтр по типу устройства
-    if (deviceTypeFilter) {
-      filtered = filtered.filter(device => device.deviceType === deviceTypeFilter);
+    // Получаем исходные устройства
+    let filtered = [...devices];
+    
+    // Проверяем наличие текстового поиска
+    if (searchValue) {
+      const searchLower = searchValue.toLowerCase();
+      filtered = filtered.filter(device => 
+        device.posDesignation.toLowerCase().includes(searchLower) || 
+        (device.description && device.description.toLowerCase().includes(searchLower))
+      );
     }
     
-    // Применяем фильтр по родительской системе
-    if (systemFilter) {
-      filtered = filtered.filter(device => {
-        // Проверяем совпадение с systemCode или parentSystem
-        return device.systemCode === systemFilter || device.parentSystem === systemFilter;
-      });
-    }
-    
-    // Применяем фильтр по типу ПЛК
-    if (plcFilter) {
-      filtered = filtered.filter(device => {
-        // Проверяем совпадение с plcType в основном объекте
-        if (device.plcType === plcFilter) return true;
-        
-        // Дополнительная проверка: устройство может содержать скрытое поле с данными kip или zra
-        // @ts-ignore (игнорируем отсутствие типизации для этих полей)
-        const kipPlc = device.kip?.plc;
-        // @ts-ignore
-        const zraPlc = device.zra?.plc;
-        
-        return kipPlc === plcFilter || zraPlc === plcFilter;
-      });
-    }
-    
-    // Применяем фильтр по Ex-версии
-    if (exVersionFilter) {
-      filtered = filtered.filter(device => {
-        // Проверяем совпадение с exVersion в основном объекте
-        if (device.exVersion === exVersionFilter) return true;
-        
-        // Дополнительная проверка: устройство может содержать скрытое поле с данными kip или zra
-        // @ts-ignore (игнорируем отсутствие типизации для этих полей)
-        const kipExVersion = device.kip?.exVersion;
-        // @ts-ignore
-        const zraExVersion = device.zra?.exVersion;
-        
-        return kipExVersion === exVersionFilter || zraExVersion === exVersionFilter;
-      });
+    // Применяем расширенные фильтры
+    if (Object.keys(advancedFilters).length > 0) {
+      // Фильтрация по типу устройства
+      if (advancedFilters.deviceType && advancedFilters.deviceType.length > 0) {
+        filtered = filtered.filter(device => 
+          device.deviceType && advancedFilters.deviceType?.includes(device.deviceType)
+        );
+      }
+      
+      // Фильтрация по коду системы
+      if (advancedFilters.systemCode && advancedFilters.systemCode.length > 0) {
+        filtered = filtered.filter(device => 
+          (device.systemCode && advancedFilters.systemCode?.includes(device.systemCode)) ||
+          (device.parentSystem && advancedFilters.systemCode?.includes(device.parentSystem))
+        );
+      }
+      
+      // Фильтрация по типу ПЛК
+      if (advancedFilters.plcType && advancedFilters.plcType.length > 0) {
+        filtered = filtered.filter(device => {
+          // Проверяем совпадение с plcType в основном объекте
+          if (device.plcType && advancedFilters.plcType?.includes(device.plcType)) return true;
+          
+          // Дополнительная проверка: устройство может содержать скрытое поле с данными kip или zra
+          // @ts-ignore (игнорируем отсутствие типизации для этих полей)
+          const kipPlc = device.kip?.plc;
+          // @ts-ignore
+          const zraPlc = device.zra?.plc;
+          
+          return (kipPlc && advancedFilters.plcType?.includes(kipPlc)) || 
+                 (zraPlc && advancedFilters.plcType?.includes(zraPlc));
+        });
+      }
+      
+      // Фильтрация по Ex-версии
+      if (advancedFilters.exVersion && advancedFilters.exVersion.length > 0) {
+        filtered = filtered.filter(device => {
+          // Проверяем совпадение с exVersion в основном объекте
+          if (device.exVersion && advancedFilters.exVersion?.includes(device.exVersion)) return true;
+          
+          // Дополнительная проверка: устройство может содержать скрытое поле с данными kip или zra
+          // @ts-ignore (игнорируем отсутствие типизации для этих полей)
+          const kipExVersion = device.kip?.exVersion;
+          // @ts-ignore
+          const zraExVersion = device.zra?.exVersion;
+          
+          return (kipExVersion && advancedFilters.exVersion?.includes(kipExVersion)) || 
+                 (zraExVersion && advancedFilters.exVersion?.includes(zraExVersion));
+        });
+      }
+      
+      // Фильтрация по обозначению позиции (posDesignation)
+      if (advancedFilters.posDesignation) {
+        const posSearchLower = advancedFilters.posDesignation.toLowerCase();
+        filtered = filtered.filter(device => 
+          device.posDesignation.toLowerCase().includes(posSearchLower)
+        );
+      }
+      
+      // Фильтрация по описанию (description)
+      if (advancedFilters.description) {
+        const descSearchLower = advancedFilters.description.toLowerCase();
+        filtered = filtered.filter(device => 
+          device.description && device.description.toLowerCase().includes(descSearchLower)
+        );
+      }
+      
+      // Фильтрация по типу данных
+      if (advancedFilters.dataType && advancedFilters.dataType.length > 0) {
+        filtered = filtered.filter(device => {
+          // @ts-ignore
+          const hasKip = Boolean(device.kip);
+          // @ts-ignore
+          const hasZra = Boolean(device.zra);
+          
+          const dataType = hasKip ? 'kip' : (hasZra ? 'zra' : 'unknown');
+          
+          return advancedFilters.dataType?.includes(dataType);
+        });
+      }
+      
+      // Дополнительные фильтры для полей КИП
+      if (advancedFilters.section && advancedFilters.section.length > 0) {
+        filtered = filtered.filter(device => {
+          // @ts-ignore
+          const section = device.kip?.section;
+          return section && advancedFilters.section?.includes(section);
+        });
+      }
+      
+      // Здесь можно добавить дополнительные фильтры для других полей КИП и ЗРА
     }
     
     // Отладочный вывод
-    console.log('Фильтры:', {
-      deviceTypeFilter,
-      systemFilter,
-      plcFilter,
-      exVersionFilter
-    });
-    console.log('Доступные значения:', {
-      deviceTypes,
-      systems,
-      plcTypes,
-      exVersions
-    });
+    console.log('Активные фильтры:', advancedFilters);
     console.log('Отфильтрованные устройства:', filtered.length);
     
     // Обновляем дерево с отфильтрованными устройствами
@@ -281,29 +329,14 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     // Сбрасываем развернутые узлы при изменении фильтра
     setExpandedKeys([]);
     
-  }, [deviceTypeFilter, systemFilter, plcFilter, exVersionFilter, devices]);
+  }, [advancedFilters, searchValue, devices]);
 
-  // Обработчик изменения фильтра типа устройства
-  const handleDeviceTypeChange = (value: string) => {
-    setDeviceTypeFilter(value);
-  };
-  
-  // Обработчик изменения фильтра родительской системы
-  const handleSystemChange = (value: string) => {
-    setSystemFilter(value);
-  };
-  
-  // Обработчик изменения фильтра типа ПЛК
-  const handlePlcChange = (value: string) => {
-    setPlcFilter(value);
-  };
-  
-  // Обработчик изменения фильтра Ex-версии
-  const handleExVersionChange = (value: string) => {
-    setExVersionFilter(value);
+  // Обработчик применения расширенных фильтров
+  const handleApplyFilters = (filters: DeviceFiltersType) => {
+    setAdvancedFilters(filters);
   };
 
-  // Поиск в дереве устройств
+  // Поиск в дерева устройств
   const handleSearch = (value: string) => {
     setSearchValue(value);
     if (!value) {
@@ -345,12 +378,10 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   // Сброс всех фильтров
   const resetFilters = () => {
     setSearchValue('');
-    setDeviceTypeFilter('');
-    setSystemFilter('');
-    setPlcFilter('');
-    setExVersionFilter('');
+    setAdvancedFilters({});
     setExpandedKeys([]);
     setAutoExpandParent(false);
+    setIsAdvancedFilterVisible(false);
   };
 
   // Обработка развертывания узлов дерева
@@ -483,6 +514,11 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     });
   };
 
+  // Обработчик переключения видимости расширенных фильтров
+  const toggleAdvancedFilters = () => {
+    setIsAdvancedFilterVisible(!isAdvancedFilterVisible);
+  };
+
   // Отображение ошибки загрузки
   if (error) {
     return (
@@ -504,119 +540,69 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
 
   return (
     <div className="device-tree-container">
-      <div className="device-tree-header" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
-          <Search 
-            placeholder="Поиск устройств" 
-            allowClear 
-            enterButton={<SearchOutlined />}
-            onSearch={handleSearch}
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            style={{ flex: '1', minWidth: '120px', maxWidth: '300px' }}
-          />
+      <div className="device-tree-header" style={{ 
+        display: 'flex', 
+        flexWrap: 'wrap', 
+        alignItems: 'center', 
+        marginBottom: '16px',
+        gap: '8px'
+      }}>
+        <Input.Search
+          placeholder="Поиск по обозначению или описанию"
+          onChange={e => handleSearch(e.target.value)}
+          value={searchValue}
+          style={{ flex: 1, minWidth: '200px' }}
+        />
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Button 
+            type="primary" 
+            icon={<FilterOutlined />} 
+            onClick={toggleAdvancedFilters}
+            style={{ minWidth: '140px' }}
+          >
+            {isAdvancedFilterVisible ? 'Скрыть фильтры' : 'Показать фильтры'}
+          </Button>
           <Button 
             type="primary" 
             icon={<PlusOutlined />} 
             onClick={showAddDeviceForm}
+            style={{ minWidth: '120px' }}
           >
             Добавить
           </Button>
         </div>
-        
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px', padding: '8px', border: '1px solid #f0f0f0', borderRadius: '4px', backgroundColor: '#fafafa' }}>
-          <Text strong style={{ width: '100%', marginBottom: '4px' }}>Фильтры:</Text>
-          
-          <Select
-            placeholder="Тип устройства"
-            allowClear
-            style={{ flex: '1', minWidth: '120px', maxWidth: '180px' }}
-            value={deviceTypeFilter || undefined}
-            onChange={handleDeviceTypeChange}
-            notFoundContent={<div>Нет данных</div>}
-            showSearch
-          >
-            {deviceTypes.length > 0 ? (
-              deviceTypes.map(type => (
-                <Option key={type} value={type}>{type}</Option>
-              ))
-            ) : (
-              <Option disabled>Нет данных</Option>
-            )}
-          </Select>
-          
-          <Select
-            placeholder="Родительская система"
-            allowClear
-            style={{ flex: '1', minWidth: '120px', maxWidth: '180px' }}
-            value={systemFilter || undefined}
-            onChange={handleSystemChange}
-            notFoundContent={<div>Нет данных</div>}
-            showSearch
-          >
-            {systems.length > 0 ? (
-              systems.map(system => (
-                <Option key={system} value={system}>{system}</Option>
-              ))
-            ) : (
-              <Option disabled>Нет данных</Option>
-            )}
-          </Select>
-          
-          <Select
-            placeholder="Тип ПЛК"
-            allowClear
-            style={{ flex: '1', minWidth: '120px', maxWidth: '180px' }}
-            value={plcFilter || undefined}
-            onChange={handlePlcChange}
-            notFoundContent={<div>Нет данных</div>}
-            showSearch
-          >
-            {plcTypes.length > 0 ? (
-              plcTypes.map(plcType => (
-                <Option key={plcType} value={plcType}>{plcType}</Option>
-              ))
-            ) : (
-              <Option disabled>Нет данных</Option>
-            )}
-          </Select>
-          
-          <Select
-            placeholder="Ex-версия"
-            allowClear
-            style={{ flex: '1', minWidth: '120px', maxWidth: '180px' }}
-            value={exVersionFilter || undefined}
-            onChange={handleExVersionChange}
-            notFoundContent={<div>Нет данных</div>}
-            showSearch
-          >
-            {exVersions.length > 0 ? (
-              exVersions.map(exVersion => (
-                <Option key={exVersion} value={exVersion}>{exVersion}</Option>
-              ))
-            ) : (
-              <Option disabled>Нет данных</Option>
-            )}
-          </Select>
-          
-          <Button 
-            icon={<FilterOutlined />} 
-            onClick={resetFilters}
-          >
-            Сброс
-          </Button>
-        </div>
       </div>
+
+      {isAdvancedFilterVisible && (
+        <div style={{ marginBottom: '16px' }}>
+          <DeviceFilters 
+            onApplyFilters={handleApplyFilters} 
+            devices={devices}
+            loading={loading}
+          />
+        </div>
+      )}
       
       {filteredDevices.length > 0 ? (
-        <Tree
-          showIcon
-          expandedKeys={expandedKeys}
-          autoExpandParent={autoExpandParent}
-          onExpand={onExpand}
-          onSelect={onSelect}
-          treeData={processTreeData(treeData)}
-        />
+        <div style={{ 
+          height: 'calc(100vh - 220px)', 
+          minHeight: '300px',
+          overflow: 'auto', 
+          border: '1px solid #f0f0f0',
+          borderRadius: '4px',
+          padding: '8px',
+          backgroundColor: '#fafafa'
+        }}>
+          <Tree
+            showIcon
+            expandedKeys={expandedKeys}
+            autoExpandParent={autoExpandParent}
+            onExpand={onExpand}
+            onSelect={onSelect}
+            treeData={processTreeData(treeData)}
+            style={{ backgroundColor: '#fff' }}
+          />
+        </div>
       ) : (
         <Empty description="Устройства не найдены" />
       )}
