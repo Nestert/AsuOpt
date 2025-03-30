@@ -13,7 +13,7 @@ const SignalTableContent: React.FC = () => {
   const [summaryData, setSummaryData] = useState<SignalsSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [initializingTypes, setInitializingTypes] = useState(false);
-  const [autoFillEnabled, setAutoFillEnabled] = useState(true);
+  const [autoFillEnabled, setAutoFillEnabled] = useState(false);
 
   // Функция для автоматического добавления отсутствующих типов устройств
   const addMissingTypes = useCallback(async (missingTypes: string[]) => {
