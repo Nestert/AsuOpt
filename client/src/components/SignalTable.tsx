@@ -1,82 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { Table, InputNumber, Card, Button, Typography, Row, Col, Statistic, Spin, Alert, Empty, Select, App, Switch, Popconfirm, Space } from 'antd';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Table, InputNumber, Card, Button, Typography, Row, Col, Statistic, Spin, Alert, Empty, App, Switch, Popconfirm, Space } from 'antd';
 import { deviceTypeSignalService } from '../services/api';
 import { DeviceTypeSignal, SignalsSummary } from '../interfaces/DeviceTypeSignal';
-import { PlusOutlined, SaveOutlined, ReloadOutlined, DeleteOutlined, ClearOutlined, LoadingOutlined } from '@ant-design/icons';
+import { ReloadOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
-const { Option } = Select;
 
 // Создаем внутренний компонент, использующий App.useApp()
 const SignalTableContent: React.FC = () => {
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [summaryData, setSummaryData] = useState<SignalsSummary | null>(null);
-  const [deviceTypes, setDeviceTypes] = useState<string[]>([]);
-  const [deviceTypesFromReference, setDeviceTypesFromReference] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [initializingTypes, setInitializingTypes] = useState(false);
   const [autoFillEnabled, setAutoFillEnabled] = useState(true);
 
-  // Загрузка данных при монтировании компонента
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Загрузка всех необходимых данных и автоматическое добавление всех типов устройств
-  const fetchData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Загружаем список всех типов устройств из DeviceReference
-      const typesFromReference = await deviceTypeSignalService.getUniqueDeviceTypesFromReference();
-      setDeviceTypesFromReference(typesFromReference);
-      console.log('SignalTable: получены типы устройств из DeviceReference:', typesFromReference);
-      
-      try {
-        // Загружаем сводную таблицу существующих записей
-        const summaryData = await deviceTypeSignalService.getSignalsSummary();
-        setSummaryData(summaryData);
-        
-        // Загружаем список всех типов устройств из Device
-        const deviceTypes = await deviceTypeSignalService.getUniqueDeviceTypes();
-        setDeviceTypes(deviceTypes);
-        console.log('SignalTable: получены типы устройств из Device:', deviceTypes);
-        
-        // Проверяем, есть ли типы устройств, которых еще нет в таблице сигналов
-        if (autoFillEnabled && typesFromReference.length > 0) {
-          const existingTypes = summaryData?.deviceTypeSignals.map(dts => dts.deviceType) || [];
-          const missingTypes = typesFromReference.filter(type => !existingTypes.includes(type));
-          
-          // Если есть недостающие типы, добавляем их автоматически
-          if (missingTypes.length > 0) {
-            await addMissingTypes(missingTypes);
-          }
-        }
-      } catch (summaryError) {
-        console.error('Ошибка при загрузке сводных данных:', summaryError);
-        setError('Не удалось загрузить полную информацию о сигналах. Данные о сигналах могут быть неточными.');
-        
-        // Загружаем список всех типов устройств из Device, несмотря на ошибку
-        try {
-          const deviceTypes = await deviceTypeSignalService.getUniqueDeviceTypes();
-          setDeviceTypes(deviceTypes);
-          console.log('SignalTable: получены типы устройств из Device:', deviceTypes);
-        } catch (typesError) {
-          console.error('Ошибка при загрузке типов устройств:', typesError);
-        }
-      }
-      
-      setLoading(false);
-    } catch (error) {
-      console.error('Ошибка при загрузке данных:', error);
-      setError('Не удалось загрузить данные. Проверьте соединение с сервером.');
-      setLoading(false);
-    }
-  };
-
   // Функция для автоматического добавления отсутствующих типов устройств
-  const addMissingTypes = async (missingTypes: string[]) => {
+  const addMissingTypes = useCallback(async (missingTypes: string[]) => {
     setInitializingTypes(true);
     
     try {
@@ -107,7 +47,55 @@ const SignalTableContent: React.FC = () => {
     } finally {
       setInitializingTypes(false);
     }
-  };
+  }, [message]);
+
+  // Загрузка данных при монтировании компонента
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Загружаем список всех типов устройств из DeviceReference
+      const typesFromReference = await deviceTypeSignalService.getUniqueDeviceTypesFromReference();
+      
+      try {
+        // Загружаем сводную таблицу существующих записей
+        const summaryData = await deviceTypeSignalService.getSignalsSummary();
+        setSummaryData(summaryData);
+        
+        // Проверяем, есть ли типы устройств, которых еще нет в таблице сигналов
+        if (autoFillEnabled && typesFromReference.length > 0) {
+          const existingTypes = summaryData?.deviceTypeSignals.map(dts => dts.deviceType) || [];
+          const missingTypes = typesFromReference.filter(type => !existingTypes.includes(type));
+          
+          // Если есть недостающие типы, добавляем их автоматически
+          if (missingTypes.length > 0) {
+            await addMissingTypes(missingTypes);
+          }
+        }
+      } catch (summaryError) {
+        console.error('Ошибка при загрузке сводных данных:', summaryError);
+        setError('Не удалось загрузить полную информацию о сигналах. Данные о сигналах могут быть неточными.');
+        
+        // Загружаем список всех типов устройств из Device, несмотря на ошибку
+        try {
+          await deviceTypeSignalService.getUniqueDeviceTypes();
+        } catch (typesError) {
+          console.error('Ошибка при загрузке типов устройств:', typesError);
+        }
+      }
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Ошибка при загрузке данных:', error);
+      setError('Не удалось загрузить данные. Проверьте соединение с сервером.');
+      setLoading(false);
+    }
+  }, [autoFillEnabled, addMissingTypes]);
+
+  // Загрузка данных при монтировании компонента
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // Очистка всех данных в таблице сигналов типов устройств
   const clearAllData = async () => {

@@ -12,6 +12,7 @@ import signalRoutes from './routes/signalRoutes';
 import deviceTypeSignalRoutes from './routes/deviceTypeSignalRoutes';
 import databaseRoutes from './routes/databaseRoutes';
 import path from 'path';
+import * as signalController from './controllers/signalController';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -46,13 +47,20 @@ initializeDatabase()
   });
 
 // Маршруты
+
+// --- Маршрут для очистки сигналов (определен здесь из-за проблем с signalRoutes) ---
+app.delete('/api/signals/clear', (req, res, next) => {
+  signalController.clearAllSignals(req, res).catch(next);
+});
+// --------------------------------------------------------------------------------
+
+app.use('/api/signals', signalRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/exports', exportRoutes);
 app.use('/api/import', importRoutes);
 app.use('/api/device-references', deviceReferenceRoutes);
 app.use('/api/kip', kipRoutes);
 app.use('/api/zra', zraRoutes);
-app.use('/api/signals', signalRoutes);
 app.use('/api/device-type-signals', deviceTypeSignalRoutes);
 app.use('/api/database', databaseRoutes);
 

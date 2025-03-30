@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 // Импортируем патч для совместимости с React 19
 import '@ant-design/v5-patch-for-react-19';
 import { ConfigProvider, Layout, Tabs, App } from 'antd';
@@ -22,20 +22,24 @@ const InnerApp: React.FC = () => {
   
   // Проверяем конфигурацию API при загрузке
   useEffect(() => {
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-    console.log('App: API URL = ', apiUrl);
-    console.log('App: process.env.NODE_ENV = ', process.env.NODE_ENV);
+    // Удаляем неиспользуемую переменную apiUrl
+    // const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+    // console.log('App: API URL = ', apiUrl);
+    // console.log('App: process.env.NODE_ENV = ', process.env.NODE_ENV);
   }, []);
 
   // Обработчик выбора устройства
-  const handleDeviceSelect = (deviceId: number) => {
+  const handleSelectDevice = useCallback((deviceId: number | null) => {
     setSelectedDeviceId(deviceId);
-  };
+  }, []);
 
   // Обработчик смены вкладки
   const handleTabChange = (key: string) => {
-    // Дополнительная логика по смене вкладки может быть добавлена здесь
-    console.log(`Активная вкладка: ${key}`);
+    // console.log(`Активная вкладка: ${key}`);
+    // При переключении на вкладку устройств, сбрасываем выбор, если это нужно
+    if (key !== 'devices') {
+      // setSelectedDeviceId(null); 
+    }
   };
 
   // Обработчик успешного импорта
@@ -59,61 +63,30 @@ const InnerApp: React.FC = () => {
   };
 
   // Обработчик удаления устройства
-  const handleDeviceDeleted = () => {
-    console.log('App: handleDeviceDeleted вызван');
-    notification.success({
-      message: 'Устройство удалено',
-      description: 'Устройство и связанные данные успешно удалены',
-      duration: 5
-    });
-    
-    // Сбрасываем выбранное устройство
-    console.log('App: сбрасываем выбранное устройство, текущее значение:', selectedDeviceId);
-    setSelectedDeviceId(null);
-    
-    // Обновляем дерево устройств с небольшой задержкой
-    console.log('App: увеличиваем счетчик обновления дерева, текущее значение:', treeUpdateCounter);
-    
-    // Используем таймаут, чтобы дать время серверу обработать удаление
-    setTimeout(() => {
-      setTreeUpdateCounter(prev => prev + 1);
-      console.log('App: дерево устройств обновлено');
-    }, 500);
-  };
+  const handleDeviceDeleted = useCallback(() => {
+    // console.log('App: handleDeviceDeleted вызван');
+    // Сначала сбрасываем выбранный ID, чтобы панель деталей очистилась
+    // или показала сообщение о выборе устройства
+    // console.log('App: сбрасываем выбранное устройство, текущее значение:', selectedDeviceId);
+    setSelectedDeviceId(null); 
+    // Затем увеличиваем счетчик, чтобы DeviceTree обновил данные
+    // console.log('App: увеличиваем счетчик обновления дерева, текущее значение:', treeUpdateCounter);
+    setTreeUpdateCounter(prev => prev + 1);
+    // console.log('App: дерево устройств обновлено');
+  }, []);
 
   // Обработчик обновления устройства
-  const handleDeviceUpdated = () => {
-    console.log('App: handleDeviceUpdated вызван');
-    
-    // Обновляем дерево устройств с небольшой задержкой
-    console.log('App: увеличиваем счетчик обновления дерева для отражения изменений');
-    
-    // Используем таймаут, чтобы дать время серверу завершить обновление
-    setTimeout(() => {
-      setTreeUpdateCounter(prev => prev + 1);
-      console.log('App: дерево устройств обновлено после изменения устройства');
-    }, 500);
-  };
-
-  // Обработчик добавления устройства
-  const handleDeviceAdded = () => {
-    console.log('App: handleDeviceAdded вызван');
-    notification.success({
-      message: 'Устройство добавлено',
-      description: 'Новое устройство успешно добавлено',
-      duration: 5
-    });
-    
-    // Обновляем дерево устройств с небольшой задержкой
-    setTimeout(() => {
-      setTreeUpdateCounter(prev => prev + 1);
-      console.log('App: дерево устройств обновлено после добавления устройства');
-    }, 500);
-  };
+  const handleDeviceUpdated = useCallback(() => {
+    // console.log('App: handleDeviceUpdated вызван');
+    // Увеличиваем счетчик, чтобы DeviceTree обновил данные
+    // console.log('App: увеличиваем счетчик обновления дерева для отражения изменений');
+    setTreeUpdateCounter(prev => prev + 1);
+    // console.log('App: дерево устройств обновлено после изменения устройства');
+  }, []);
 
   // Обработчик очистки базы данных
   const handleDatabaseCleared = () => {
-    console.log('App: handleDatabaseCleared вызван');
+    // console.log('App: handleDatabaseCleared вызван');
     notification.success({
       message: 'База данных обновлена',
       description: 'Операция выполнена успешно',
@@ -145,7 +118,7 @@ const InnerApp: React.FC = () => {
                 <Layout className="content-layout">
                   <Sider width={350} className="app-sider">
                     <DeviceTree 
-                      onSelectDevice={handleDeviceSelect}
+                      onSelectDevice={handleSelectDevice}
                       updateCounter={treeUpdateCounter}
                     />
                   </Sider>

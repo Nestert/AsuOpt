@@ -17,62 +17,8 @@ const api = axios.create({
 export const deviceService = {
   // Получить все устройства
   getAllDevices: async (): Promise<DeviceReference[]> => {
-    console.log('API: вызов getAllDevices');
     try {
       const response = await api.get('/device-references');
-      console.log('API: getAllDevices получены данные:', response.data);
-      
-      // Дополнительная проверка и отладка полей для фильтрации
-      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-        console.log('API: Пример данных устройства:', response.data[0]);
-        
-        // Проверяем наличие полей plcType и exVersion, а также соответствующих полей в kip/zra
-        const systemCodes = response.data.map(device => device.systemCode).filter(Boolean);
-        const plcTypes = response.data.map(device => device.plcType).filter(Boolean);
-        const exVersions = response.data.map(device => device.exVersion).filter(Boolean);
-        
-        // Проверяем наличие вложенных данных kip/zra
-        const hasKipData = response.data.some(device => device.kip);
-        const hasZraData = response.data.some(device => device.zra);
-        
-        console.log('API: Наличие вложенных данных - kip:', hasKipData, 'zra:', hasZraData);
-        
-        // Если есть вложенные данные, проверяем поля plc и exVersion
-        if (hasKipData) {
-          const kipPlcValues = response.data
-            .filter(device => device.kip)
-            .map(device => device.kip.plc)
-            .filter(Boolean);
-          
-          const kipExVersions = response.data
-            .filter(device => device.kip)
-            .map(device => device.kip.exVersion)
-            .filter(Boolean);
-          
-          console.log('API: Уникальные kipPlc:', Array.from(new Set(kipPlcValues)));
-          console.log('API: Уникальные kipExVersion:', Array.from(new Set(kipExVersions)));
-        }
-        
-        if (hasZraData) {
-          const zraPlcValues = response.data
-            .filter(device => device.zra)
-            .map(device => device.zra.plc)
-            .filter(Boolean);
-          
-          const zraExVersions = response.data
-            .filter(device => device.zra)
-            .map(device => device.zra.exVersion)
-            .filter(Boolean);
-          
-          console.log('API: Уникальные zraPlc:', Array.from(new Set(zraPlcValues)));
-          console.log('API: Уникальные zraExVersion:', Array.from(new Set(zraExVersions)));
-        }
-        
-        console.log('API: Уникальные systemCode:', Array.from(new Set(systemCodes)));
-        console.log('API: Уникальные plcType:', Array.from(new Set(plcTypes)));
-        console.log('API: Уникальные exVersion:', Array.from(new Set(exVersions)));
-      }
-      
       return response.data;
     } catch (error) {
       console.error('API: ошибка в getAllDevices:', error);
@@ -82,10 +28,8 @@ export const deviceService = {
   
   // Получить дерево устройств
   getDeviceTree: async (): Promise<TreeNode[]> => {
-    console.log('API: вызов getDeviceTree');
     try {
       const response = await api.get('/device-references/tree');
-      console.log('API: getDeviceTree получены данные:', response.data);
       return response.data;
     } catch (error) {
       console.error('API: ошибка в getDeviceTree:', error);
@@ -95,10 +39,8 @@ export const deviceService = {
   
   // Получить детали устройства по ID
   getDeviceById: async (id: number): Promise<DeviceFullData> => {
-    console.log(`API: вызов getDeviceById с id=${id}`);
     try {
       const response = await api.get(`/device-references/${id}`);
-      console.log('API: getDeviceById получены данные:', response.data);
       return response.data;
     } catch (error) {
       console.error(`API: ошибка в getDeviceById(${id}):`, error);
@@ -108,10 +50,8 @@ export const deviceService = {
   
   // Создать новое устройство
   createDevice: async (deviceData: any): Promise<DeviceFullData> => {
-    console.log('API: вызов createDevice с данными:', deviceData);
     try {
       const response = await api.post('/device-references', deviceData);
-      console.log('API: createDevice получен ответ:', response.data);
       return response.data;
     } catch (error) {
       console.error('API: ошибка в createDevice:', error);
@@ -121,7 +61,6 @@ export const deviceService = {
   
   // Удалить устройство по ID
   deleteDeviceById: async (id: number): Promise<void> => {
-    console.log(`API: вызов deleteDeviceById с id=${id}`);
     try {
       console.log(`API: отправляем DELETE запрос к /device-references/${id}`);
       const response = await api.delete(`/device-references/${id}`);
@@ -144,7 +83,6 @@ export const deviceService = {
   
   // Очистить базу данных устройств
   clearAllDevices: async (): Promise<any> => {
-    console.log('API: вызов clearAllDevices');
     try {
       const response = await api.delete('/devices/clear');
       console.log('API: база данных устройств очищена:', response.data);
@@ -161,7 +99,6 @@ export const deviceService = {
   
   // Очистить базу данных справочников
   clearAllReferences: async (): Promise<any> => {
-    console.log('API: вызов clearAllReferences');
     try {
       const response = await api.delete('/device-references/clear');
       console.log('API: база данных справочников очищена:', response.data);
@@ -178,10 +115,8 @@ export const deviceService = {
   
   // Поиск устройств
   searchDevices: async (query: string): Promise<DeviceReference[]> => {
-    console.log(`API: вызов searchDevices с query="${query}"`);
     try {
       const response = await api.get(`/device-references/search?query=${encodeURIComponent(query)}`);
-      console.log('API: searchDevices получены данные:', response.data);
       return response.data;
     } catch (error) {
       console.error(`API: ошибка в searchDevices("${query}"):`, error);
@@ -433,9 +368,7 @@ export const signalService = {
   // Назначить сигнал устройству
   assignSignalToDevice: async (deviceId: number, signalId: number, count: number): Promise<DeviceSignal> => {
     try {
-      console.log(`Отправка запроса assignSignalToDevice: deviceId=${deviceId}, signalId=${signalId}, count=${count}`);
       const response = await api.post('/signals/assign', { deviceId, signalId, count });
-      console.log('Успешный ответ от assignSignalToDevice:', response.data);
       return response.data;
     } catch (error: any) {
       // Выводим более подробную информацию об ошибке
@@ -460,7 +393,6 @@ export const signalService = {
   clearAllSignals: async (): Promise<any> => {
     try {
       const response = await api.delete('/signals/clear');
-      console.log('API: все сигналы удалены:', response.data);
       return response.data;
     } catch (error) {
       console.error('API: ошибка в clearAllSignals:', error);
@@ -496,9 +428,7 @@ export const deviceTypeSignalService = {
   // Получить список уникальных типов устройств из справочника DeviceReference
   getUniqueDeviceTypesFromReference: async (): Promise<string[]> => {
     try {
-      console.log('API: вызов getUniqueDeviceTypesFromReference');
       const response = await api.get('/device-type-signals/unique-device-types-reference');
-      console.log('API: getUniqueDeviceTypesFromReference получены данные:', response.data);
       return response.data;
     } catch (error) {
       console.error('API: ошибка в getUniqueDeviceTypesFromReference:', error);
@@ -552,9 +482,7 @@ export const deviceTypeSignalService = {
   // Очистить все записи в таблице сигналов типов устройств
   clearAllDeviceTypeSignals: async (): Promise<void> => {
     try {
-      console.log('API: вызов clearAllDeviceTypeSignals');
       const response = await api.delete('/device-type-signals/clear');
-      console.log('API: таблица сигналов типов устройств очищена:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('API: ошибка в clearAllDeviceTypeSignals:', error);
@@ -573,7 +501,6 @@ export const databaseService = {
   getAllTables: async (): Promise<string[]> => {
     try {
       const response = await api.get('/database/tables');
-      console.log('API: получен список таблиц:', response.data);
       return response.data.tables || [];
     } catch (error) {
       console.error('API: ошибка в getAllTables:', error);
@@ -585,7 +512,6 @@ export const databaseService = {
   clearTable: async (tableName: string): Promise<any> => {
     try {
       const response = await api.delete(`/database/tables/${tableName}`);
-      console.log(`API: таблица ${tableName} очищена:`, response.data);
       return response.data;
     } catch (error) {
       console.error(`API: ошибка в clearTable(${tableName}):`, error);

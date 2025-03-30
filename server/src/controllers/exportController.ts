@@ -79,8 +79,6 @@ export const exportSignalsToExcel = async (req: Request, res: Response) => {
   try {
     const { columns = [], include_plc = false } = req.body;
     
-    console.log('Экспорт сигналов с параметрами:', { columns, include_plc });
-    
     // Получаем все сигналы устройств с включением связанных моделей
     const deviceSignals = await DeviceSignal.findAll({
       include: [

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, Button, Modal, Space, Spin, Alert, Typography, App, Row, Col, Divider } from 'antd';
-import { DeleteOutlined, ExclamationCircleOutlined, ClearOutlined, DatabaseOutlined } from '@ant-design/icons';
-import { deviceService, signalService, importService, databaseService } from '../services/api';
+import { DeleteOutlined, ClearOutlined, DatabaseOutlined } from '@ant-design/icons';
+import { deviceService, signalService, databaseService } from '../services/api';
 
 const { Title, Text } = Typography;
 // Не используем статический confirm
@@ -106,16 +106,12 @@ const DatabaseActions: React.FC<DatabaseActionsProps> = ({ onDatabaseCleared }) 
   const clearReferences = async () => {
     setLoading(true);
     try {
-      console.log('Начало очистки справочников...');
       const result = await deviceService.clearAllReferences();
-      console.log('Результат очистки справочников:', result);
       
-      // Если структура ответа соответствует ожидаемой
-      const deletedCounts = result.deletedCounts || {};
       message.success({
         content: `Справочники успешно очищены. Удалено: ${
-          deletedCounts.references !== undefined ?
-          `${deletedCounts.references} справочников, ${deletedCounts.kip || 0} КИП, ${deletedCounts.zra || 0} ЗРА` : 
+          result.deletedCount !== undefined ?
+          `${result.deletedCount} записей` : 
           'все записи'
         }`,
         key: 'clearOperation',
@@ -143,16 +139,14 @@ const DatabaseActions: React.FC<DatabaseActionsProps> = ({ onDatabaseCleared }) 
   const clearDevices = async () => {
     setLoading(true);
     try {
-      console.log('Начало очистки устройств...');
       const result = await deviceService.clearAllDevices();
-      console.log('Результат очистки устройств:', result);
       
       message.success({
         content: `Устройства успешно очищены. Удалено: ${
           result.deletedCount !== undefined ? 
-          result.deletedCount : 
-          'все'
-        } устройств`,
+          `${result.deletedCount} устройств` : 
+          'все устройства'
+        }`,
         key: 'clearOperation',
         duration: 5
       });
@@ -178,16 +172,14 @@ const DatabaseActions: React.FC<DatabaseActionsProps> = ({ onDatabaseCleared }) 
   const clearSignals = async () => {
     setLoading(true);
     try {
-      console.log('Начало очистки сигналов...');
       const result = await signalService.clearAllSignals();
-      console.log('Результат очистки сигналов:', result);
       
       message.success({
         content: `Сигналы успешно очищены. Удалено: ${
           result.deletedCount !== undefined ? 
-          result.deletedCount : 
-          'все'
-        } сигналов`,
+          `${result.deletedCount} сигналов` : 
+          'все сигналы'
+        }`,
         key: 'clearOperation',
         duration: 5
       });
@@ -213,16 +205,13 @@ const DatabaseActions: React.FC<DatabaseActionsProps> = ({ onDatabaseCleared }) 
   const clearTable = async (tableName: string) => {
     setLoading(true);
     try {
-      console.log(`Начало очистки таблицы ${tableName}...`);
-      
-      // Используем сервис для очистки таблицы
       const result = await databaseService.clearTable(tableName);
       
       message.success({
-        content: `Таблица ${tableName} успешно очищена. ${
+        content: `Таблица ${tableName} успешно очищена. Удалено: ${
           result.deletedCount !== undefined ? 
-          `Удалено ${result.deletedCount} записей.` : 
-          ''
+          `${result.deletedCount} записей` : 
+          'все записи'
         }`,
         key: 'clearOperation',
         duration: 5

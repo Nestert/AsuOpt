@@ -29,7 +29,6 @@ router.get('/device/:deviceId', (req: Request, res: Response, next: NextFunction
 
 // Назначение сигнала устройству
 router.post('/assign', (req: Request, res: Response, next: NextFunction) => {
-  console.log('POST /api/signals/assign вызван', req.body);
   signalController.assignSignalToDevice(req, res)
     .catch(next);
 });

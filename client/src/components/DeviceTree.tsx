@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { Empty, Input, Spin, Tree, Typography, Button, Select } from 'antd';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Empty, Input, Spin, Tree, Typography, Button } from 'antd';
 import {
   FolderOutlined,
   AppstoreOutlined,
-  SearchOutlined,
   PlusOutlined,
   FilterOutlined,
 } from '@ant-design/icons';
@@ -12,9 +11,7 @@ import { DeviceReference } from '../interfaces/DeviceReference';
 import AddDeviceForm from './AddDeviceForm';
 import DeviceFilters, { DeviceFilters as DeviceFiltersType } from './DeviceFilters';
 
-const { Search } = Input;
 const { Text } = Typography;
-const { Option } = Select;
 
 interface DeviceTreeProps {
   onSelectDevice: (deviceId: number) => void;
@@ -41,10 +38,6 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [searchValue, setSearchValue] = useState('');
   const [advancedFilters, setAdvancedFilters] = useState<DeviceFiltersType>({});
-  const [deviceTypes, setDeviceTypes] = useState<string[]>([]);
-  const [systems, setSystems] = useState<string[]>([]);
-  const [plcTypes, setPlcTypes] = useState<string[]>([]);
-  const [exVersions, setExVersions] = useState<string[]>([]);
   const [autoExpandParent, setAutoExpandParent] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +55,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   };
 
   // Функция построения кастомного дерева
-  const buildCustomTree = (devices: DeviceReference[]): CustomTreeNode[] => {
+  const buildCustomTreeCallback = useCallback((devices: DeviceReference[]): CustomTreeNode[] => {
     const rootNode: CustomTreeNode = {
       id: 'root',
       name: 'Устройства',
@@ -119,93 +112,42 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     };
 
     return sortNodes(rootNode.children);
-  };
+  }, []);
 
   // Загрузка устройств
-  useEffect(() => {
-    console.log('DeviceTree: запускаем загрузку устройств, updateCounter =', updateCounter);
-    const fetchDevices = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await deviceService.getAllDevices();
-        console.log('Загружены устройства:', data.length, 'элементов');
-        
-        // Отладочный вывод для проверки значений полей
-        const systemCodesDebug = data.map(device => device.systemCode).filter(Boolean);
-        const plcTypesDebug = data.map(device => device.plcType).filter(Boolean);
-        const exVersionsDebug = data.map(device => device.exVersion).filter(Boolean);
-        
-        console.log('DEBUG системы:', systemCodesDebug);
-        console.log('DEBUG типы ПЛК:', plcTypesDebug);
-        console.log('DEBUG Ex-версии:', exVersionsDebug);
-        
-        setDevices(data);
-        setFilteredDevices(data);
-        
-        // Извлекаем уникальные типы устройств для фильтра
-        const types = Array.from(new Set(data.map(device => device.deviceType).filter(Boolean)));
-        setDeviceTypes(types);
-        
-        // Извлекаем уникальные родительские системы
-        const systemCodes = Array.from(new Set(data.map(device => {
-          // Проверяем parentSystem, если systemCode отсутствует
-          return device.systemCode || device.parentSystem;
-        }).filter(Boolean))) as string[];
-        setSystems(systemCodes);
-        
-        // Извлекаем уникальные типы ПЛК, учитывая все возможные источники
-        const allPlcValues = data.flatMap(device => {
-          const values = [];
-          
-          // Из основного объекта
-          if (device.plcType) values.push(device.plcType);
-          
-          // Из kip, если есть
-          // @ts-ignore
-          if (device.kip?.plc) values.push(device.kip.plc);
-          
-          // Из zra, если есть
-          // @ts-ignore
-          if (device.zra?.plc) values.push(device.zra.plc);
-          
-          return values;
-        });
-        const plcs = Array.from(new Set(allPlcValues)) as string[];
-        setPlcTypes(plcs);
-        
-        // Извлекаем уникальные Ex-версии, учитывая все возможные источники
-        const allExVersionValues = data.flatMap(device => {
-          const values = [];
-          
-          // Из основного объекта
-          if (device.exVersion) values.push(device.exVersion);
-          
-          // Из kip, если есть
-          // @ts-ignore
-          if (device.kip?.exVersion) values.push(device.kip.exVersion);
-          
-          // Из zra, если есть
-          // @ts-ignore
-          if (device.zra?.exVersion) values.push(device.zra.exVersion);
-          
-          return values;
-        });
-        const exVers = Array.from(new Set(allExVersionValues)) as string[];
-        setExVersions(exVers);
-        
-        const customTree = buildCustomTree(data);
-        setTreeData(customTree);
-      } catch (err) {
-        console.error('Ошибка при загрузке устройств:', err);
-        setError('Не удалось загрузить устройства');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchDevices = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await deviceService.getAllDevices();
+      console.log('Загружены устройства:', data.length, 'элементов');
+      
+      // Отладочный вывод для проверки значений полей
+      const systemCodesDebug = data.map(device => device.systemCode).filter(Boolean);
+      const plcTypesDebug = data.map(device => device.plcType).filter(Boolean);
+      const exVersionsDebug = data.map(device => device.exVersion).filter(Boolean);
+      
+      console.log('DEBUG системы:', systemCodesDebug);
+      console.log('DEBUG типы ПЛК:', plcTypesDebug);
+      console.log('DEBUG Ex-версии:', exVersionsDebug);
+      
+      setDevices(data);
+      setFilteredDevices(data);
+      
+      const customTree = buildCustomTreeCallback(data);
+      setTreeData(customTree);
+    } catch (err) {
+      console.error('Ошибка при загрузке устройств:', err);
+      setError('Не удалось загрузить устройства');
+    } finally {
+      setLoading(false);
+    }
+  }, [buildCustomTreeCallback]);
 
+  // Загрузка данных при монтировании и при изменении updateCounter
+  useEffect(() => {
     fetchDevices();
-  }, [updateCounter]); // Зависимость от updateCounter для перезагрузки при изменениях
+  }, [updateCounter, fetchDevices]);
 
   // Эффект для фильтрации устройств при изменении фильтров
   useEffect(() => {
@@ -321,15 +263,16 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     console.log('Отфильтрованные устройства:', filtered.length);
     
     // Обновляем дерево с отфильтрованными устройствами
-    const customTree = buildCustomTree(filtered);
+    const customTree = buildCustomTreeCallback(filtered);
     
     setFilteredDevices(filtered);
     setTreeData(customTree);
     
     // Сбрасываем развернутые узлы при изменении фильтра
     setExpandedKeys([]);
-    
-  }, [advancedFilters, searchValue, devices]);
+    setAutoExpandParent(false);
+    setIsAdvancedFilterVisible(false);
+  }, [advancedFilters, searchValue, devices, buildCustomTreeCallback]);
 
   // Обработчик применения расширенных фильтров
   const handleApplyFilters = (filters: DeviceFiltersType) => {
@@ -373,15 +316,6 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     searchTree(treeData);
     setExpandedKeys(Array.from(new Set(expandKeys)));
     setAutoExpandParent(true);
-  };
-
-  // Сброс всех фильтров
-  const resetFilters = () => {
-    setSearchValue('');
-    setAdvancedFilters({});
-    setExpandedKeys([]);
-    setAutoExpandParent(false);
-    setIsAdvancedFilterVisible(false);
   };
 
   // Обработка развертывания узлов дерева
@@ -428,39 +362,6 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     // Закрываем форму
     hideAddDeviceForm();
     // Увеличиваем счетчик обновлений, чтобы перезагрузить дерево
-    const fetchDevices = async () => {
-      setLoading(true);
-      try {
-        const data = await deviceService.getAllDevices();
-        console.log('Загружены устройства после добавления:', data.length, 'элементов');
-        
-        // Обновляем список типов устройств
-        const types = Array.from(new Set(data.map(device => device.deviceType).filter(Boolean)));
-        setDeviceTypes(types);
-        
-        // Обновляем список родительских систем
-        const systemCodes = Array.from(new Set(data.map(device => {
-          return device.systemCode || device.parentSystem;
-        }).filter(Boolean))) as string[];
-        setSystems(systemCodes);
-        
-        // Обновляем список типов ПЛК
-        const plcs = Array.from(new Set(data.map(device => device.plcType).filter(Boolean))) as string[];
-        setPlcTypes(plcs);
-        
-        // Обновляем список Ex-версий
-        const exVers = Array.from(new Set(data.map(device => device.exVersion).filter(Boolean))) as string[];
-        setExVersions(exVers);
-        
-        // Устанавливаем новые данные, фильтрация произойдет в useEffect
-        setDevices(data);
-      } catch (err) {
-        console.error('Ошибка при загрузке устройств после добавления:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDevices();
   };
 

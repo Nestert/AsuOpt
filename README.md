@@ -53,16 +53,16 @@ npm start
 
 ## Структура данных
 
-Основная таблица Devices содержит следующие поля:
-- ID: уникальный идентификатор
-- SystemCode: код системы
-- EquipmentCode: код оборудования
-- LineNumber: номер линии
-- CabinetName: имя шкафа
-- DeviceDesignation: обозначение устройства
-- DeviceType: тип устройства
-- Description: описание
-- ParentId: ссылка на родительское устройство
+Основная таблица `Devices` описана в файле `docs/database.md`.
+
+## Документация
+
+Подробная техническая документация находится в директории `docs/`:
+
+*   [Архитектура приложения](docs/architecture.md)
+*   [Структура Базы Данных](docs/database.md)
+*   [Процесс Разработки](docs/development_workflow.md)
+*   [Документация API](docs/api.md) (Рекомендуется использовать Swagger/OpenAPI)
 
 ## Разработка
 

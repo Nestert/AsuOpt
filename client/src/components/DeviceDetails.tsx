@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Descriptions, Empty, Spin, Tabs, Typography, Space, App } from 'antd';
+import { Button, Card, Descriptions, Empty, Spin, Tabs, Space, App } from 'antd';
 import { deviceService, } from '../services/api';
 import { DeviceFullData } from '../interfaces/DeviceReference';
 import { EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
@@ -15,7 +15,6 @@ interface DeviceDetailsProps {
 const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted, onDeviceUpdated }) => {
   const [deviceData, setDeviceData] = useState<DeviceFullData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editableData, setEditableData] = useState<DeviceFullData | null>(null);
   
@@ -36,7 +35,6 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
       }
 
       setLoading(true);
-      setError(null);
       try {
         console.log('Выполняем запрос к API с deviceId =', deviceId);
         const data = await deviceService.getDeviceById(deviceId);
@@ -44,7 +42,6 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
         setDeviceData(data);
       } catch (err) {
         console.error('Ошибка при загрузке данных устройства:', err);
-        setError('Не удалось загрузить данные устройства');
       } finally {
         setLoading(false);
       }

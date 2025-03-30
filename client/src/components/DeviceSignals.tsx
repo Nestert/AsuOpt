@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Select, InputNumber, Typography, Space, Popconfirm, App } from 'antd';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Table, Button, Modal, Form, Select, InputNumber, Typography, Popconfirm, App } from 'antd';
 import { signalService } from '../services/api';
 import { Signal, DeviceSignal } from '../interfaces/Signal';
 import { PlusOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
@@ -19,6 +19,21 @@ const DeviceSignals: React.FC<DeviceSignalsProps> = ({ deviceId }) => {
   const [form] = Form.useForm();
   const { message } = App.useApp();
 
+  // Оборачиваем fetchDeviceSignals в useCallback
+  const fetchDeviceSignals = useCallback(async () => {
+    if (!deviceId) return;
+    
+    try {
+      setLoading(true);
+      const data = await signalService.getDeviceSignals(deviceId);
+      setDeviceSignals(data);
+      setLoading(false);
+    } catch (error) {
+      message.error('Не удалось загрузить сигналы устройства');
+      setLoading(false);
+    }
+  }, [deviceId, message]); // Указываем зависимости для useCallback
+
   // Загрузка данных при изменении deviceId
   useEffect(() => {
     if (deviceId) {
@@ -26,7 +41,7 @@ const DeviceSignals: React.FC<DeviceSignalsProps> = ({ deviceId }) => {
     } else {
       setDeviceSignals([]);
     }
-  }, [deviceId]);
+  }, [deviceId, fetchDeviceSignals]); // Оставляем fetchDeviceSignals в зависимостях useEffect
 
   // Загрузка всех доступных сигналов при открытии модального окна
   const handleAddSignal = async () => {
@@ -40,21 +55,6 @@ const DeviceSignals: React.FC<DeviceSignalsProps> = ({ deviceId }) => {
     }
   };
 
-  // Получение сигналов для устройства
-  const fetchDeviceSignals = async () => {
-    if (!deviceId) return;
-    
-    try {
-      setLoading(true);
-      const data = await signalService.getDeviceSignals(deviceId);
-      setDeviceSignals(data);
-      setLoading(false);
-    } catch (error) {
-      message.error('Не удалось загрузить сигналы устройства');
-      setLoading(false);
-    }
-  };
-
   // Обработка отправки формы
   const handleFormSubmit = async () => {
     if (!deviceId) {
@@ -62,10 +62,9 @@ const DeviceSignals: React.FC<DeviceSignalsProps> = ({ deviceId }) => {
       return;
     }
     
+    setLoading(true);
     try {
       const values = await form.validateFields();
-      
-      console.log(`Назначаем сигнал ${values.signalId} устройству ${deviceId} в количестве ${values.count}`);
       
       await signalService.assignSignalToDevice(
         deviceId,
@@ -81,6 +80,8 @@ const DeviceSignals: React.FC<DeviceSignalsProps> = ({ deviceId }) => {
       const errorMessage = error.response?.data?.error || 'Произошла ошибка при назначении сигнала устройству';
       console.error('Ошибка при назначении сигнала:', errorMessage);
       message.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
