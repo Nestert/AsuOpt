@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Empty, Input, Spin, Tree, Typography, Button, Dropdown, Menu, App } from 'antd';
+import { Empty, Input, Spin, Tree, Typography, Button, Dropdown, App } from 'antd';
 import {
   FolderOutlined,
   AppstoreOutlined,
@@ -9,7 +9,7 @@ import {
 import { deviceService } from '../services/api';
 import { DeviceReference } from '../interfaces/DeviceReference';
 import AddDeviceForm from './AddDeviceForm';
-import DeviceFilters, { DeviceFilters as DeviceFiltersType } from './DeviceFilters';
+import DeviceFilters, { DeviceFiltersInterface as DeviceFiltersType } from './DeviceFilters';
 
 const { Text } = Typography;
 

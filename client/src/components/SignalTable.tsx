@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Table, InputNumber, Card, Button, Typography, Row, Col, Statistic, Spin, Alert, Empty, App, Switch, Popconfirm, Space } from 'antd';
+import { Table, Card, Button, Typography, Row, Col, Statistic, Spin, Alert, Empty, App, Switch, Popconfirm, Space } from 'antd';
 import { deviceTypeSignalService } from '../services/api';
 import { DeviceTypeSignal, SignalsSummary } from '../interfaces/DeviceTypeSignal';
 import { ReloadOutlined, DeleteOutlined } from '@ant-design/icons';

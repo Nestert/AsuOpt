@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Form, Select, Input, Button, Space, Collapse, Row, Col, Checkbox, Tooltip, Typography } from 'antd';
+import { Card, Form, Select, Input, Button, Space, Collapse, Row, Col, Checkbox, Tooltip } from 'antd';
 import { FilterOutlined, ClearOutlined, SearchOutlined, SaveOutlined, LoadingOutlined } from '@ant-design/icons';
 import { DeviceReference, Kip, Zra } from '../interfaces/DeviceReference';
 
 const { Option } = Select;
 const { Panel } = Collapse;
-const { Text } = Typography;
 
-// Интерфейс для фильтров
-export interface DeviceFilters {
+// Переименовываем интерфейс, чтобы избежать конфликта имен
+export interface DeviceFiltersInterface {
   deviceType?: string[];
   systemCode?: string[];
   plcType?: string[];
@@ -47,18 +46,18 @@ export interface DeviceFilters {
 // Интерфейс для пресетов фильтров
 interface FilterPreset {
   name: string;
-  filters: DeviceFilters;
+  filters: DeviceFiltersInterface; // Используем новое имя интерфейса
 }
 
 interface DeviceFiltersProps {
-  onApplyFilters: (filters: DeviceFilters) => void;
+  onApplyFilters: (filters: DeviceFiltersInterface) => void; // Используем новое имя интерфейса
   devices: DeviceReference[];
   loading?: boolean;
 }
 
 const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, loading = false }) => {
   const [form] = Form.useForm();
-  const [activeFilters, setActiveFilters] = useState<DeviceFilters>({});
+  const [activeFilters, setActiveFilters] = useState<DeviceFiltersInterface>({}); // Используем новое имя интерфейса
   const [presets, setPresets] = useState<FilterPreset[]>([]);
   const [availableValues, setAvailableValues] = useState<Record<string, string[]>>({});
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
@@ -174,7 +173,7 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
   const saveAsPreset = (presetName: string) => {
     const newPreset: FilterPreset = {
       name: presetName,
-      filters: { ...activeFilters }
+      filters: { ...activeFilters } // Здесь используется activeFilters, тип которого уже обновлен
     };
 
     const updatedPresets = [...presets, newPreset];
@@ -183,7 +182,7 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
   };
 
   // Функция применения фильтра
-  const applyFilters = (values: DeviceFilters) => {
+  const applyFilters = (values: DeviceFiltersInterface) => {
     const cleanFilters = Object.entries(values)
       .reduce((acc, [key, value]) => {
         // Отфильтровываем пустые значения
