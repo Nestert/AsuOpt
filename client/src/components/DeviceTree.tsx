@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Empty, Input, Spin, Tree, Typography, Button } from 'antd';
+import { Empty, Input, Spin, Tree, Typography, Button, Dropdown, Menu, App } from 'antd';
 import {
   FolderOutlined,
   AppstoreOutlined,
@@ -45,6 +45,13 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
   const [filteredDevices, setFilteredDevices] = useState<DeviceReference[]>([]);
   const [isAdvancedFilterVisible, setIsAdvancedFilterVisible] = useState(false);
+
+  // Состояние для контекстного меню
+  const [contextMenuVisible, setContextMenuVisible] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+  const [rightClickedNode, setRightClickedNode] = useState<any>(null); // Используем any для простоты, можно уточнить тип
+
+  const { message, modal } = App.useApp(); // Добавляем modal для подтверждения удаления
 
   // Функция для разбиения строки posDesignation на части
   const parsePosDesignation = (posDesignation: string): string[] => {
@@ -324,25 +331,39 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     setAutoExpandParent(false);
   };
 
-  // Обработка выбора устройства
+  // Обработчик выбора узла в дереве
   const onSelect = (selectedKeys: React.Key[], info: any) => {
-    if (selectedKeys.length > 0) {
-      console.log('onSelect: выбраны ключи =', selectedKeys);
-      
-      // Получаем информацию о выбранном узле
-      const selectedNode = info.node;
-      
-      // Проверяем, что узел является листом и имеет originalId
-      if (selectedNode.isLeaf && selectedNode.originalId) {
-        const deviceId = selectedNode.originalId;
-        console.log('onSelect: выбрано устройство с ID =', deviceId);
-        onSelectDevice(deviceId);
-        // Сохраняем ID выбранного устройства как потенциального родителя
-        setSelectedParentId(deviceId);
+    const { node } = info;
+    console.log('Выбран узел:', node);
+
+    // --- Логика раскрытия/сворачивания при клике на имя узла --- 
+    if (node && !node.isLeaf) { // Проверяем, что это не лист
+      const currentKey = node.key;
+      const isExpanded = expandedKeys.includes(currentKey);
+      let newExpandedKeys;
+
+      if (isExpanded) {
+        // Сворачиваем узел
+        newExpandedKeys = expandedKeys.filter(key => key !== currentKey);
+        console.log(`Сворачиваем узел ${currentKey}`);
       } else {
-        console.log('onSelect: выбран не лист дерева, действие не требуется');
-        setSelectedParentId(null);
+        // Раскрываем узел
+        newExpandedKeys = [...expandedKeys, currentKey];
+        console.log(`Раскрываем узел ${currentKey}`);
       }
+      setExpandedKeys(newExpandedKeys);
+      setAutoExpandParent(false); // Важно при ручном управлении раскрытием
+    }
+    // --- Конец логики раскрытия/сворачивания --- 
+
+    // Оригинальная логика выбора узла (для отображения деталей)
+    if (node.isLeaf && node.originalId) {
+      onSelectDevice(node.originalId);
+      // Сохраняем ID выбранного устройства как потенциального родителя
+      setSelectedParentId(node.originalId);
+    } else {
+      console.log('onSelect: выбран не лист дерева, действие не требуется');
+      setSelectedParentId(null);
     }
   };
 
@@ -420,6 +441,100 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     setIsAdvancedFilterVisible(!isAdvancedFilterVisible);
   };
 
+  // Обработчик правого клика по узлу дерева
+  const onRightClick = ({ event, node }: { event: React.MouseEvent, node: any }) => {
+    event.preventDefault(); // Предотвращаем стандартное контекстное меню браузера
+    console.log('Right clicked node:', node);
+    setRightClickedNode(node); // Сохраняем данные узла
+    setContextMenuPosition({ x: event.clientX, y: event.clientY }); // Сохраняем координаты
+    setContextMenuVisible(true); // Показываем меню
+  };
+
+  // Скрытие контекстного меню при клике в другом месте
+  useEffect(() => {
+    const handleClickOutside = () => setContextMenuVisible(false);
+    if (contextMenuVisible) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [contextMenuVisible]);
+
+  // --- Функции для действий контекстного меню ---
+
+  const handleMenuClick = (e: { key: string }) => {
+    setContextMenuVisible(false); // Скрываем меню после клика
+    if (!rightClickedNode) return;
+
+    const nodeId = rightClickedNode.originalId;
+
+    switch (e.key) {
+      case 'edit':
+        if (nodeId) {
+          console.log('Контекстное меню: Редактировать узел', nodeId);
+          // Выбираем узел, чтобы показать детали
+          onSelect([], { node: rightClickedNode }); // Передаем узел в info
+          // TODO: Потенциально добавить сигнал для DeviceDetails, чтобы перейти в режим редактирования
+        }
+        break;
+      case 'delete':
+        if (nodeId) {
+          console.log('Контекстное меню: Удалить узел', nodeId);
+          modal.confirm({
+            title: 'Подтвердите удаление',
+            content: `Вы уверены, что хотите удалить устройство "${rightClickedNode.title?.props?.children?.join ? rightClickedNode.title.props.children.join('') : rightClickedNode.title}"?`, // Получаем текст из title
+            okText: 'Удалить',
+            okType: 'danger',
+            cancelText: 'Отмена',
+            onOk: async () => {
+              try {
+                await deviceService.deleteDeviceById(nodeId);
+                message.success('Устройство успешно удалено');
+                fetchDevices(); // Обновляем дерево
+              } catch (err) {
+                console.error('Ошибка при удалении устройства:', err);
+                message.error('Не удалось удалить устройство');
+              }
+            },
+          });
+        }
+        break;
+      case 'addChild':
+        if (nodeId) {
+          console.log('Контекстное меню: Добавить дочерний элемент для', nodeId);
+          setSelectedParentId(nodeId);
+          showAddDeviceForm();
+        } else {
+          // Если кликнули не на лист (а на папку), parentId будет null
+          setSelectedParentId(null);
+          showAddDeviceForm();
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Формирование элементов меню
+  const getMenuItems = () => {
+    const items = [];
+    const isLeaf = rightClickedNode?.isLeaf;
+    
+    if (isLeaf) {
+        items.push({ key: 'edit', label: 'Редактировать' });
+        items.push({ key: 'delete', label: 'Удалить', danger: true });
+        items.push({ key: 'addChild', label: 'Добавить дочерний' });
+    } else {
+        // Для папок можно добавить только дочерний элемент
+        items.push({ key: 'addChild', label: 'Добавить устройство сюда' });
+    }
+    
+    return items;
+  };
+
+  // --- Рендеринг ---
+
   // Отображение ошибки загрузки
   if (error) {
     return (
@@ -440,7 +555,8 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   }
 
   return (
-    <div className="device-tree-container">
+    // Добавляем стили flexbox для основного контейнера
+    <div className="device-tree-container" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}> 
       <div className="device-tree-header" style={{ 
         display: 'flex', 
         flexWrap: 'wrap', 
@@ -452,7 +568,8 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
           placeholder="Поиск по обозначению или описанию"
           onChange={e => handleSearch(e.target.value)}
           value={searchValue}
-          style={{ flex: 1, minWidth: '200px' }}
+          style={{ flex: 1, minWidth: '200px', marginBottom: 0 }}
+          size="middle"
         />
         <div style={{ display: 'flex', gap: '8px' }}>
           <Button 
@@ -460,14 +577,16 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
             icon={<FilterOutlined />} 
             onClick={toggleAdvancedFilters}
             style={{ minWidth: '140px' }}
+            size="middle"
           >
-            {isAdvancedFilterVisible ? 'Скрыть фильтры' : 'Показать фильтры'}
+            Фильтры
           </Button>
           <Button 
             type="primary" 
             icon={<PlusOutlined />} 
             onClick={showAddDeviceForm}
             style={{ minWidth: '120px' }}
+            size="middle"
           >
             Добавить
           </Button>
@@ -484,29 +603,64 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
         </div>
       )}
       
-      {filteredDevices.length > 0 ? (
-        <div style={{ 
-          height: 'calc(100vh - 220px)', 
-          minHeight: '300px',
-          overflow: 'auto', 
-          border: '1px solid #f0f0f0',
-          borderRadius: '4px',
-          padding: '8px',
-          backgroundColor: '#fafafa'
-        }}>
-          <Tree
-            showIcon
-            expandedKeys={expandedKeys}
-            autoExpandParent={autoExpandParent}
-            onExpand={onExpand}
-            onSelect={onSelect}
-            treeData={processTreeData(treeData)}
-            style={{ backgroundColor: '#fff' }}
-          />
-        </div>
-      ) : (
-        <Empty description="Устройства не найдены" />
-      )}
+      {/* Контейнер для дерева или сообщения Empty */}
+      <div style={{ 
+          flex: 1, // Занимать всё оставшееся пространство
+          minHeight: 0, // Важно для flex item
+          display: 'flex', // Используем flex для центрирования Empty
+          flexDirection: 'column' // Элементы внутри (рамка/Empty) идут друг за другом
+      }}>
+        {filteredDevices.length > 0 ? (
+          <div style={{ 
+            // Убираем фиксированную высоту, добавляем flex: 1
+            flex: 1,
+            minHeight: 0, // Добавляем и сюда на всякий случай
+            overflow: 'auto', 
+            border: '1px solid #f0f0f0',
+            borderRadius: '4px',
+            padding: '8px',
+            backgroundColor: '#fafafa'
+          }}>
+            {/* Оборачиваем Tree в Dropdown */} 
+            <Dropdown
+              menu={{ items: getMenuItems(), onClick: handleMenuClick }}
+              trigger={['contextMenu']}
+              open={contextMenuVisible}
+              onOpenChange={setContextMenuVisible}
+              // Используем dropdownRender для позиционирования по координатам мыши
+              dropdownRender={menu => (
+                <div style={{ 
+                    position: 'fixed',
+                    left: contextMenuPosition.x,
+                    top: contextMenuPosition.y,
+                 }}>
+                  {menu}
+                </div>
+              )}
+            >
+              {/* Пустой div нужен, чтобы Dropdown корректно отлавливал событие contextMenu */}
+              {/* На саму Tree вешаем onRightClick для получения координат */}
+              <div> 
+                <Tree
+                  showIcon
+                  expandedKeys={expandedKeys}
+                  autoExpandParent={autoExpandParent}
+                  onExpand={onExpand}
+                  onSelect={onSelect}
+                  treeData={processTreeData(treeData)}
+                  style={{ backgroundColor: '#fff' }}
+                  onRightClick={onRightClick} // Этот обработчик получает координаты и данные узла
+                />
+              </div>
+            </Dropdown>
+          </div>
+        ) : (
+          // Оборачиваем Empty для центрирования в flex-контейнере
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}> 
+            <Empty description="Устройства не найдены" />
+          </div>
+        )}
+      </div>
 
       <AddDeviceForm 
         visible={isAddDeviceVisible}

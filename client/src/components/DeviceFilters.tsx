@@ -62,8 +62,9 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
   const [presets, setPresets] = useState<FilterPreset[]>([]);
   const [availableValues, setAvailableValues] = useState<Record<string, string[]>>({});
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
-  const [showKipFields, setShowKipFields] = useState(true);
-  const [showZraFields, setShowZraFields] = useState(true);
+
+  // Используем Form.useWatch для отслеживания выбранных типов данных
+  const watchedDataTypes = Form.useWatch('dataType', form);
 
   // Получение уникальных значений для полей при изменении списка устройств
   useEffect(() => {
@@ -237,14 +238,6 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
           >
             Сохранить
           </Button>
-          <Button 
-            icon={<ClearOutlined />} 
-            onClick={resetFilters}
-            disabled={Object.keys(activeFilters).length === 0}
-            size="small"
-          >
-            Сбросить
-          </Button>
         </Space>
       }
       size="small"
@@ -279,14 +272,20 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
             <Space>
               <Checkbox 
                 value="kip" 
-                onChange={e => setShowKipFields(e.target.checked)}
+                onChange={e => {
+                  const newValue = e.target.checked ? ['kip'] : ['zra', 'unknown'];
+                  form.setFieldValue('dataType', newValue);
+                }}
                 defaultChecked
               >
                 КИП
               </Checkbox>
               <Checkbox 
                 value="zra" 
-                onChange={e => setShowZraFields(e.target.checked)}
+                onChange={e => {
+                  const newValue = e.target.checked ? ['zra'] : ['kip', 'unknown'];
+                  form.setFieldValue('dataType', newValue);
+                }}
                 defaultChecked
               >
                 ЗРА
@@ -390,8 +389,9 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
             </Row>
           </Panel>
 
-          {showKipFields && (
-            <Panel header="Поля КИП" key="kip">
+          {/* Условный рендеринг для полей КИП */} 
+          {watchedDataTypes && watchedDataTypes.includes('kip') && (
+            <Panel header="Поля КИП" key="2">
               <Row gutter={[8, 8]}>
                 <Col xs={24} sm={12} md={8}>
                   <Form.Item label="Участок" name="section" style={{ marginBottom: '8px' }}>
@@ -494,9 +494,10 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
               </Row>
             </Panel>
           )}
-
-          {showZraFields && (
-            <Panel header="Поля ЗРА" key="zra">
+          
+          {/* Условный рендеринг для полей ЗРА */} 
+          {watchedDataTypes && watchedDataTypes.includes('zra') && (
+            <Panel header="Поля ЗРА" key="3">
               <Row gutter={[8, 8]}>
                 <Col xs={24} sm={12} md={8}>
                   <Form.Item label="Тип конструкции" name="designType" style={{ marginBottom: '8px' }}>

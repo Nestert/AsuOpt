@@ -175,18 +175,7 @@ const SignalTableContent: React.FC = () => {
       dataIndex: 'aiCount',
       key: 'aiCount',
       render: (text: number, record: DeviceTypeSignal) => (
-        <div style={{ position: 'relative' }}>
-          <InputNumber
-            min={0}
-            value={text}
-            disabled={true}
-            style={{ width: '100%' }}
-            controls={false}
-          />
-          <Text type="secondary" style={{ position: 'absolute', right: '8px', top: '8px', fontSize: '12px' }}>
-            Авто
-          </Text>
-        </div>
+        <span>{text || 0}</span>
       )
     },
     {
@@ -194,18 +183,7 @@ const SignalTableContent: React.FC = () => {
       dataIndex: 'aoCount',
       key: 'aoCount',
       render: (text: number, record: DeviceTypeSignal) => (
-        <div style={{ position: 'relative' }}>
-          <InputNumber
-            min={0}
-            value={text}
-            disabled={true}
-            style={{ width: '100%' }}
-            controls={false}
-          />
-          <Text type="secondary" style={{ position: 'absolute', right: '8px', top: '8px', fontSize: '12px' }}>
-            Авто
-          </Text>
-        </div>
+        <span>{text || 0}</span>
       )
     },
     {
@@ -213,18 +191,7 @@ const SignalTableContent: React.FC = () => {
       dataIndex: 'diCount',
       key: 'diCount',
       render: (text: number, record: DeviceTypeSignal) => (
-        <div style={{ position: 'relative' }}>
-          <InputNumber
-            min={0}
-            value={text}
-            disabled={true}
-            style={{ width: '100%' }}
-            controls={false}
-          />
-          <Text type="secondary" style={{ position: 'absolute', right: '8px', top: '8px', fontSize: '12px' }}>
-            Авто
-          </Text>
-        </div>
+        <span>{text || 0}</span>
       )
     },
     {
@@ -232,18 +199,7 @@ const SignalTableContent: React.FC = () => {
       dataIndex: 'doCount',
       key: 'doCount',
       render: (text: number, record: DeviceTypeSignal) => (
-        <div style={{ position: 'relative' }}>
-          <InputNumber
-            min={0}
-            value={text}
-            disabled={true}
-            style={{ width: '100%' }}
-            controls={false}
-          />
-          <Text type="secondary" style={{ position: 'absolute', right: '8px', top: '8px', fontSize: '12px' }}>
-            Авто
-          </Text>
-        </div>
+        <span>{text || 0}</span>
       )
     },
     {
@@ -354,18 +310,6 @@ const SignalTableContent: React.FC = () => {
                 rowKey="deviceType"
                 pagination={false}
                 bordered
-                summary={() => (
-                  <Table.Summary fixed>
-                    <Table.Summary.Row>
-                      <Table.Summary.Cell index={0}><strong>Всего</strong></Table.Summary.Cell>
-                      <Table.Summary.Cell index={1}><strong>{summaryData.summary.totalAI}</strong></Table.Summary.Cell>
-                      <Table.Summary.Cell index={2}><strong>{summaryData.summary.totalAO}</strong></Table.Summary.Cell>
-                      <Table.Summary.Cell index={3}><strong>{summaryData.summary.totalDI}</strong></Table.Summary.Cell>
-                      <Table.Summary.Cell index={4}><strong>{summaryData.summary.totalDO}</strong></Table.Summary.Cell>
-                      <Table.Summary.Cell index={5}><strong>{summaryData.summary.totalSignals}</strong></Table.Summary.Cell>
-                    </Table.Summary.Row>
-                  </Table.Summary>
-                )}
               />
             </>
           ) : (
