@@ -74,6 +74,11 @@ export class Signal extends Model<SignalAttributes> implements SignalAttributes 
   }
   
   public static associate(): void {
-    // Связь с DeviceSignal будет добавлена после инициализации DeviceSignal
+    // Связь с DeviceSignal
+    const { DeviceSignal } = require('./DeviceSignal');
+    Signal.hasMany(DeviceSignal, {
+      foreignKey: 'signalId',
+      as: 'deviceSignals',
+    });
   }
 } 

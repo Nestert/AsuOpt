@@ -9,6 +9,7 @@ interface DeviceReferenceAttributes {
   systemCode?: string;    // Код системы (опционально)
   plcType?: string;       // Тип ПЛК (опционально)
   exVersion?: string;     // Ex-версия (опционально)
+  projectId?: number;     // ID проекта
 }
 
 export class DeviceReference extends Model<DeviceReferenceAttributes> implements DeviceReferenceAttributes {
@@ -20,6 +21,7 @@ export class DeviceReference extends Model<DeviceReferenceAttributes> implements
   public systemCode!: string;
   public plcType!: string;
   public exVersion!: string;
+  public projectId!: number;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -60,6 +62,12 @@ export class DeviceReference extends Model<DeviceReferenceAttributes> implements
         exVersion: {
           type: DataTypes.STRING,
           allowNull: true,
+        },
+        projectId: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+          defaultValue: 1,
+          field: 'project_id',
         },
       },
       {

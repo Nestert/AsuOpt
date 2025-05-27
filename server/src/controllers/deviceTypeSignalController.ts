@@ -57,17 +57,25 @@ export const getUniqueDeviceTypes = async (req: Request, res: Response) => {
 // Получить список уникальных типов устройств из таблицы DeviceReference
 export const getUniqueDeviceTypesFromReference = async (req: Request, res: Response) => {
   try {
-    console.log('Вызов метода getUniqueDeviceTypesFromReference');
+    const { projectId } = req.query;
+    console.log(`Вызов метода getUniqueDeviceTypesFromReference для проекта ${projectId || 'все'}`);
+    
+    // Формируем условие фильтрации по проекту
+    const whereCondition: any = {
+      deviceType: {
+        [Op.not]: null,
+        [Op.ne]: ''
+      }
+    };
+    
+    if (projectId) {
+      whereCondition.projectId = parseInt(projectId as string, 10);
+    }
     
     // Получаем все уникальные типы устройств из таблицы DeviceReference
     const deviceReferences = await DeviceReference.findAll({
       attributes: ['deviceType'],
-      where: {
-        deviceType: {
-          [Op.not]: null,
-          [Op.ne]: ''
-        }
-      },
+      where: whereCondition,
       group: ['deviceType'],
       order: [['deviceType', 'ASC']]
     });
@@ -75,22 +83,17 @@ export const getUniqueDeviceTypesFromReference = async (req: Request, res: Respo
     // Извлекаем только значения типов устройств
     const deviceTypes = deviceReferences.map(device => device.deviceType);
     
-    console.log('Получены типы устройств из DeviceReference:', deviceTypes);
+    console.log(`Получены типы устройств из DeviceReference для проекта ${projectId || 'все'}:`, deviceTypes);
     
-    // Если типов устройств нет, создаем тестовые данные
-    if (deviceTypes.length === 0) {
+    // Если типов устройств нет и не указан проект, создаем тестовые данные
+    if (deviceTypes.length === 0 && !projectId) {
       console.log('В DeviceReference нет данных, создаем тестовые записи...');
       await createTestDeviceReferences();
       
       // Повторяем запрос после создания тестовых данных
       const updatedReferences = await DeviceReference.findAll({
         attributes: ['deviceType'],
-        where: {
-          deviceType: {
-            [Op.not]: null,
-            [Op.ne]: ''
-          }
-        },
+        where: whereCondition,
         group: ['deviceType'],
         order: [['deviceType', 'ASC']]
       });
@@ -134,6 +137,10 @@ async function createTestDeviceReferences() {
 // Получить сводную таблицу сигналов
 export const getSignalsSummary = async (req: Request, res: Response) => {
   try {
+    const { projectId } = req.query;
+    console.log(`getSignalsSummary: получаем сводку для проекта ${projectId || 'все'}`);
+    
+    // DeviceTypeSignal не связана с проектами, получаем все записи
     const deviceTypeSignals = await DeviceTypeSignal.findAll({
       order: [['deviceType', 'ASC']]
     });
@@ -141,18 +148,25 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
     // Получаем количество устройств для каждого типа
     const deviceCounts: {[key: string]: number} = {};
     
-    // Получаем число устройств для каждого типа из таблицы Device
-    const deviceTypeCounts = await Device.findAll({
+    // Формируем условие фильтрации по проекту для DeviceReference
+    const deviceCountWhere: any = {
+      deviceType: {
+        [Op.not]: null,
+        [Op.ne]: ''
+      }
+    };
+    
+    if (projectId) {
+      deviceCountWhere.projectId = parseInt(projectId as string, 10);
+    }
+    
+    // Получаем число устройств для каждого типа из таблицы DeviceReference
+    const deviceTypeCounts = await DeviceReference.findAll({
       attributes: [
         'deviceType',
-        [Device.sequelize!.fn('COUNT', Device.sequelize!.col('id')), 'count']
+        [DeviceReference.sequelize!.fn('COUNT', DeviceReference.sequelize!.col('id')), 'count']
       ],
-      where: {
-        deviceType: {
-          [Op.not]: null,
-          [Op.ne]: ''
-        }
-      },
+      where: deviceCountWhere,
       group: ['deviceType']
     });
     
@@ -201,14 +215,20 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
         console.log('Выполняем запрос для получения количества сигналов...');
         
         // Используем упрощенный запрос для снижения вероятности ошибок
-        const signalCountsQuery = `
-          SELECT d.deviceType as deviceType, s.type as signalType, SUM(ds.count) as total
+        let signalCountsQuery = `
+          SELECT dr.deviceType as deviceType, s.type as signalType, SUM(ds.count) as total
           FROM device_signals ds
-          JOIN devices d ON ds.deviceId = d.id
+          JOIN device_references dr ON ds.deviceId = dr.id
           JOIN signals s ON ds.signalId = s.id
-          WHERE d.deviceType IS NOT NULL AND d.deviceType != ''
-          GROUP BY d.deviceType, s.type
+          WHERE dr.deviceType IS NOT NULL AND dr.deviceType != ''
         `;
+        
+        // Добавляем фильтрацию по проекту, если указан
+        if (projectId) {
+          signalCountsQuery += ` AND dr.project_id = ${parseInt(projectId as string, 10)}`;
+        }
+        
+        signalCountsQuery += ` GROUP BY dr.deviceType, s.type`;
         
         try {
           const signalResults: any[] = await Device.sequelize!.query(signalCountsQuery, {
@@ -260,8 +280,16 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
         console.log('Таблицы device_signals или signals не существуют, используем данные из DeviceTypeSignal');
       }
       
+      // Получаем типы устройств, которые есть в текущем проекте
+      const projectDeviceTypes = Object.keys(deviceCounts);
+      
+      // Фильтруем DeviceTypeSignal только по типам устройств текущего проекта
+      const filteredDeviceTypeSignals = projectId 
+        ? deviceTypeSignals.filter(dts => projectDeviceTypes.includes(dts.deviceType))
+        : deviceTypeSignals;
+      
       // Добавляем количество устройств и сигналов к каждой записи
-      const deviceTypeSignalsWithCounts = deviceTypeSignals.map(dts => {
+      const deviceTypeSignalsWithCounts = filteredDeviceTypeSignals.map(dts => {
         const deviceType = dts.deviceType;
         const signalCounts = signalCountsByType[deviceType] || {ai: 0, ao: 0, di: 0, do: 0};
         
@@ -309,8 +337,16 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
     } catch (innerError) {
       console.error('Ошибка при обработке данных о сигналах:', innerError);
       
+      // Получаем типы устройств, которые есть в текущем проекте
+      const projectDeviceTypes = Object.keys(deviceCounts);
+      
+      // Фильтруем DeviceTypeSignal только по типам устройств текущего проекта
+      const filteredDeviceTypeSignals = projectId 
+        ? deviceTypeSignals.filter(dts => projectDeviceTypes.includes(dts.deviceType))
+        : deviceTypeSignals;
+      
       // Формируем ответ только с базовыми данными из DeviceTypeSignal
-      const basicDeviceTypeSignals = deviceTypeSignals.map(dts => ({
+      const basicDeviceTypeSignals = filteredDeviceTypeSignals.map(dts => ({
         ...dts.toJSON(),
         deviceCount: deviceCounts[dts.deviceType] || 0
       }));

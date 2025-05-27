@@ -10,7 +10,11 @@ const { Title, Paragraph } = Typography;
 const { Option } = Select;
 const { Dragger } = Upload;
 
-const SignalDefinitions: React.FC = () => {
+interface SignalDefinitionsProps {
+  projectId?: number | null;
+}
+
+const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [summary, setSummary] = useState<SignalSummary[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -24,18 +28,18 @@ const SignalDefinitions: React.FC = () => {
   const [deviceTypes, setDeviceTypes] = useState<string[]>([]);
   const [selectedDeviceType, setSelectedDeviceType] = useState<string>('');
 
-  // Загрузка данных при монтировании компонента
+  // Загрузка данных при монтировании компонента и при смене проекта
   useEffect(() => {
     fetchSignals();
     fetchSummary();
     fetchDeviceTypes();
-  }, []);
+  }, [projectId]);
 
   // Получение всех сигналов
   const fetchSignals = async () => {
     try {
       setLoading(true);
-      const data = await signalService.getAllSignals();
+      const data = await signalService.getAllSignals(projectId || undefined);
       setSignals(data);
       setLoading(false);
     } catch (error) {
@@ -47,7 +51,7 @@ const SignalDefinitions: React.FC = () => {
   // Получение сводки по сигналам
   const fetchSummary = async () => {
     try {
-      const data = await signalService.getSignalsSummary();
+      const data = await signalService.getSignalsSummary(projectId || undefined);
       setSummary(data);
     } catch (error) {
       message.error('Не удалось загрузить сводку по сигналам');

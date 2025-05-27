@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-import { ImportController } from '../controllers/ImportController';
+import { ImportController } from '../controllers/importController';
 
 const router = express.Router();
 

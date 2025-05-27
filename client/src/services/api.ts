@@ -16,9 +16,10 @@ const api = axios.create({
 // Сервис для работы с устройствами
 export const deviceService = {
   // Получить все устройства
-  getAllDevices: async (): Promise<DeviceReference[]> => {
+  getAllDevices: async (projectId?: number): Promise<DeviceReference[]> => {
     try {
-      const response = await api.get('/device-references');
+      const params = projectId ? { projectId } : {};
+      const response = await api.get('/device-references', { params });
       return response.data;
     } catch (error) {
       console.error('API: ошибка в getAllDevices:', error);
@@ -27,9 +28,10 @@ export const deviceService = {
   },
   
   // Получить дерево устройств
-  getDeviceTree: async (): Promise<TreeNode[]> => {
+  getDeviceTree: async (projectId?: number): Promise<TreeNode[]> => {
     try {
-      const response = await api.get('/device-references/tree');
+      const params = projectId ? { projectId } : {};
+      const response = await api.get('/device-references/tree', { params });
       return response.data;
     } catch (error) {
       console.error('API: ошибка в getDeviceTree:', error);
@@ -290,9 +292,10 @@ export const exportService = {
 // Сервис для работы с сигналами
 export const signalService = {
   // Получить все сигналы
-  getAllSignals: async (): Promise<Signal[]> => {
+  getAllSignals: async (projectId?: number): Promise<Signal[]> => {
     try {
-      const response = await api.get('/signals');
+      const params = projectId ? { projectId } : {};
+      const response = await api.get('/signals', { params });
       return response.data;
     } catch (error) {
       console.error('API: ошибка в getAllSignals:', error);
@@ -312,9 +315,10 @@ export const signalService = {
   },
   
   // Получить сводку по сигналам
-  getSignalsSummary: async (): Promise<SignalSummary[]> => {
+  getSignalsSummary: async (projectId?: number): Promise<SignalSummary[]> => {
     try {
-      const response = await api.get('/signals/summary');
+      const params = projectId ? { projectId } : {};
+      const response = await api.get('/signals/summary', { params });
       return response.data;
     } catch (error) {
       console.error('API: ошибка в getSignalsSummary:', error);
@@ -426,9 +430,10 @@ export const deviceTypeSignalService = {
   },
   
   // Получить список уникальных типов устройств из справочника DeviceReference
-  getUniqueDeviceTypesFromReference: async (): Promise<string[]> => {
+  getUniqueDeviceTypesFromReference: async (projectId?: number): Promise<string[]> => {
     try {
-      const response = await api.get('/device-type-signals/unique-device-types-reference');
+      const params = projectId ? { projectId } : {};
+      const response = await api.get('/device-type-signals/unique-device-types-reference', { params });
       return response.data;
     } catch (error) {
       console.error('API: ошибка в getUniqueDeviceTypesFromReference:', error);
@@ -437,9 +442,10 @@ export const deviceTypeSignalService = {
   },
   
   // Получить сводную таблицу сигналов
-  getSignalsSummary: async (): Promise<SignalsSummary> => {
+  getSignalsSummary: async (projectId?: number): Promise<SignalsSummary> => {
     try {
-      const response = await api.get('/device-type-signals/summary');
+      const params = projectId ? { projectId } : {};
+      const response = await api.get('/device-type-signals/summary', { params });
       return response.data;
     } catch (error) {
       console.error('API: ошибка в getSignalsSummary:', error);

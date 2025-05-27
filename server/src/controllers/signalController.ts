@@ -8,10 +8,45 @@ import { Op, Sequelize } from 'sequelize';
 // Получение всех сигналов
 export const getAllSignals = async (req: Request, res: Response) => {
   try {
-    const signals = await Signal.findAll({
-      order: [['type', 'ASC'], ['name', 'ASC']]
-    });
-    return res.status(200).json(signals);
+    const { projectId } = req.query;
+    console.log(`getAllSignals: получаем сигналы для проекта ${projectId || 'все'}`);
+    
+    if (projectId) {
+      // Если указан проект, получаем только сигналы, связанные с устройствами этого проекта
+      const signals = await Signal.findAll({
+        include: [
+          {
+            model: DeviceSignal,
+            as: 'deviceSignals',
+            required: true, // INNER JOIN
+            include: [
+              {
+                model: DeviceReference,
+                as: 'deviceReference',
+                where: { projectId: parseInt(projectId as string, 10) },
+                required: true
+              }
+            ]
+          }
+        ],
+        order: [['type', 'ASC'], ['name', 'ASC']]
+      });
+      
+      // Убираем дубликаты сигналов (если сигнал используется несколькими устройствами)
+      const uniqueSignals = signals.filter((signal, index, self) => 
+        index === self.findIndex(s => s.id === signal.id)
+      );
+      
+      console.log(`getAllSignals: найдено ${uniqueSignals.length} уникальных сигналов для проекта ${projectId}`);
+      return res.status(200).json(uniqueSignals);
+    } else {
+      // Если проект не указан, возвращаем все сигналы
+      const signals = await Signal.findAll({
+        order: [['type', 'ASC'], ['name', 'ASC']]
+      });
+      console.log(`getAllSignals: найдено ${signals.length} сигналов (все проекты)`);
+      return res.status(200).json(signals);
+    }
   } catch (error) {
     console.error('Ошибка при получении сигналов:', error);
     return res.status(500).json({ error: 'Ошибка при получении сигналов' });
@@ -310,13 +345,50 @@ export const removeSignalFromDevice = async (req: Request, res: Response) => {
 // Получение сводки по сигналам
 export const getSignalsSummary = async (req: Request, res: Response) => {
   try {
-    const signalsByType = await Signal.findAll({
-      attributes: ['type', [Sequelize.fn('SUM', Sequelize.col('totalCount')), 'totalCount']],
-      group: ['type'],
-      order: [['type', 'ASC']]
-    });
+    const { projectId } = req.query;
+    console.log(`getSignalsSummary: получаем сводку сигналов для проекта ${projectId || 'все'}`);
     
-    return res.status(200).json(signalsByType);
+    if (projectId) {
+      // Если указан проект, получаем сводку только по сигналам устройств этого проекта
+      const signalsByType = await Signal.findAll({
+        attributes: [
+          'type', 
+          [Sequelize.fn('SUM', Sequelize.col('deviceSignals.count')), 'totalCount']
+        ],
+        include: [
+          {
+            model: DeviceSignal,
+            as: 'deviceSignals',
+            attributes: [],
+            required: true,
+            include: [
+              {
+                model: DeviceReference,
+                as: 'deviceReference',
+                attributes: [],
+                where: { projectId: parseInt(projectId as string, 10) },
+                required: true
+              }
+            ]
+          }
+        ],
+        group: ['Signal.type'],
+        order: [['type', 'ASC']]
+      });
+      
+      console.log(`getSignalsSummary: найдено ${signalsByType.length} типов сигналов для проекта ${projectId}`);
+      return res.status(200).json(signalsByType);
+    } else {
+      // Если проект не указан, возвращаем сводку по всем сигналам
+      const signalsByType = await Signal.findAll({
+        attributes: ['type', [Sequelize.fn('SUM', Sequelize.col('totalCount')), 'totalCount']],
+        group: ['type'],
+        order: [['type', 'ASC']]
+      });
+      
+      console.log(`getSignalsSummary: найдено ${signalsByType.length} типов сигналов (все проекты)`);
+      return res.status(200).json(signalsByType);
+    }
   } catch (error) {
     console.error('Ошибка при получении сводки по сигналам:', error);
     return res.status(500).json({ error: 'Ошибка при получении сводки по сигналам' });

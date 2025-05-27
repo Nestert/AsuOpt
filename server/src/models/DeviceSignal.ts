@@ -1,6 +1,7 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import { Device } from './Device';
 import { Signal } from './Signal';
+import { DeviceReference } from './DeviceReference';
 
 interface DeviceSignalAttributes {
   id?: number;
@@ -65,6 +66,12 @@ export class DeviceSignal extends Model<DeviceSignalAttributes> implements Devic
     DeviceSignal.belongsTo(Signal, {
       foreignKey: 'signalId',
       as: 'signal',
+    });
+    
+    // Добавляем связь с DeviceReference для фильтрации по проекту
+    DeviceSignal.belongsTo(DeviceReference, {
+      foreignKey: 'deviceId',
+      as: 'deviceReference',
     });
   }
 } 

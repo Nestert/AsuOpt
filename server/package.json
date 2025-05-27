@@ -9,6 +9,8 @@
     "import-data": "ts-node src/scripts/importTempFiles.ts",
     "clear-db": "ts-node src/scripts/clearDatabase.ts",
     "migrate-signals": "ts-node src/scripts/migrateSignalTable.ts",
+    "migrate-projects": "ts-node src/scripts/runMigration.ts",
+    "migrate-projects-step": "ts-node src/scripts/runMigrationStep.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

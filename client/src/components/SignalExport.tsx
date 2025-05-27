@@ -5,17 +5,21 @@ import { exportService } from '../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
+interface SignalExportProps {
+  projectId?: number | null;
+}
+
 // Компонент-обертка для использования App.useApp()
-const SignalExport: React.FC = () => {
+const SignalExport: React.FC<SignalExportProps> = ({ projectId }) => {
   return (
     <App>
-      <SignalExportContent />
+      <SignalExportContent projectId={projectId} />
     </App>
   );
 };
 
 // Основной контент компонента
-const SignalExportContent: React.FC = () => {
+const SignalExportContent: React.FC<SignalExportProps> = ({ projectId }) => {
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
   const { message } = App.useApp();

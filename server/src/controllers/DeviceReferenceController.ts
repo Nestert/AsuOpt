@@ -8,10 +8,18 @@ export class DeviceReferenceController {
   // Получение всех устройств из справочника
   static async getAllDevices(req: Request, res: Response): Promise<void> {
     try {
-      console.log('getAllDevices: получаем все устройства с полной информацией');
+      const { projectId } = req.query;
+      console.log(`getAllDevices: получаем устройства для проекта ${projectId || 'все'}`);
+      
+      // Формируем условие фильтрации по проекту
+      const whereCondition: any = {};
+      if (projectId) {
+        whereCondition.projectId = parseInt(projectId as string, 10);
+      }
       
       // Получаем устройства с включением связанных данных KIP и ZRA
       const devices = await DeviceReference.findAll({
+        where: whereCondition,
         order: [['posDesignation', 'ASC']],
         include: [
           {
@@ -234,8 +242,18 @@ export class DeviceReferenceController {
   // Получение дерева устройств
   static async getDeviceTree(req: Request, res: Response): Promise<void> {
     try {
+      const { projectId } = req.query;
+      console.log(`getDeviceTree: получаем дерево устройств для проекта ${projectId || 'все'}`);
+      
+      // Формируем условие фильтрации по проекту
+      const whereCondition: any = {};
+      if (projectId) {
+        whereCondition.projectId = parseInt(projectId as string, 10);
+      }
+      
       // Группируем устройства по типу и первой части позиционного обозначения
       const devices = await DeviceReference.findAll({
+        where: whereCondition,
         order: [['posDesignation', 'ASC']]
       });
       

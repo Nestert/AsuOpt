@@ -11,6 +11,7 @@ import zraRoutes from './routes/zraRoutes';
 import signalRoutes from './routes/signalRoutes';
 import deviceTypeSignalRoutes from './routes/deviceTypeSignalRoutes';
 import databaseRoutes from './routes/databaseRoutes';
+import projectRoutes from './routes/projectRoutes';
 import path from 'path';
 import * as signalController from './controllers/signalController';
 
@@ -54,6 +55,7 @@ app.delete('/api/signals/clear', (req, res, next) => {
 });
 // --------------------------------------------------------------------------------
 
+app.use('/api/projects', projectRoutes);
 app.use('/api/signals', signalRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/exports', exportRoutes);

@@ -6,8 +6,12 @@ import { ReloadOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
+interface SignalTableProps {
+  projectId?: number | null;
+}
+
 // Создаем внутренний компонент, использующий App.useApp()
-const SignalTableContent: React.FC = () => {
+const SignalTableContent: React.FC<SignalTableProps> = ({ projectId }) => {
   const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [summaryData, setSummaryData] = useState<SignalsSummary | null>(null);
@@ -55,11 +59,11 @@ const SignalTableContent: React.FC = () => {
     setError(null);
     try {
       // Загружаем список всех типов устройств из DeviceReference
-      const typesFromReference = await deviceTypeSignalService.getUniqueDeviceTypesFromReference();
+      const typesFromReference = await deviceTypeSignalService.getUniqueDeviceTypesFromReference(projectId || undefined);
       
       try {
         // Загружаем сводную таблицу существующих записей
-        const summaryData = await deviceTypeSignalService.getSignalsSummary();
+        const summaryData = await deviceTypeSignalService.getSignalsSummary(projectId || undefined);
         setSummaryData(summaryData);
         
         // Проверяем, есть ли типы устройств, которых еще нет в таблице сигналов
@@ -90,7 +94,7 @@ const SignalTableContent: React.FC = () => {
       setError('Не удалось загрузить данные. Проверьте соединение с сервером.');
       setLoading(false);
     }
-  }, [autoFillEnabled, addMissingTypes]);
+  }, [autoFillEnabled, addMissingTypes, projectId]);
 
   // Загрузка данных при монтировании компонента
   useEffect(() => {
@@ -325,10 +329,10 @@ const SignalTableContent: React.FC = () => {
 };
 
 // Основной компонент-обертка
-const SignalTable: React.FC = () => {
+const SignalTable: React.FC<SignalTableProps> = ({ projectId }) => {
   return (
     <App>
-      <SignalTableContent />
+      <SignalTableContent projectId={projectId} />
     </App>
   );
 };

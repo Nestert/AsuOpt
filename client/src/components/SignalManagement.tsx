@@ -3,9 +3,11 @@ import { Tabs } from 'antd';
 import SignalTable from './SignalTable';
 import SignalDefinitions from './SignalDefinitions';
 import SignalExport from './SignalExport';
+import { useProject } from '../contexts/ProjectContext';
 
 const SignalManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState('summary');
+  const { currentProjectId } = useProject();
 
   const handleTabChange = (key: string) => {
     setActiveTab(key);
@@ -20,17 +22,17 @@ const SignalManagement: React.FC = () => {
           {
             key: 'summary',
             label: 'Сводная таблица сигналов',
-            children: <SignalTable />
+            children: <SignalTable projectId={currentProjectId} />
           },
           {
             key: 'definitions',
             label: 'Типы сигналов',
-            children: <SignalDefinitions />
+            children: <SignalDefinitions projectId={currentProjectId} />
           },
           {
             key: 'export',
             label: 'Экспорт сигналов',
-            children: <SignalExport />
+            children: <SignalExport projectId={currentProjectId} />
           }
         ]}
       />

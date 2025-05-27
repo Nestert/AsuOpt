@@ -10,6 +10,7 @@ import { deviceService } from '../services/api';
 import { DeviceReference } from '../interfaces/DeviceReference';
 import AddDeviceForm from './AddDeviceForm';
 import DeviceFilters, { DeviceFiltersInterface as DeviceFiltersType } from './DeviceFilters';
+import { useProject } from '../contexts/ProjectContext';
 
 const { Text } = Typography;
 
@@ -52,6 +53,9 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   const [rightClickedNode, setRightClickedNode] = useState<any>(null); // Используем any для простоты, можно уточнить тип
 
   const { message, modal } = App.useApp(); // Добавляем modal для подтверждения удаления
+  
+  // Используем контекст проектов
+  const { currentProjectId } = useProject();
 
   // Функция для разбиения строки posDesignation на части
   const parsePosDesignation = (posDesignation: string): string[] => {
@@ -126,8 +130,8 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     setLoading(true);
     setError(null);
     try {
-      const data = await deviceService.getAllDevices();
-      console.log('Загружены устройства:', data.length, 'элементов');
+      const data = await deviceService.getAllDevices(currentProjectId || undefined);
+      console.log(`Загружены устройства для проекта ${currentProjectId}:`, data.length, 'элементов');
       
       // Отладочный вывод для проверки значений полей
       const systemCodesDebug = data.map(device => device.systemCode).filter(Boolean);
@@ -149,12 +153,12 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     } finally {
       setLoading(false);
     }
-  }, [buildCustomTreeCallback]);
+  }, [buildCustomTreeCallback, currentProjectId]);
 
-  // Загрузка данных при монтировании и при изменении updateCounter
+  // Загрузка данных при монтировании и при изменении updateCounter или проекта
   useEffect(() => {
     fetchDevices();
-  }, [updateCounter, fetchDevices]);
+  }, [updateCounter, fetchDevices, currentProjectId]);
 
   // Эффект для фильтрации устройств при изменении фильтров
   useEffect(() => {

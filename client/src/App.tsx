@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 // Импортируем патч для совместимости с React 19
 import '@ant-design/v5-patch-for-react-19';
-import { ConfigProvider, Layout, Tabs, App } from 'antd';
+import { ConfigProvider, Layout, Tabs, App, Space } from 'antd';
 import ruRU from 'antd/es/locale/ru_RU';
 import DeviceTree from './components/DeviceTree';
 import DeviceDetails from './components/DeviceDetails';
 import ImportData from './components/ImportData';
 import DatabaseActions from './components/DatabaseActions';
 import SignalManagement from './components/SignalManagement';
+import ProjectSelector from './components/ProjectSelector';
+import ProjectManagement from './components/ProjectManagement';
+import { ProjectProvider, useProject } from './contexts/ProjectContext';
 import './App.css';
 
 const { Header, Sider, Content } = Layout;
@@ -16,9 +19,13 @@ const { Header, Sider, Content } = Layout;
 const InnerApp: React.FC = () => {
   const [selectedDeviceId, setSelectedDeviceId] = useState<number | null>(null);
   const [treeUpdateCounter, setTreeUpdateCounter] = useState<number>(0);
+  const [projectManagementVisible, setProjectManagementVisible] = useState(false);
   
   // Теперь notification доступен внутри компонента App
   const { notification } = App.useApp();
+  
+  // Используем контекст проектов
+  const { currentProjectId, setCurrentProjectId, refreshProjects } = useProject();
   
   // Проверяем конфигурацию API при загрузке
   useEffect(() => {
@@ -98,10 +105,39 @@ const InnerApp: React.FC = () => {
     setTreeUpdateCounter(prev => prev + 1);
   };
 
+  // Обработчики для проектов
+  const handleProjectChange = (projectId: number | null) => {
+    setCurrentProjectId(projectId);
+    // Сбрасываем выбранное устройство при смене проекта
+    setSelectedDeviceId(null);
+    // Обновляем дерево устройств
+    setTreeUpdateCounter(prev => prev + 1);
+  };
+
+  const handleManageProjects = () => {
+    setProjectManagementVisible(true);
+  };
+
+  const handleProjectCreated = () => {
+    refreshProjects();
+    notification.success({
+      message: 'Проект создан',
+      description: 'Новый проект успешно создан',
+      duration: 3
+    });
+  };
+
   return (
     <Layout className="app-layout">
       <Header className="app-header">
-        <h1>АСУ-Оптимизация</h1>
+        <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+          <h1 style={{ margin: 0, color: 'white' }}>АСУ-Оптимизация</h1>
+          <ProjectSelector
+            currentProjectId={currentProjectId}
+            onProjectChange={handleProjectChange}
+            onManageProjects={handleManageProjects}
+          />
+        </Space>
       </Header>
       
       <Layout className="main-layout">
@@ -173,6 +209,14 @@ const InnerApp: React.FC = () => {
           ]}
         />
       </Layout>
+      
+      {/* Модальное окно управления проектами */}
+      <ProjectManagement
+        visible={projectManagementVisible}
+        onClose={() => setProjectManagementVisible(false)}
+        onProjectCreated={handleProjectCreated}
+        currentProjectId={currentProjectId}
+      />
     </Layout>
   );
 };
@@ -190,7 +234,9 @@ const AppComponent: React.FC = () => {
       }}
     >
       <App>
-        <InnerApp />
+        <ProjectProvider>
+          <InnerApp />
+        </ProjectProvider>
       </App>
     </ConfigProvider>
   );

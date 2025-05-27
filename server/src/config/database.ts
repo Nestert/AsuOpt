@@ -7,6 +7,7 @@ import { Zra } from '../models/Zra';
 import { Signal } from '../models/Signal';
 import { DeviceSignal } from '../models/DeviceSignal';
 import { DeviceTypeSignal } from '../models/DeviceTypeSignal';
+import { Project } from '../models/Project';
 
 const dbPath = path.join(__dirname, '../../database.sqlite');
 
@@ -32,6 +33,7 @@ const sequelize = new Sequelize({
 const initializeDatabase = async () => {
   try {
     // Инициализация всех моделей
+    Project.initialize(sequelize);
     Device.initialize(sequelize);
     DeviceReference.initialize(sequelize);
     Kip.initialize(sequelize);
@@ -41,6 +43,7 @@ const initializeDatabase = async () => {
     DeviceTypeSignal.initialize(sequelize);
     
     // Устанавливаем ассоциации между моделями
+    Project.associate({});
     Device.associate();
     DeviceReference.associate();
     Kip.associate();
