@@ -12,6 +12,7 @@ interface AddDeviceFormProps {
   onCancel: () => void;
   onSuccess: () => void;
   parentId?: number | null;
+  projectId?: number | null;
 }
 
 // Интерфейс для данных нового устройства
@@ -21,13 +22,14 @@ interface NewDeviceData {
     deviceType: string;
     description: string;
     parentId?: number | null;
+    projectId?: number | null;
   };
   dataType: 'unknown' | 'kip' | 'zra';
   kip?: Partial<Kip>;
   zra?: Partial<Zra>;
 }
 
-const AddDeviceForm: React.FC<AddDeviceFormProps> = ({ visible, onCancel, onSuccess, parentId }) => {
+const AddDeviceForm: React.FC<AddDeviceFormProps> = ({ visible, onCancel, onSuccess, parentId, projectId }) => {
   const [form] = Form.useForm();
   const [deviceType, setDeviceType] = useState<string>('unknown');
   const [loading, setLoading] = useState(false);
@@ -51,6 +53,7 @@ const AddDeviceForm: React.FC<AddDeviceFormProps> = ({ visible, onCancel, onSucc
           posDesignation: values.posDesignation,
           deviceType: values.deviceType,
           description: values.description || '',
+          ...(projectId ? { projectId } : {}),
         },
         dataType: values.deviceType as 'unknown' | 'kip' | 'zra',
       };
@@ -80,7 +83,7 @@ const AddDeviceForm: React.FC<AddDeviceFormProps> = ({ visible, onCancel, onSucc
       if (parentId) {
         deviceData.reference.parentId = parentId;
       }
-      
+
       // Отправка запроса на создание устройства
       await deviceService.createDevice(deviceData);
       

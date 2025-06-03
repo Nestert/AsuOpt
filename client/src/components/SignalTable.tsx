@@ -41,7 +41,7 @@ const SignalTableContent: React.FC<SignalTableProps> = ({ projectId }) => {
       }
       
       // Загружаем обновленные данные после добавления всех типов
-      const updatedSummary = await deviceTypeSignalService.getSignalsSummary();
+      const updatedSummary = await deviceTypeSignalService.getSignalsSummary(projectId || undefined);
       setSummaryData(updatedSummary);
       
       message.success(`Добавлено ${missingTypes.length} новых типов устройств из справочника`);
