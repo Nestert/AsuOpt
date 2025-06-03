@@ -666,11 +666,12 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
         )}
       </div>
 
-      <AddDeviceForm 
+      <AddDeviceForm
         visible={isAddDeviceVisible}
         onCancel={hideAddDeviceForm}
         onSuccess={handleDeviceAdded}
         parentId={selectedParentId}
+        projectId={currentProjectId}
       />
     </div>
   );
