@@ -29,14 +29,15 @@ interface NewDeviceData {
 
 const AddDeviceForm: React.FC<AddDeviceFormProps> = ({ visible, onCancel, onSuccess, parentId }) => {
   const [form] = Form.useForm();
-  const [deviceType, setDeviceType] = useState<string>('unknown');
+  // Тип данных устройства (КИП, ЗРА или неизвестный)
+  const [dataType, setDataType] = useState<string>('unknown');
   const [loading, setLoading] = useState(false);
   
   const { message } = App.useApp();
 
-  // Обработчик изменения типа устройства
-  const handleDeviceTypeChange = (value: string) => {
-    setDeviceType(value);
+  // Обработчик изменения типа данных
+  const handleDataTypeChange = (value: string) => {
+    setDataType(value);
   };
 
   // Отправка формы
@@ -52,11 +53,11 @@ const AddDeviceForm: React.FC<AddDeviceFormProps> = ({ visible, onCancel, onSucc
           deviceType: values.deviceType,
           description: values.description || '',
         },
-        dataType: values.deviceType as 'unknown' | 'kip' | 'zra',
+        dataType: values.dataType as 'unknown' | 'kip' | 'zra',
       };
       
       // Добавление специфичных данных в зависимости от типа устройства
-      if (values.deviceType === 'kip') {
+      if (values.dataType === 'kip') {
         deviceData.kip = {
           section: values.section || '',
           manufacturer: values.manufacturer || '',
@@ -65,7 +66,7 @@ const AddDeviceForm: React.FC<AddDeviceFormProps> = ({ visible, onCancel, onSucc
           scale: values.scale || '',
           // Другие поля КИП можно добавить здесь
         };
-      } else if (values.deviceType === 'zra') {
+      } else if (values.dataType === 'zra') {
         deviceData.zra = {
           unitArea: values.unitArea || '',
           designType: values.designType || '',
@@ -97,7 +98,7 @@ const AddDeviceForm: React.FC<AddDeviceFormProps> = ({ visible, onCancel, onSucc
 
   // Рендер дополнительных полей в зависимости от типа устройства
   const renderDeviceTypeFields = () => {
-    switch (deviceType) {
+    switch (dataType) {
       case 'kip':
         return (
           <>
@@ -164,7 +165,7 @@ const AddDeviceForm: React.FC<AddDeviceFormProps> = ({ visible, onCancel, onSucc
         form={form}
         layout="vertical"
         name="add_device_form"
-        initialValues={{ deviceType: 'unknown' }}
+        initialValues={{ dataType: 'unknown' }}
       >
         <Divider orientation="left">Основная информация</Divider>
         <Form.Item
@@ -178,9 +179,17 @@ const AddDeviceForm: React.FC<AddDeviceFormProps> = ({ visible, onCancel, onSucc
         <Form.Item
           name="deviceType"
           label="Тип устройства"
-          rules={[{ required: true, message: 'Выберите тип устройства!' }]}
+          rules={[{ required: true, message: 'Введите тип устройства!' }]}
         >
-          <Select placeholder="Выберите тип устройства" onChange={handleDeviceTypeChange}>
+          <Input placeholder="Введите тип устройства" />
+        </Form.Item>
+
+        <Form.Item
+          name="dataType"
+          label="Категория устройства"
+          rules={[{ required: true, message: 'Выберите категорию устройства!' }]}
+        >
+          <Select placeholder="Выберите категорию" onChange={handleDataTypeChange}>
             <Option value="unknown">Неопределённый</Option>
             <Option value="kip">КИП (контрольно-измерительный прибор)</Option>
             <Option value="zra">ЗРА (запорно-регулирующая арматура)</Option>
