@@ -291,17 +291,19 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
       // Добавляем количество устройств и сигналов к каждой записи
       const deviceTypeSignalsWithCounts = filteredDeviceTypeSignals.map(dts => {
         const deviceType = dts.deviceType;
-        const signalCounts = signalCountsByType[deviceType] || {ai: 0, ao: 0, di: 0, do: 0};
-        
+        const signalCounts = signalCountsByType[deviceType] || { ai: 0, ao: 0, di: 0, do: 0 };
+
+        // Если выбран конкретный проект, используем только данные этого проекта,
+        // иначе допускаем использование сохраненных значений из DeviceTypeSignal
+        const useProjectDataOnly = !!projectId;
+
         return {
           ...dts.toJSON(),
           deviceCount: deviceCounts[deviceType] || 0,
-          // Используем реальные значения из device_signals, если они есть,
-          // иначе используем значения из DeviceTypeSignal
-          aiCount: signalCounts.ai || dts.aiCount || 0,
-          aoCount: signalCounts.ao || dts.aoCount || 0,
-          diCount: signalCounts.di || dts.diCount || 0,
-          doCount: signalCounts.do || dts.doCount || 0
+          aiCount: useProjectDataOnly ? signalCounts.ai : (signalCounts.ai || dts.aiCount || 0),
+          aoCount: useProjectDataOnly ? signalCounts.ao : (signalCounts.ao || dts.aoCount || 0),
+          diCount: useProjectDataOnly ? signalCounts.di : (signalCounts.di || dts.diCount || 0),
+          doCount: useProjectDataOnly ? signalCounts.do : (signalCounts.do || dts.doCount || 0)
         };
       });
       
