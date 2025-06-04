@@ -199,7 +199,7 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
   const handleAssignSignalsToAllTypes = async () => {
     setLoading(true);
     try {
-      const result = await importService.assignSignalsToAllDeviceTypes();
+      const result = await importService.assignSignalsToAllDeviceTypes(projectId || undefined);
       if (result.success) {
         message.success(result.message);
         fetchSignals();

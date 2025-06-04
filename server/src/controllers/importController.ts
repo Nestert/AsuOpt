@@ -78,13 +78,15 @@ export class ImportController {
   static async assignSignalsToDevicesByType(req: Request, res: Response): Promise<void> {
     try {
       const { deviceType } = req.params;
+      const { projectId } = req.query;
       
       if (!deviceType) {
         res.status(400).json({ success: false, message: 'Не указан тип устройства' });
         return;
       }
       
-      const result = await ImportService.assignSignalsToDevicesByType(deviceType);
+      const pid = projectId ? parseInt(projectId as string, 10) : undefined;
+      const result = await ImportService.assignSignalsToDevicesByType(deviceType, pid);
       
       res.json(result);
     } catch (error) {
@@ -102,7 +104,9 @@ export class ImportController {
   static async assignSignalsToAllDeviceTypes(req: Request, res: Response): Promise<void> {
     try {
       console.log('Начато назначение сигналов всем типам устройств');
-      const result = await ImportService.assignSignalsToAllDeviceTypes();
+      const { projectId } = req.query;
+      const pid = projectId ? parseInt(projectId as string, 10) : undefined;
+      const result = await ImportService.assignSignalsToAllDeviceTypes(pid);
       
       res.json(result);
     } catch (error) {
