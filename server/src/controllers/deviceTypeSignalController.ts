@@ -247,7 +247,7 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
           const whereClause: any = {};
 
           if (projectId) {
-            whereClause['$deviceReference.projectId$'] = parseInt(projectId as string, 10);
+            whereClause['$deviceReference.project_id$'] = parseInt(projectId as string, 10);
           }
 
           const signalResults = await DeviceSignal.findAll({
