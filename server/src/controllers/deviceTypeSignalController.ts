@@ -142,10 +142,39 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
     const { projectId } = req.query;
     console.log(`getSignalsSummary: получаем сводку для проекта ${projectId || 'все'}`);
     
-    // DeviceTypeSignal не связана с проектами, получаем все записи
-    const deviceTypeSignals = await DeviceTypeSignal.findAll({
-      order: [['deviceType', 'ASC']]
-    });
+    let deviceTypeSignals: DeviceTypeSignal[];
+
+    if (projectId) {
+      // Для выбранного проекта формируем список типов устройств из DeviceReference
+      const projectDeviceTypes = await DeviceReference.findAll({
+        attributes: ['deviceType'],
+        where: {
+          projectId: parseInt(projectId as string, 10),
+          deviceType: {
+            [Op.not]: null,
+            [Op.ne]: ''
+          }
+        },
+        group: ['deviceType'],
+        order: [['deviceType', 'ASC']]
+      });
+
+      deviceTypeSignals = projectDeviceTypes.map((row: any) =>
+        DeviceTypeSignal.build({
+          deviceType: row.deviceType,
+          aiCount: 0,
+          aoCount: 0,
+          diCount: 0,
+          doCount: 0,
+          projectId: parseInt(projectId as string, 10)
+        })
+      );
+    } else {
+      // Если проект не указан, возвращаем все записи из DeviceTypeSignal
+      deviceTypeSignals = await DeviceTypeSignal.findAll({
+        order: [['deviceType', 'ASC']]
+      });
+    }
     
     // Получаем количество устройств для каждого типа
     const deviceCounts: {[key: string]: number} = {};
