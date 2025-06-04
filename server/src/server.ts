@@ -6,6 +6,7 @@ import deviceRoutes from './routes/deviceRoutes';
 import exportRoutes from './routes/exportRoutes';
 import importRoutes from './routes/importRoutes';
 import deviceReferenceRoutes from './routes/deviceReferenceRoutes';
+import signalTypeRoutes from './routes/signalTypeRoutes';
 import kipRoutes from './routes/kipRoutes';
 import zraRoutes from './routes/zraRoutes';
 import signalRoutes from './routes/signalRoutes';
@@ -64,6 +65,7 @@ app.use('/api/device-references', deviceReferenceRoutes);
 app.use('/api/kip', kipRoutes);
 app.use('/api/zra', zraRoutes);
 app.use('/api/device-type-signals', deviceTypeSignalRoutes);
+app.use('/api/signal-types', signalTypeRoutes);
 app.use('/api/database', databaseRoutes);
 
 // Обработка ошибок

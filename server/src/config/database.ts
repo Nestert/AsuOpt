@@ -9,6 +9,7 @@ import { Signal } from '../models/Signal';
 import { DeviceSignal } from '../models/DeviceSignal';
 import { DeviceTypeSignal } from '../models/DeviceTypeSignal';
 import { Project } from '../models/Project';
+import { SignalType } from '../models/SignalType';
 
 const dbPath = path.join(__dirname, '../../database.sqlite');
 
@@ -84,6 +85,7 @@ const initializeDatabase = async () => {
     DeviceReference.initialize(sequelize);
     Kip.initialize(sequelize);
     Zra.initialize(sequelize);
+    SignalType.initialize(sequelize);
     Signal.initialize(sequelize);
     DeviceSignal.initialize(sequelize);
     DeviceTypeSignal.initialize(sequelize);

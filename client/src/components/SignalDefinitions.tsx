@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, Popconfirm, Card, Row, Col, Statistic, Upload } from 'antd';
-import { signalService, importService } from '../services/api';
-import { Signal, SignalSummary } from '../interfaces/Signal';
+import { signalService, signalTypeService, importService } from '../services/api';
+import { SignalSummary } from '../interfaces/Signal';
+import { SignalType } from '../interfaces/SignalType';
 import { PlusOutlined, ExclamationCircleOutlined, EditOutlined, DeleteOutlined, UploadOutlined, LinkOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { RcFile } from 'antd/es/upload';
@@ -15,35 +16,32 @@ interface SignalDefinitionsProps {
 }
 
 const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
-  const [signals, setSignals] = useState<Signal[]>([]);
+  const [signalTypes, setSignalTypes] = useState<SignalType[]>([]);
   const [summary, setSummary] = useState<SignalSummary[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [form] = Form.useForm();
-  const [currentSignal, setCurrentSignal] = useState<Signal | null>(null);
+  const [currentType, setCurrentType] = useState<SignalType | null>(null);
   const [loading, setLoading] = useState(false);
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [deviceTypes, setDeviceTypes] = useState<string[]>([]);
-  const [selectedDeviceType, setSelectedDeviceType] = useState<string>('');
 
   // Загрузка данных при монтировании компонента и при смене проекта
   useEffect(() => {
-    fetchSignals();
+    fetchSignalTypes();
     fetchSummary();
-    fetchDeviceTypes();
   }, [projectId]);
 
-  // Получение всех сигналов
-  const fetchSignals = async () => {
+  // Получение всех типов сигналов
+  const fetchSignalTypes = async () => {
     try {
       setLoading(true);
-      const data = await signalService.getAllSignals(projectId || undefined);
-      setSignals(data);
+      const data = await signalTypeService.getAllSignalTypes();
+      setSignalTypes(data);
       setLoading(false);
     } catch (error) {
-      message.error('Не удалось загрузить сигналы');
+      message.error('Не удалось загрузить типы сигналов');
       setLoading(false);
     }
   };
@@ -58,41 +56,24 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
     }
   };
 
-  // Получение уникальных типов устройств из сигналов
-  const fetchDeviceTypes = async () => {
-    try {
-      // Здесь нужно реализовать API для получения типов устройств
-      // Временно будем извлекать типы из категорий сигналов
-      const signals = await signalService.getAllSignals();
-      const uniqueCategories = signals
-        .map(signal => signal.category)
-        .filter((category): category is string => !!category)
-        .filter((value, index, self) => self.indexOf(value) === index);
-      setDeviceTypes(uniqueCategories);
-    } catch (error) {
-      message.error('Не удалось загрузить типы устройств');
-    }
-  };
 
-  // Добавление нового сигнала
+  // Добавление нового типа сигнала
   const handleAddSignal = () => {
     setIsEditing(false);
-    setCurrentSignal(null);
+    setCurrentType(null);
     form.resetFields();
     setIsModalVisible(true);
   };
 
   // Редактирование сигнала
-  const handleEditSignal = (signal: Signal) => {
+  const handleEditSignal = (signal: SignalType) => {
     setIsEditing(true);
-    setCurrentSignal(signal);
+    setCurrentType(signal);
     form.setFieldsValue({
+      code: signal.code,
       name: signal.name,
-      type: signal.type,
       description: signal.description,
       category: signal.category,
-      connectionType: signal.connectionType,
-      voltage: signal.voltage
     });
     setIsModalVisible(true);
   };
@@ -102,18 +83,18 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
     try {
       const values = await form.validateFields();
       
-      if (isEditing && currentSignal) {
-        // Обновление существующего сигнала
-        await signalService.updateSignal(currentSignal.id, values);
-        message.success('Сигнал успешно обновлен');
+      if (isEditing && currentType) {
+        // Обновление существующего типа сигнала
+        await signalTypeService.updateSignalType(currentType.id, values);
+        message.success('Тип сигнала успешно обновлен');
       } else {
-        // Создание нового сигнала
-        await signalService.createSignal(values);
-        message.success('Сигнал успешно создан');
+        // Создание нового типа сигнала
+        await signalTypeService.createSignalType(values);
+        message.success('Тип сигнала успешно создан');
       }
       
       setIsModalVisible(false);
-      fetchSignals();
+      fetchSignalTypes();
       fetchSummary();
     } catch (error) {
       message.error('Произошла ошибка при сохранении сигнала');
@@ -123,12 +104,12 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
   // Удаление сигнала
   const handleDeleteSignal = async (id: number) => {
     try {
-      await signalService.deleteSignal(id);
-      message.success('Сигнал успешно удален');
-      fetchSignals();
+      await signalTypeService.deleteSignalType(id);
+      message.success('Тип сигнала успешно удален');
+      fetchSignalTypes();
       fetchSummary();
     } catch (error) {
-      message.error('Не удалось удалить сигнал');
+      message.error('Не удалось удалить тип сигнала');
     }
   };
 
@@ -171,9 +152,8 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
       if (result.success) {
         message.success(result.message);
         setIsImportModalVisible(false);
-        fetchSignals();
+        fetchSignalTypes();
         fetchSummary();
-        fetchDeviceTypes();
       } else {
         message.error(result.message);
       }
@@ -202,7 +182,7 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
       const result = await importService.assignSignalsToAllDeviceTypes(projectId || undefined);
       if (result.success) {
         message.success(result.message);
-        fetchSignals();
+        fetchSignalTypes();
         fetchSummary();
       } else {
         message.error(result.message);
@@ -217,48 +197,25 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
   // Колонки для таблицы сигналов
   const columns = [
     {
+      title: 'Код',
+      dataIndex: 'code',
+      key: 'code',
+    },
+    {
       title: 'Название',
       dataIndex: 'name',
       key: 'name',
     },
     {
-      title: 'Тип',
-      dataIndex: 'type',
-      key: 'type',
-      filters: [
-        { text: 'AI', value: 'AI' },
-        { text: 'AO', value: 'AO' },
-        { text: 'DI', value: 'DI' },
-        { text: 'DO', value: 'DO' },
-      ],
-      onFilter: (value: any, record: Signal) => record.type === value,
-    },
-    {
       title: 'Категория',
       dataIndex: 'category',
       key: 'category',
-      filters: signals
+      filters: signalTypes
         .map(signal => signal.category)
         .filter((category): category is string => !!category)
         .filter((value, index, self) => self.indexOf(value) === index)
         .map(cat => ({ text: cat, value: cat })),
-      onFilter: (value: any, record: Signal) => record.category === value,
-    },
-    {
-      title: 'Тип подключения',
-      dataIndex: 'connectionType',
-      key: 'connectionType',
-      filters: signals
-        .map(signal => signal.connectionType)
-        .filter((type): type is string => !!type)
-        .filter((value, index, self) => self.indexOf(value) === index)
-        .map(type => ({ text: type, value: type })),
-      onFilter: (value: any, record: Signal) => record.connectionType === value,
-    },
-    {
-      title: 'Напряжение',
-      dataIndex: 'voltage',
-      key: 'voltage',
+      onFilter: (value: any, record: SignalType) => record.category === value,
     },
     {
       title: 'Описание',
@@ -266,15 +223,9 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
       key: 'description',
     },
     {
-      title: 'Кол-во',
-      dataIndex: 'totalCount',
-      key: 'totalCount',
-      sorter: (a: Signal, b: Signal) => a.totalCount - b.totalCount,
-    },
-    {
       title: 'Действия',
       key: 'actions',
-      render: (_: any, record: Signal) => (
+      render: (_: any, record: SignalType) => (
         <Space>
           <Button 
             icon={<EditOutlined />} 
@@ -349,7 +300,7 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
       {/* Таблица сигналов */}
       <Table 
         columns={columns} 
-        dataSource={signals}
+        dataSource={signalTypes}
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 10 }}
@@ -357,7 +308,7 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
       
       {/* Модальное окно для добавления/редактирования сигнала */}
       <Modal
-        title={isEditing ? 'Редактировать сигнал' : 'Добавить новый сигнал'}
+        title={isEditing ? 'Редактировать тип сигнала' : 'Добавить новый тип сигнала'}
         open={isModalVisible}
         onOk={handleFormSubmit}
         onCancel={() => setIsModalVisible(false)}
@@ -369,24 +320,19 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
           layout="vertical"
         >
           <Form.Item
+            name="code"
+            label="Код"
+            rules={[{ required: true, message: 'Введите код типа' }]}
+          >
+            <Input placeholder="Например: AI" />
+          </Form.Item>
+
+          <Form.Item
             name="name"
             label="Название"
-            rules={[{ required: true, message: 'Введите название сигнала' }]}
+            rules={[{ required: true, message: 'Введите название типа сигнала' }]}
           >
-            <Input placeholder="Введите название сигнала" />
-          </Form.Item>
-          
-          <Form.Item
-            name="type"
-            label="Тип"
-            rules={[{ required: true, message: 'Выберите тип сигнала' }]}
-          >
-            <Select placeholder="Выберите тип сигнала">
-              <Option value="AI">AI (Аналоговый вход)</Option>
-              <Option value="AO">AO (Аналоговый выход)</Option>
-              <Option value="DI">DI (Дискретный вход)</Option>
-              <Option value="DO">DO (Дискретный выход)</Option>
-            </Select>
+            <Input placeholder="Введите название типа" />
           </Form.Item>
           
           <Form.Item
@@ -396,25 +342,12 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
             <Input placeholder="Введите категорию сигнала" />
           </Form.Item>
           
-          <Form.Item
-            name="connectionType"
-            label="Тип подключения"
-          >
-            <Input placeholder="Например: 2-провод, 4-провод" />
-          </Form.Item>
-          
-          <Form.Item
-            name="voltage"
-            label="Напряжение"
-          >
-            <Input placeholder="Например: 4-20mA, 24V" />
-          </Form.Item>
           
           <Form.Item
             name="description"
             label="Описание"
           >
-            <Input.TextArea placeholder="Введите описание сигнала" rows={4} />
+            <Input.TextArea placeholder="Введите описание типа сигнала" rows={4} />
           </Form.Item>
         </Form>
       </Modal>

@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { DeviceReference, TreeNode, DeviceFullData } from '../interfaces/DeviceReference';
 import { Signal, DeviceSignal, SignalSummary } from '../interfaces/Signal';
+import { SignalType } from '../interfaces/SignalType';
 import { DeviceTypeSignal, SignalsSummary } from '../interfaces/DeviceTypeSignal';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
@@ -415,6 +416,45 @@ export const signalService = {
       return response.data;
     } catch (error) {
       console.error('API: ошибка в clearAllSignals:', error);
+      throw error;
+    }
+  }
+};
+
+// Сервис для работы с типами сигналов
+export const signalTypeService = {
+  getAllSignalTypes: async (): Promise<SignalType[]> => {
+    try {
+      const response = await api.get('/signal-types');
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в getAllSignalTypes:', error);
+      throw error;
+    }
+  },
+  createSignalType: async (data: Omit<SignalType, 'id' | 'created_at' | 'updated_at'>): Promise<SignalType> => {
+    try {
+      const response = await api.post('/signal-types', data);
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в createSignalType:', error);
+      throw error;
+    }
+  },
+  updateSignalType: async (id: number, data: Partial<SignalType>): Promise<SignalType> => {
+    try {
+      const response = await api.put(`/signal-types/${id}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в updateSignalType:', error);
+      throw error;
+    }
+  },
+  deleteSignalType: async (id: number): Promise<void> => {
+    try {
+      await api.delete(`/signal-types/${id}`);
+    } catch (error) {
+      console.error('API: ошибка в deleteSignalType:', error);
       throw error;
     }
   }

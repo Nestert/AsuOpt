@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { initializeDatabase } from '../config/database';
 import { sequelize } from '../config/database';
@@ -10,34 +10,35 @@ async function runMigration() {
     // Инициализируем подключение к базе данных
     await initializeDatabase();
     
-    // Читаем SQL файл миграции
-    const migrationPath = join(__dirname, '../migrations/001_add_projects.sql');
-    const migrationSQL = readFileSync(migrationPath, 'utf8');
-    
-    // Разбиваем на отдельные команды (по точке с запятой)
-    const commands = migrationSQL
-      .split(';')
-      .map(cmd => cmd.trim())
-      .filter(cmd => cmd.length > 0 && !cmd.startsWith('--'));
-    
-    console.log(`📝 Найдено ${commands.length} команд для выполнения`);
-    
-    // Выполняем каждую команду
-    for (let i = 0; i < commands.length; i++) {
-      const command = commands[i];
-      console.log(`⏳ Выполняем команду ${i + 1}/${commands.length}...`);
-      
-      try {
-        await sequelize.query(command);
-        console.log(`✅ Команда ${i + 1} выполнена успешно`);
-      } catch (error) {
-        // Игнорируем ошибки о том, что столбец уже существует
-        if (error.message.includes('duplicate column name') || 
-            error.message.includes('already exists')) {
-          console.log(`⚠️  Команда ${i + 1} пропущена (уже существует)`);
-        } else {
-          console.error(`❌ Ошибка в команде ${i + 1}:`, error.message);
-          throw error;
+    const migrationsDir = join(__dirname, '../migrations');
+    const files = readdirSync(migrationsDir)
+      .filter(f => f.endsWith('.sql'))
+      .sort();
+
+    for (const file of files) {
+      console.log(`\n▶️  Выполнение миграции ${file}`);
+      const migrationSQL = readFileSync(join(migrationsDir, file), 'utf8');
+      const commands = migrationSQL
+        .split(';')
+        .map(cmd => cmd.trim())
+        .filter(cmd => cmd.length > 0 && !cmd.startsWith('--'));
+
+      console.log(`📝 Найдено ${commands.length} команд`);
+
+      for (let i = 0; i < commands.length; i++) {
+        const command = commands[i];
+        console.log(`⏳ Выполняем команду ${i + 1}/${commands.length}`);
+        try {
+          await sequelize.query(command);
+          console.log(`✅ Команда ${i + 1} выполнена`);
+        } catch (error: any) {
+          if (error.message.includes('duplicate column name') ||
+              error.message.includes('already exists')) {
+            console.log(`⚠️  Команда ${i + 1} пропущена`);
+          } else {
+            console.error(`❌ Ошибка в команде ${i + 1}:`, error.message);
+            throw error;
+          }
         }
       }
     }
