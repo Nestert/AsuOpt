@@ -240,9 +240,13 @@ export const importService = {
   },
   
   // Назначение сигналов устройствам определенного типа
-  assignSignalsToDevicesByType: async (deviceType: string): Promise<{ success: boolean; message: string; count?: number }> => {
+  assignSignalsToDevicesByType: async (
+    deviceType: string,
+    projectId?: number
+  ): Promise<{ success: boolean; message: string; count?: number }> => {
     try {
-      const response = await api.post(`/import/assign-signals/${deviceType}`);
+      const query = projectId ? `?projectId=${projectId}` : '';
+      const response = await api.post(`/import/assign-signals/${deviceType}${query}`);
       return response.data;
     } catch (error) {
       console.error(`API: ошибка в assignSignalsToDevicesByType(${deviceType}):`, error);
@@ -251,9 +255,12 @@ export const importService = {
   },
   
   // Назначение сигналов всем типам устройств
-  assignSignalsToAllDeviceTypes: async (): Promise<{ success: boolean; message: string; count?: number }> => {
+  assignSignalsToAllDeviceTypes: async (
+    projectId?: number
+  ): Promise<{ success: boolean; message: string; count?: number }> => {
     try {
-      const response = await api.post('/import/assign-signals-all');
+      const query = projectId ? `?projectId=${projectId}` : '';
+      const response = await api.post(`/import/assign-signals-all${query}`);
       return response.data;
     } catch (error) {
       console.error('API: ошибка в assignSignalsToAllDeviceTypes:', error);
