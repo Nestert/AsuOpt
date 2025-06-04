@@ -45,7 +45,7 @@ export class ImportService {
           
           // Создаем или находим запись в справочнике устройств
           const [deviceRef, created] = await DeviceReference.findOrCreate({
-            where: { posDesignation },
+            where: { posDesignation, projectId },
             defaults: {
               deviceType,
               description: row['Описание'] || '',
@@ -137,7 +137,7 @@ export class ImportService {
           
           // Создаем или находим запись в справочнике устройств
           const [deviceRef, created] = await DeviceReference.findOrCreate({
-            where: { posDesignation },
+            where: { posDesignation, projectId },
             defaults: {
               deviceType: row['Конструктивное исполнение'] || 'Запорная арматура',
               description: row['Описание (ТЕМП)'] || '',
