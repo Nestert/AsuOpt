@@ -298,7 +298,7 @@ export class ImportService {
    * Привязка сигналов к устройствам на основе их типа
    * @param deviceType Тип устройства
    */
-  static async assignSignalsToDevicesByType(deviceType: string): Promise<{ success: boolean; message: string; count?: number }> {
+  static async assignSignalsToDevicesByType(deviceType: string, projectId?: number): Promise<{ success: boolean; message: string; count?: number }> {
     try {
       // Получаем все сигналы для данной категории (типа устройства)
       const signals = await Signal.findAll({
@@ -314,8 +314,14 @@ export class ImportService {
       
       // Получаем все устройства данного типа
       const { DeviceReference } = require('../models/DeviceReference');
+      const whereClause: any = { deviceType };
+
+      if (projectId) {
+        whereClause.projectId = projectId;
+      }
+
       const devices = await DeviceReference.findAll({
-        where: { deviceType }
+        where: whereClause
       });
       
       if (devices.length === 0) {
@@ -454,7 +460,7 @@ export class ImportService {
   /**
    * Назначение сигналов всем типам устройств
    */
-  static async assignSignalsToAllDeviceTypes(): Promise<{ success: boolean; message: string; count?: number }> {
+  static async assignSignalsToAllDeviceTypes(projectId?: number): Promise<{ success: boolean; message: string; count?: number }> {
     try {
       console.log('Начато назначение сигналов всем типам устройств');
       
@@ -492,7 +498,7 @@ export class ImportService {
       for (const category of categories) {
         try {
           console.log(`Назначение сигналов для типа устройств: ${category}`);
-          const result = await ImportService.assignSignalsToDevicesByType(category);
+          const result = await ImportService.assignSignalsToDevicesByType(category, projectId);
           
           if (result.success) {
             totalAssignedCount += result.count || 0;
