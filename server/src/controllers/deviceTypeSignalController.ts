@@ -2,7 +2,9 @@ import { Request, Response } from 'express';
 import { DeviceTypeSignal } from '../models/DeviceTypeSignal';
 import { Device } from '../models/Device';
 import { DeviceReference } from '../models/DeviceReference';
-import { Op } from 'sequelize';
+import { DeviceSignal } from '../models/DeviceSignal';
+import { Signal } from '../models/Signal';
+import { Op, Sequelize } from 'sequelize';
 
 // Интерфейс для объекта сводки
 interface SignalSummary {
@@ -210,73 +212,68 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
       
       // Если обе таблицы существуют, выполняем запрос для получения данных о сигналах
       if (deviceSignalsExists && signalsExists) {
-        // Получаем информацию о сигналах из таблицы device_signals с помощью отдельных запросов
-        // для избежания ошибок с именами таблиц
         console.log('Выполняем запрос для получения количества сигналов...');
         
-        // Используем упрощенный запрос для снижения вероятности ошибок
-        let signalCountsQuery = `
-          SELECT dr.deviceType as deviceType, s.type as signalType, SUM(ds.count) as total
-          FROM device_signals ds
-          JOIN device_references dr ON ds.deviceId = dr.id
-          JOIN signals s ON ds.signalId = s.id
-          WHERE dr.deviceType IS NOT NULL AND dr.deviceType != ''
-        `;
-        
-        // Добавляем фильтрацию по проекту, если указан
-        if (projectId) {
-          const pid = parseInt(projectId as string, 10);
-          signalCountsQuery += ` AND dr.project_id = ${pid}`;
-          signalCountsQuery += ` AND s.project_id = ${pid}`;
-        }
-        
-        signalCountsQuery += ` GROUP BY dr.deviceType, s.type`;
-        
         try {
-          const signalResults: any[] = await Device.sequelize!.query(signalCountsQuery, {
-            type: 'SELECT'
-          });
-          
-          console.log('Получены результаты запроса:', signalResults);
-          
-          // Проверяем, что получены корректные результаты
-          if (Array.isArray(signalResults) && signalResults.length > 0) {
-            // Заполняем объект signalCountsByType данными из запроса
-            signalResults.forEach(result => {
-              // Проверяем наличие необходимых полей в результате
-              if (result && result.deviceType && result.signalType && result.total !== undefined) {
-                const deviceType = result.deviceType;
-                const signalType = result.signalType;
-                const total = parseInt(result.total) || 0;
-                
-                if (!signalCountsByType[deviceType]) {
-                  signalCountsByType[deviceType] = {ai: 0, ao: 0, di: 0, do: 0};
-                }
-                
-                switch(signalType) {
-                  case 'AI':
-                    signalCountsByType[deviceType].ai += total;
-                    break;
-                  case 'AO':
-                    signalCountsByType[deviceType].ao += total;
-                    break;
-                  case 'DI':
-                    signalCountsByType[deviceType].di += total;
-                    break;
-                  case 'DO':
-                    signalCountsByType[deviceType].do += total;
-                    break;
-                }
-              } else {
-                console.warn('Найдена запись с неверным форматом:', result);
-              }
-            });
-          } else {
-            console.log('Запрос выполнен успешно, но результаты отсутствуют или имеют неверный формат');
+          const whereClause: any = {};
+
+          if (projectId) {
+            whereClause['$deviceReference.projectId$'] = parseInt(projectId as string, 10);
           }
+
+          const signalResults = await DeviceSignal.findAll({
+            attributes: [
+              [Sequelize.col('deviceReference.deviceType'), 'deviceType'],
+              [Sequelize.col('signal.type'), 'signalType'],
+              [Sequelize.fn('SUM', Sequelize.col('DeviceSignal.count')), 'total']
+            ],
+            include: [
+              {
+                model: DeviceReference,
+                as: 'deviceReference',
+                attributes: [],
+              },
+              {
+                model: Signal,
+                as: 'signal',
+                attributes: [],
+              }
+            ],
+            where: whereClause,
+            group: ['deviceReference.deviceType', 'signal.type']
+          });
+
+          const rows = signalResults.map(result => result.get({ plain: true })) as any[];
+
+          console.log('Получены результаты запроса:', rows);
+
+          rows.forEach(result => {
+            const deviceType = result.deviceType;
+            const signalType = result.signalType;
+            const total = parseInt(result.total) || 0;
+
+            if (!signalCountsByType[deviceType]) {
+              signalCountsByType[deviceType] = { ai: 0, ao: 0, di: 0, do: 0 };
+            }
+
+            switch (signalType) {
+              case 'AI':
+                signalCountsByType[deviceType].ai += total;
+                break;
+              case 'AO':
+                signalCountsByType[deviceType].ao += total;
+                break;
+              case 'DI':
+                signalCountsByType[deviceType].di += total;
+                break;
+              case 'DO':
+                signalCountsByType[deviceType].do += total;
+                break;
+            }
+          });
         } catch (sqlError) {
-          console.error('Ошибка при выполнении SQL-запроса:', sqlError);
-          // Если возникла ошибка в SQL-запросе, продолжаем работу без данных о сигналах
+          console.error('Ошибка при выполнении запроса:', sqlError);
+          // Если возникла ошибка, продолжаем работу без данных о сигналах
         }
       } else {
         console.log('Таблицы device_signals или signals не существуют, используем данные из DeviceTypeSignal');
