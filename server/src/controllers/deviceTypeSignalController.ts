@@ -213,7 +213,7 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
       // Если обе таблицы существуют, выполняем запрос для получения данных о сигналах
       if (deviceSignalsExists && signalsExists) {
         console.log('Выполняем запрос для получения количества сигналов...');
-
+        
         try {
           const whereClause: any = {};
 
