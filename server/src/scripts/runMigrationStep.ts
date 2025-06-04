@@ -93,7 +93,9 @@ async function runMigrationStep() {
       'CREATE INDEX IF NOT EXISTS idx_kips_project_id ON kips(project_id)',
       'CREATE INDEX IF NOT EXISTS idx_zras_project_id ON zras(project_id)',
       'CREATE INDEX IF NOT EXISTS idx_signals_project_id ON signals(project_id)',
-      'CREATE INDEX IF NOT EXISTS idx_device_type_signals_project_id ON device_type_signals(project_id)'
+      'CREATE INDEX IF NOT EXISTS idx_device_type_signals_project_id ON device_type_signals(project_id)',
+      'DROP INDEX IF EXISTS sqlite_autoindex_device_references_1',
+      'CREATE UNIQUE INDEX IF NOT EXISTS idx_device_references_proj_pos ON device_references(project_id, posDesignation)'
     ];
     
     for (const indexSQL of indexes) {

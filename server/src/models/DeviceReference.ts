@@ -37,7 +37,6 @@ export class DeviceReference extends Model<DeviceReferenceAttributes> implements
         posDesignation: {
           type: DataTypes.STRING,
           allowNull: false,
-          unique: true, // Уникальное позиционное обозначение
         },
         deviceType: {
           type: DataTypes.STRING,
@@ -77,7 +76,7 @@ export class DeviceReference extends Model<DeviceReferenceAttributes> implements
         indexes: [
           {
             unique: true,
-            fields: ['posDesignation'],
+            fields: ['project_id', 'posDesignation'],
           },
         ],
       }
