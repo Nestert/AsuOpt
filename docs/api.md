@@ -15,5 +15,7 @@
 | `GET` | `/api/device-type-signals` | Сигналы по типам устройств |
 | `PUT` | `/api/device-type-signals` | Создать или обновить запись |
 | `DELETE` | `/api/device-type-signals/:deviceType` | Удалить запись |
+| `POST` | `/api/import/assign-signals/:deviceType?projectId=ID` | Назначить сигналы устройствам указанного типа в проекте |
+| `POST` | `/api/import/assign-signals-all?projectId=ID` | Назначить сигналы всем типам устройств в проекте |
 
 Также доступны маршруты для импорта данных (`/api/import`), экспорта (`/api/exports`) и управления проектами (`/api/projects`).
