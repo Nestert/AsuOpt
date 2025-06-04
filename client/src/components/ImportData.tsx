@@ -4,6 +4,7 @@ import { UploadOutlined, InboxOutlined } from '@ant-design/icons';
 import { importService } from '../services/api';
 import type { UploadFile } from 'antd/es/upload/interface';
 import type { RcFile } from 'antd/es/upload';
+import { useProject } from '../contexts/ProjectContext';
 
 const { Dragger } = Upload;
 const { Title, Text } = Typography;
@@ -19,6 +20,8 @@ const ImportData: React.FC<ImportDataProps> = ({ onImportSuccess, onImportError 
   const [uploading, setUploading] = useState(false);
   const [importType, setImportType] = useState<'kip' | 'zra'>('kip');
   const [importProgress, setImportProgress] = useState(0);
+
+  const { currentProjectId } = useProject();
   
   // Получаем message из App
   const { message } = App.useApp();
@@ -71,9 +74,9 @@ const ImportData: React.FC<ImportDataProps> = ({ onImportSuccess, onImportError 
     try {
       let response;
       if (importType === 'kip') {
-        response = await importService.importKipFromCsv(file);
+        response = await importService.importKipFromCsv(file, currentProjectId || undefined);
       } else {
-        response = await importService.importZraFromCsv(file);
+        response = await importService.importZraFromCsv(file, currentProjectId || undefined);
       }
 
       // Завершаем прогресс
