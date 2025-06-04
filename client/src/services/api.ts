@@ -186,12 +186,16 @@ export const zraService = {
 // Сервис для работы с импортом данных
 export const importService = {
   // Импорт данных КИП из CSV файла
-  importKipFromCsv: async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
+  importKipFromCsv: async (
+    file: File,
+    projectId?: number
+  ): Promise<{ success: boolean; message: string; count?: number }> => {
     const formData = new FormData();
     formData.append('file', file);
     
     try {
-      const response = await api.post('/import/kip', formData, {
+      const query = projectId ? `?projectId=${projectId}` : '';
+      const response = await api.post(`/import/kip${query}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -204,12 +208,16 @@ export const importService = {
   },
   
   // Импорт данных ЗРА из CSV файла
-  importZraFromCsv: async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
+  importZraFromCsv: async (
+    file: File,
+    projectId?: number
+  ): Promise<{ success: boolean; message: string; count?: number }> => {
     const formData = new FormData();
     formData.append('file', file);
     
     try {
-      const response = await api.post('/import/zra', formData, {
+      const query = projectId ? `?projectId=${projectId}` : '';
+      const response = await api.post(`/import/zra${query}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

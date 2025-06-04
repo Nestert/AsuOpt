@@ -12,10 +12,13 @@ export class ImportController {
         res.status(400).json({ success: false, message: 'Файл не найден' });
         return;
       }
-      
+
+      const { projectId } = req.query;
+      const pid = projectId ? parseInt(projectId as string, 10) : 1;
+
       const filePath = req.file.path;
-      const result = await ImportService.importKipFromCsv(filePath);
-      
+      const result = await ImportService.importKipFromCsv(filePath, pid);
+
       res.json(result);
     } catch (error) {
       console.error('Ошибка в контроллере импорта КИП:', error);
@@ -35,10 +38,13 @@ export class ImportController {
         res.status(400).json({ success: false, message: 'Файл не найден' });
         return;
       }
-      
+
+      const { projectId } = req.query;
+      const pid = projectId ? parseInt(projectId as string, 10) : 1;
+
       const filePath = req.file.path;
-      const result = await ImportService.importZraFromCsv(filePath);
-      
+      const result = await ImportService.importZraFromCsv(filePath, pid);
+
       res.json(result);
     } catch (error) {
       console.error('Ошибка в контроллере импорта ЗРА:', error);

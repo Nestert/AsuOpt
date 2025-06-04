@@ -13,7 +13,10 @@ export class ImportService {
    * Импорт данных КИП из CSV файла
    * @param filePath Путь к CSV файлу
    */
-  static async importKipFromCsv(filePath: string): Promise<{ success: boolean; message: string; count?: number }> {
+  static async importKipFromCsv(
+    filePath: string,
+    projectId: number = 1
+  ): Promise<{ success: boolean; message: string; count?: number }> {
     try {
       const results: any[] = [];
       
@@ -46,8 +49,13 @@ export class ImportService {
             defaults: {
               deviceType,
               description: row['Описание'] || '',
+              projectId
             }
           });
+
+          if (!created && deviceRef.projectId !== projectId) {
+            await deviceRef.update({ projectId });
+          }
           
           // Создаем запись КИП, связанную с устройством
           await Kip.create({
@@ -97,7 +105,10 @@ export class ImportService {
    * Импорт данных ЗРА из CSV файла
    * @param filePath Путь к CSV файлу
    */
-  static async importZraFromCsv(filePath: string): Promise<{ success: boolean; message: string; count?: number }> {
+  static async importZraFromCsv(
+    filePath: string,
+    projectId: number = 1
+  ): Promise<{ success: boolean; message: string; count?: number }> {
     try {
       const results: any[] = [];
       
@@ -130,8 +141,13 @@ export class ImportService {
             defaults: {
               deviceType: row['Конструктивное исполнение'] || 'Запорная арматура',
               description: row['Описание (ТЕМП)'] || '',
+              projectId
             }
           });
+
+          if (!created && deviceRef.projectId !== projectId) {
+            await deviceRef.update({ projectId });
+          }
           
           // Создаем запись ЗРА, связанную с устройством
           await Zra.create({
