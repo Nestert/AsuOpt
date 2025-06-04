@@ -1,5 +1,6 @@
 import { Sequelize } from 'sequelize';
 import path from 'path';
+import fs from 'fs';
 import { Device } from '../models/Device';
 import { DeviceReference } from '../models/DeviceReference';
 import { Kip } from '../models/Kip';
@@ -17,6 +18,51 @@ const sequelize = new Sequelize({
   storage: dbPath,
   logging: false,
 });
+
+// Проверка наличия project_id и запуск миграции при необходимости
+const ensureProjectMigration = async () => {
+  const [columns] = await sequelize.query("PRAGMA table_info('device_references')");
+  const hasProjectId = Array.isArray(columns) && (columns as any[]).some(col => col.name === 'project_id');
+
+  if (!hasProjectId) {
+    console.log('project_id column not found, running migration...');
+
+    const candidates = [
+      path.join(__dirname, '../migrations/001_add_projects.sql'),
+      path.join(__dirname, '../../src/migrations/001_add_projects.sql'),
+      path.join(__dirname, '../../migrations/001_add_projects.sql')
+    ];
+
+    let migrationSQL = '';
+    for (const p of candidates) {
+      if (fs.existsSync(p)) {
+        migrationSQL = fs.readFileSync(p, 'utf8');
+        break;
+      }
+    }
+
+    if (migrationSQL) {
+      const commands = migrationSQL
+        .split(';')
+        .map(cmd => cmd.trim())
+        .filter(cmd => cmd.length > 0 && !cmd.startsWith('--'));
+
+      for (const command of commands) {
+        try {
+          await sequelize.query(command);
+        } catch (err: any) {
+          if (!err.message.includes('duplicate column name') && !err.message.includes('already exists')) {
+            console.error('Migration error:', err);
+          }
+        }
+      }
+
+      console.log('Migration finished');
+    } else {
+      console.error('Migration file not found, unable to run migration');
+    }
+  }
+};
 
 // Примечание: для PostgreSQL (для сетевой версии)
 // const sequelize = new Sequelize({
@@ -54,8 +100,10 @@ const initializeDatabase = async () => {
     // Синхронизируем модели с базой данных
     // SQLite не поддерживает полноценно alter: true, используем force: false
     await sequelize.sync({ force: false });
-    
+
     console.log('База данных успешно инициализирована');
+
+    await ensureProjectMigration();
   } catch (error) {
     console.error('Ошибка при инициализации базы данных:', error);
     throw error;
