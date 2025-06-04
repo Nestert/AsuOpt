@@ -225,7 +225,7 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
         
         // Добавляем фильтрацию по проекту, если указан
         if (projectId) {
-          signalCountsQuery += ` AND dr.project_id = ${parseInt(projectId as string, 10)}`;
+          signalCountsQuery += ` AND dr.project_id = ${parseInt(projectId as string, 10)}`
         }
         
         signalCountsQuery += ` GROUP BY dr.deviceType, s.type`;
