@@ -8,7 +8,6 @@ interface DeviceTypeSignalAttributes {
   aoCount: number;
   diCount: number;
   doCount: number;
-  projectId?: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -20,7 +19,6 @@ export class DeviceTypeSignal extends Model<DeviceTypeSignalAttributes> implemen
   public aoCount!: number;
   public diCount!: number;
   public doCount!: number;
-  public projectId!: number;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -62,12 +60,6 @@ export class DeviceTypeSignal extends Model<DeviceTypeSignalAttributes> implemen
           allowNull: false,
           defaultValue: 0,
           field: 'do_count'
-        },
-        projectId: {
-          type: DataTypes.INTEGER,
-          allowNull: false,
-          defaultValue: 1,
-          field: 'project_id'
         }
       },
       {
