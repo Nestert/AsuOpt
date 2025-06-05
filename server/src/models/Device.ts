@@ -10,6 +10,7 @@ interface DeviceAttributes {
   deviceType: string;
   description: string;
   parentId?: number | null;
+  projectId: number;
 }
 
 export class Device extends Model<DeviceAttributes> implements DeviceAttributes {
@@ -22,6 +23,7 @@ export class Device extends Model<DeviceAttributes> implements DeviceAttributes 
   public deviceType!: string;
   public description!: string;
   public parentId!: number | null;
+  public projectId!: number;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -70,6 +72,12 @@ export class Device extends Model<DeviceAttributes> implements DeviceAttributes 
             key: 'id',
           },
         },
+        projectId: {
+          type: DataTypes.INTEGER,
+          allowNull: false,
+          defaultValue: 1,
+          field: 'project_id',
+        },
       },
       {
         sequelize,
@@ -88,7 +96,13 @@ export class Device extends Model<DeviceAttributes> implements DeviceAttributes 
       foreignKey: 'parentId',
       as: 'parent',
     });
-    
+
+    const { Project } = require('./Project');
+    Device.belongsTo(Project, {
+      foreignKey: 'projectId',
+      as: 'project',
+    });
+
     // Связь с DeviceSignal будет добавлена после инициализации DeviceSignal
   }
-} 
+}

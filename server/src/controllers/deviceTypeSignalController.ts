@@ -165,8 +165,7 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
           aiCount: 0,
           aoCount: 0,
           diCount: 0,
-          doCount: 0,
-          projectId: parseInt(projectId as string, 10)
+          doCount: 0
         })
       );
     } else {
