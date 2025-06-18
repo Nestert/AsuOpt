@@ -306,14 +306,25 @@ export const exportService = {
 
 // Сервис для работы с сигналами
 export const signalService = {
-  // Получить все сигналы
-  getAllSignals: async (projectId?: number): Promise<Signal[]> => {
+  // Получить все сигналы (для справочника типов сигналов)
+  getAllSignals: async (): Promise<Signal[]> => {
     try {
-      const params = projectId ? { projectId } : {};
-      const response = await api.get('/signals', { params });
+      const response = await api.get('/signals');
       return response.data;
     } catch (error) {
       console.error('API: ошибка в getAllSignals:', error);
+      throw error;
+    }
+  },
+  
+  // Получить сигналы по проекту (только назначенные устройствам)
+  getSignalsByProject: async (projectId: number): Promise<Signal[]> => {
+    try {
+      const params = { projectId, filterByProject: 'true' };
+      const response = await api.get('/signals', { params });
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в getSignalsByProject:', error);
       throw error;
     }
   },

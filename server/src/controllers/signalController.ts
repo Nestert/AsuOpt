@@ -8,11 +8,13 @@ import { Op, Sequelize } from 'sequelize';
 // Получение всех сигналов
 export const getAllSignals = async (req: Request, res: Response) => {
   try {
-    const { projectId } = req.query;
-    console.log(`getAllSignals: получаем сигналы для проекта ${projectId || 'все'}`);
+    const { projectId, filterByProject } = req.query;
+    console.log(`getAllSignals: получаем сигналы для проекта ${projectId || 'все'}, фильтр по проекту: ${filterByProject}`);
     
-    if (projectId) {
-      // Если указан проект, получаем только сигналы, связанные с устройствами этого проекта
+    // Если явно указан параметр filterByProject=true, фильтруем по проекту
+    // Иначе возвращаем все сигналы (для справочника типов сигналов)
+    if (projectId && filterByProject === 'true') {
+      // Получаем только сигналы, связанные с устройствами этого проекта
       const signals = await Signal.findAll({
         include: [
           {
@@ -40,11 +42,11 @@ export const getAllSignals = async (req: Request, res: Response) => {
       console.log(`getAllSignals: найдено ${uniqueSignals.length} уникальных сигналов для проекта ${projectId}`);
       return res.status(200).json(uniqueSignals);
     } else {
-      // Если проект не указан, возвращаем все сигналы
+      // Возвращаем все сигналы (для справочника типов сигналов)
       const signals = await Signal.findAll({
         order: [['type', 'ASC'], ['name', 'ASC']]
       });
-      console.log(`getAllSignals: найдено ${signals.length} сигналов (все проекты)`);
+      console.log(`getAllSignals: найдено ${signals.length} сигналов (все сигналы)`);
       return res.status(200).json(signals);
     }
   } catch (error) {

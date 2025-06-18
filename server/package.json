@@ -11,6 +11,7 @@
     "migrate-signals": "ts-node src/scripts/migrateSignalTable.ts",
     "migrate-projects": "ts-node src/scripts/runMigration.ts",
     "migrate-projects-step": "ts-node src/scripts/runMigrationStep.ts",
+    "fix-database": "ts-node src/scripts/fixDatabase.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

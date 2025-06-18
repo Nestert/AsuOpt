@@ -34,7 +34,7 @@ ALTER TABLE zras ADD COLUMN project_id INTEGER DEFAULT 1 REFERENCES projects(id)
 ALTER TABLE signals ADD COLUMN project_id INTEGER DEFAULT 1 REFERENCES projects(id);
 
 -- DeviceTypeSignals
-ALTER TABLE device_type_signals ADD COLUMN project_id INTEGER DEFAULT 1 REFERENCES projects(id)
+ALTER TABLE device_type_signals ADD COLUMN project_id INTEGER DEFAULT 1 REFERENCES projects(id);
 
 -- 5. Создание индексов для производительности
 CREATE INDEX IF NOT EXISTS idx_device_references_project_id ON device_references(project_id);

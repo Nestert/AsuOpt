@@ -8,6 +8,7 @@ export interface DeviceReference {
   systemCode?: string;
   plcType?: string;
   exVersion?: string;
+  projectId?: number;
   createdAt?: string;
   updatedAt?: string;
 }

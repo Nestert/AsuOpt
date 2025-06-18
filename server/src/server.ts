@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
 import { initializeDatabase } from './config/database';
+import { initializeModels } from './config/initializeModels';
 import deviceRoutes from './routes/deviceRoutes';
 import exportRoutes from './routes/exportRoutes';
 import importRoutes from './routes/importRoutes';
@@ -37,15 +38,19 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
   next();
 });
 
-// Инициализация базы данных
-initializeDatabase()
-  .then(() => {
-    console.log('База данных инициализирована успешно');
-  })
-  .catch((error) => {
-    console.error('Ошибка при инициализации базы данных:', error);
+// Инициализация базы данных и моделей
+const initialize = async () => {
+  try {
+    await initializeDatabase();
+    await initializeModels();
+    console.log('🎉 Система полностью инициализирована');
+  } catch (error) {
+    console.error('❌ Критическая ошибка при инициализации:', error);
     process.exit(1);
-  });
+  }
+};
+
+initialize();
 
 // Маршруты
 

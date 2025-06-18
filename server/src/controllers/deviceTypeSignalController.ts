@@ -243,35 +243,32 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
         console.log('Выполняем запрос для получения количества сигналов...');
         
         try {
-          const whereClause: any = {};
+          // Используем прямой SQL запрос, так как связи через DeviceSignal -> DeviceReference сложны
+          let sqlQuery = `
+            SELECT 
+              dr.deviceType AS deviceType,
+              s.type AS signalType,
+              SUM(ds.count) AS total
+            FROM device_signals ds
+            INNER JOIN device_references dr ON ds.deviceId = dr.id
+            INNER JOIN signals s ON ds.signalId = s.id
+          `;
 
+          const queryParams: any[] = [];
+          
           if (projectId) {
-            whereClause['$deviceReference.project_id$'] = parseInt(projectId as string, 10);
+            sqlQuery += ` WHERE dr.project_id = ?`;
+            queryParams.push(parseInt(projectId as string, 10));
           }
+          
+          sqlQuery += ` GROUP BY dr.deviceType, s.type`;
 
-          const signalResults = await DeviceSignal.findAll({
-            attributes: [
-              [Sequelize.col('deviceReference.deviceType'), 'deviceType'],
-              [Sequelize.col('signal.type'), 'signalType'],
-              [Sequelize.fn('SUM', Sequelize.col('DeviceSignal.count')), 'total']
-            ],
-            include: [
-              {
-                model: DeviceReference,
-                as: 'deviceReference',
-                attributes: [],
-              },
-              {
-                model: Signal,
-                as: 'signal',
-                attributes: [],
-              }
-            ],
-            where: whereClause,
-            group: ['deviceReference.deviceType', 'signal.type']
-          });
+          const signalResults = await Device.sequelize!.query(sqlQuery, {
+            replacements: queryParams,
+            type: 'SELECT'
+          }) as any[];
 
-          const rows = signalResults.map(result => result.get({ plain: true })) as any[];
+          const rows = signalResults as any[];
 
           console.log('Получены результаты запроса:', rows);
 

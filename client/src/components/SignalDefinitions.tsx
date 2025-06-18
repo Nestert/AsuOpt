@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, Popconfirm, Card, Row, Col, Statistic, Upload } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, Popconfirm, Upload } from 'antd';
 import { signalService, importService } from '../services/api';
-import { Signal, SignalSummary } from '../interfaces/Signal';
+import { Signal } from '../interfaces/Signal';
 import { PlusOutlined, ExclamationCircleOutlined, EditOutlined, DeleteOutlined, UploadOutlined, LinkOutlined } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { RcFile } from 'antd/es/upload';
@@ -16,7 +16,6 @@ interface SignalDefinitionsProps {
 
 const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
   const [signals, setSignals] = useState<Signal[]>([]);
-  const [summary, setSummary] = useState<SignalSummary[]>([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [form] = Form.useForm();
@@ -31,15 +30,14 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
   // Загрузка данных при монтировании компонента и при смене проекта
   useEffect(() => {
     fetchSignals();
-    fetchSummary();
     fetchDeviceTypes();
   }, [projectId]);
 
-  // Получение всех сигналов
+  // Получение всех сигналов (для справочника типов сигналов)
   const fetchSignals = async () => {
     try {
       setLoading(true);
-      const data = await signalService.getAllSignals(projectId || undefined);
+      const data = await signalService.getAllSignals();
       setSignals(data);
       setLoading(false);
     } catch (error) {
@@ -48,21 +46,10 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
     }
   };
 
-  // Получение сводки по сигналам
-  const fetchSummary = async () => {
-    try {
-      const data = await signalService.getSignalsSummary(projectId || undefined);
-      setSummary(data);
-    } catch (error) {
-      message.error('Не удалось загрузить сводку по сигналам');
-    }
-  };
-
   // Получение уникальных типов устройств из сигналов
   const fetchDeviceTypes = async () => {
     try {
-      // Здесь нужно реализовать API для получения типов устройств
-      // Временно будем извлекать типы из категорий сигналов
+      // Получаем все сигналы и извлекаем уникальные категории
       const signals = await signalService.getAllSignals();
       const uniqueCategories = signals
         .map(signal => signal.category)
@@ -114,7 +101,6 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
       
       setIsModalVisible(false);
       fetchSignals();
-      fetchSummary();
     } catch (error) {
       message.error('Произошла ошибка при сохранении сигнала');
     }
@@ -126,7 +112,6 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
       await signalService.deleteSignal(id);
       message.success('Сигнал успешно удален');
       fetchSignals();
-      fetchSummary();
     } catch (error) {
       message.error('Не удалось удалить сигнал');
     }
@@ -172,7 +157,6 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
         message.success(result.message);
         setIsImportModalVisible(false);
         fetchSignals();
-        fetchSummary();
         fetchDeviceTypes();
       } else {
         message.error(result.message);
@@ -203,7 +187,6 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
       if (result.success) {
         message.success(result.message);
         fetchSignals();
-        fetchSummary();
       } else {
         message.error(result.message);
       }
@@ -302,26 +285,6 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
   return (
     <div className="signal-definitions">
       <Title level={2}>Справочник типов сигналов</Title>
-      
-      {/* Сводная статистика */}
-      <Card title="Сводная статистика по типам сигналов" style={{ marginBottom: 20 }}>
-        <Row gutter={16}>
-          {summary.map(item => (
-            <Col span={6} key={item.type}>
-              <Statistic
-                title={`Всего ${item.type}`}
-                value={item.totalCount}
-                valueStyle={{ color: 
-                  item.type === 'AI' ? '#1890ff' : 
-                  item.type === 'AO' ? '#52c41a' : 
-                  item.type === 'DI' ? '#faad14' : 
-                  '#f5222d' 
-                }}
-              />
-            </Col>
-          ))}
-        </Row>
-      </Card>
       
       {/* Кнопки действий */}
       <div style={{ marginBottom: 16, display: 'flex', gap: '8px' }}>
