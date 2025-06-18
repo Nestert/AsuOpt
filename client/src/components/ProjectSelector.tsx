@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Select, Button, Space, App } from 'antd';
 import { SettingOutlined, FolderOutlined } from '@ant-design/icons';
 import { Project } from '../interfaces/Project';
@@ -19,27 +19,21 @@ const ProjectSelector: React.FC<ProjectSelectorProps> = ({
   const [loading, setLoading] = useState(false);
   const { message } = App.useApp();
 
-  useEffect(() => {
-    loadProjects();
-  }, []);
-
-  const loadProjects = async () => {
-    setLoading(true);
+  const loadProjects = useCallback(async () => {
     try {
+      setLoading(true);
       const projectList = await projectService.getAllProjects();
-      setProjects(projectList.filter(p => p.status === 'active'));
-      
-      // Если нет выбранного проекта, выбираем первый активный
-      if (!currentProjectId && projectList.length > 0) {
-        const defaultProject = projectList.find(p => p.code === 'DEFAULT') || projectList[0];
-        onProjectChange(defaultProject.id);
-      }
+      setProjects(projectList);
     } catch (error) {
       message.error('Не удалось загрузить список проектов');
     } finally {
       setLoading(false);
     }
-  };
+  }, [message]);
+
+  useEffect(() => {
+    loadProjects();
+  }, [loadProjects]);
 
   const handleProjectChange = (value: number) => {
     onProjectChange(value);

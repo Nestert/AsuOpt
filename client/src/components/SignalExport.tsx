@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Card, Button, Checkbox, Typography, Form, Space, Spin, Divider, Alert, App } from 'antd';
-import { DownloadOutlined, FileExcelOutlined } from '@ant-design/icons';
+import { Card, Button, Checkbox, Typography, Form, Spin, Divider, Alert, App } from 'antd';
+import { FileExcelOutlined } from '@ant-design/icons';
 import { exportService } from '../services/api';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 
 interface SignalExportProps {
   projectId?: number | null;

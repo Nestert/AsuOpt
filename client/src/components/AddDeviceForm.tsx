@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
-import { Modal, Form, Input, Button, Select, Space, Typography, Divider, App } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, Button, Select, Divider, App } from 'antd';
 import { deviceService } from '../services/api';
-import { DeviceReference, Kip, Zra } from '../interfaces/DeviceReference';
+import { Kip, Zra } from '../interfaces/DeviceReference';
 
 const { Option } = Select;
-const { Title, Text } = Typography;
 
 interface AddDeviceFormProps {
   visible: boolean;

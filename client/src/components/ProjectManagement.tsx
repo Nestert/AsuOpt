@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Modal,
   Table,
@@ -7,10 +7,9 @@ import {
   Form,
   Input,
   App,
-  Popconfirm,
   Tag,
   Tooltip,
-  Typography,
+  Typography
 } from 'antd';
 import {
   PlusOutlined,
@@ -50,23 +49,23 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({
   const [copyForm] = Form.useForm();
   const { message, modal } = App.useApp();
 
+  const loadProjects = useCallback(async () => {
+    try {
+      setLoading(true);
+      const projectList = await projectService.getAllProjects();
+      setProjects(projectList);
+    } catch (error) {
+      message.error('Не удалось загрузить список проектов');
+    } finally {
+      setLoading(false);
+    }
+  }, [message]);
+
   useEffect(() => {
     if (visible) {
       loadProjects();
     }
-  }, [visible]);
-
-  const loadProjects = async () => {
-    setLoading(true);
-    try {
-      const projectList = await projectService.getAllProjects();
-      setProjects(projectList);
-    } catch (error) {
-      message.error('Не удалось загрузить проекты');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [visible, loadProjects]);
 
   const handleCreateProject = async (values: CreateProjectRequest) => {
     try {

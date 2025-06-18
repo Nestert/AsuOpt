@@ -24,13 +24,10 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [deviceTypes, setDeviceTypes] = useState<string[]>([]);
-  const [selectedDeviceType, setSelectedDeviceType] = useState<string>('');
 
   // Загрузка данных при монтировании компонента и при смене проекта
   useEffect(() => {
     fetchSignals();
-    fetchDeviceTypes();
   }, [projectId]);
 
   // Получение всех сигналов (для справочника типов сигналов)
@@ -43,21 +40,6 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
     } catch (error) {
       message.error('Не удалось загрузить сигналы');
       setLoading(false);
-    }
-  };
-
-  // Получение уникальных типов устройств из сигналов
-  const fetchDeviceTypes = async () => {
-    try {
-      // Получаем все сигналы и извлекаем уникальные категории
-      const signals = await signalService.getAllSignals();
-      const uniqueCategories = signals
-        .map(signal => signal.category)
-        .filter((category): category is string => !!category)
-        .filter((value, index, self) => self.indexOf(value) === index);
-      setDeviceTypes(uniqueCategories);
-    } catch (error) {
-      message.error('Не удалось загрузить типы устройств');
     }
   };
 
@@ -157,7 +139,6 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
         message.success(result.message);
         setIsImportModalVisible(false);
         fetchSignals();
-        fetchDeviceTypes();
       } else {
         message.error(result.message);
       }

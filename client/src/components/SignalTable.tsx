@@ -51,7 +51,7 @@ const SignalTableContent: React.FC<SignalTableProps> = ({ projectId }) => {
     } finally {
       setInitializingTypes(false);
     }
-  }, [message]);
+  }, [message, projectId]);
 
   // Загрузка данных при монтировании компонента
   const fetchData = useCallback(async () => {

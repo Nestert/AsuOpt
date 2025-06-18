@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Tabs } from 'antd';
 import SignalTable from './SignalTable';
 import SignalDefinitions from './SignalDefinitions';
@@ -6,18 +6,12 @@ import SignalExport from './SignalExport';
 import { useProject } from '../contexts/ProjectContext';
 
 const SignalManagement: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('summary');
   const { currentProjectId } = useProject();
-
-  const handleTabChange = (key: string) => {
-    setActiveTab(key);
-  };
 
   return (
     <div className="signal-management">
       <Tabs 
-        defaultActiveKey="summary" 
-        onChange={handleTabChange}
+        defaultActiveKey="summary"
         items={[
           {
             key: 'summary',
