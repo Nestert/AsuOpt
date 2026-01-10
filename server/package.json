@@ -12,7 +12,11 @@
     "migrate-projects": "ts-node src/scripts/runMigration.ts",
     "migrate-projects-step": "ts-node src/scripts/runMigrationStep.ts",
     "fix-database": "ts-node src/scripts/fixDatabase.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix"
   },
   "keywords": [],
   "author": "",
@@ -34,10 +38,22 @@
     "multer": "^1.4.5-lts.2",
     "nodemon": "^3.1.9",
     "pdfkit": "^0.16.0",
+    "puppeteer": "^20.0.0",
     "sequelize": "^6.37.6",
     "sqlite3": "^5.1.7",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.2",
-    "puppeteer": "^20.0.0"
+    "typescript": "^5.8.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/supertest": "^6.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.52.0",
+    "@typescript-eslint/parser": "^8.52.0",
+    "eslint": "^9.39.2",
+    "jest": "^30.2.0",
+    "supertest": "^7.2.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "ts-jest": "^29.4.6"
   }
 }

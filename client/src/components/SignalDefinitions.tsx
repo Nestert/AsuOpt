@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, Popconfirm, Upload } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, Popconfirm, Upload, Tooltip } from 'antd';
 import { signalService, importService } from '../services/api';
 import { Signal } from '../interfaces/Signal';
 import { PlusOutlined, ExclamationCircleOutlined, EditOutlined, DeleteOutlined, UploadOutlined, LinkOutlined } from '@ant-design/icons';
@@ -24,6 +24,7 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
   // Загрузка данных при монтировании компонента и при смене проекта
   useEffect(() => {
@@ -42,6 +43,19 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
       setLoading(false);
     }
   };
+
+  // Фильтрация сигналов по поисковому запросу
+  const filteredSignals = signals.filter(signal => {
+    if (!searchText) return true;
+    const searchLower = searchText.toLowerCase();
+    return (
+      signal.name.toLowerCase().includes(searchLower) ||
+      signal.type.toLowerCase().includes(searchLower) ||
+      (signal.category && signal.category.toLowerCase().includes(searchLower)) ||
+      (signal.description && signal.description.toLowerCase().includes(searchLower)) ||
+      (signal.connectionType && signal.connectionType.toLowerCase().includes(searchLower))
+    );
+  });
 
   // Добавление нового сигнала
   const handleAddSignal = () => {
@@ -184,6 +198,13 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
       title: 'Название',
       dataIndex: 'name',
       key: 'name',
+      filters: signals
+        .map(signal => signal.name)
+        .filter((name): name is string => !!name)
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .slice(0, 10) // Limit to 10 most common names
+        .map(name => ({ text: name, value: name })),
+      onFilter: (value: any, record: Signal) => record.name === value,
     },
     {
       title: 'Тип',
@@ -223,11 +244,23 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
       title: 'Напряжение',
       dataIndex: 'voltage',
       key: 'voltage',
+      filters: signals
+        .map(signal => signal.voltage)
+        .filter((voltage): voltage is string => !!voltage)
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .map(voltage => ({ text: voltage, value: voltage })),
+      onFilter: (value: any, record: Signal) => record.voltage === value,
     },
     {
       title: 'Описание',
       dataIndex: 'description',
       key: 'description',
+      filters: signals
+        .map(signal => signal.description)
+        .filter((desc): desc is string => !!desc)
+        .filter((value, index, self) => self.indexOf(value) === index)
+        .map(desc => ({ text: desc, value: desc })),
+      onFilter: (value: any, record: Signal) => record.description === value,
     },
     {
       title: 'Кол-во',
@@ -267,6 +300,18 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
     <div className="signal-definitions">
       <Title level={2}>Справочник типов сигналов</Title>
       
+      {/* Поиск */}
+      <div style={{ marginBottom: 16 }}>
+        <Tooltip title="Поиск сигналов по названию, типу (AI/AO/DI/DO), категории и описанию">
+          <Input.Search
+            placeholder="Поиск по названию, типу, категории, описанию"
+            value={searchText}
+            onChange={e => setSearchText(e.target.value)}
+            style={{ maxWidth: 400 }}
+          />
+        </Tooltip>
+      </div>
+
       {/* Кнопки действий */}
       <div style={{ marginBottom: 16, display: 'flex', gap: '8px' }}>
         <Button 
@@ -291,9 +336,9 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
       </div>
       
       {/* Таблица сигналов */}
-      <Table 
-        columns={columns} 
-        dataSource={signals}
+      <Table
+        columns={columns}
+        dataSource={filteredSignals}
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 10 }}

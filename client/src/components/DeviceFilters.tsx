@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Form, Select, Input, Button, Space, Collapse, Row, Col, Checkbox, Tooltip } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, Form, Select, Input, Button, Space, Collapse, Row, Col, Checkbox, Tooltip, DatePicker } from 'antd';
 import { FilterOutlined, ClearOutlined, SearchOutlined, SaveOutlined, LoadingOutlined } from '@ant-design/icons';
-import { DeviceReference, Kip, Zra } from '../interfaces/DeviceReference';
+import { DeviceReference } from '../interfaces/DeviceReference';
 
 const { Option } = Select;
 const { Panel } = Collapse;
@@ -14,6 +14,11 @@ export interface DeviceFiltersInterface {
   exVersion?: string[];
   posDesignation?: string;
   description?: string;
+  searchText?: string;
+  createdAtStart?: string;
+  createdAtEnd?: string;
+  updatedAtStart?: string;
+  updatedAtEnd?: string;
   
   // КИП специфичные поля
   section?: string[];
@@ -47,113 +52,126 @@ export interface DeviceFiltersInterface {
 interface FilterPreset {
   name: string;
   filters: DeviceFiltersInterface; // Используем новое имя интерфейса
+  searchText?: string;
 }
 
 interface DeviceFiltersProps {
   onApplyFilters: (filters: DeviceFiltersInterface) => void; // Используем новое имя интерфейса
+  onApplySearch?: (searchText: string) => void;
   devices: DeviceReference[];
   loading?: boolean;
+  currentSearchText?: string;
+  projectId?: number | null;
 }
 
-const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, loading = false }) => {
+const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, onApplySearch, devices, loading = false, currentSearchText = '', projectId }) => {
   const [form] = Form.useForm();
   const [activeFilters, setActiveFilters] = useState<DeviceFiltersInterface>({}); // Используем новое имя интерфейса
   const [presets, setPresets] = useState<FilterPreset[]>([]);
-  const [availableValues, setAvailableValues] = useState<Record<string, string[]>>({});
+  const [availableValues, setAvailableValues] = useState<Record<string, { value: string; count: number }[]>>({});
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
   // Используем Form.useWatch для отслеживания выбранных типов данных
   const watchedDataTypes = Form.useWatch('dataType', form);
 
-  // Получение уникальных значений для полей при изменении списка устройств
+  // Получение уникальных значений с подсчетом количества для полей при изменении списка устройств
   useEffect(() => {
     if (!devices || devices.length === 0) return;
 
-    const values: Record<string, Set<string>> = {
-      deviceType: new Set<string>(),
-      systemCode: new Set<string>(),
-      plcType: new Set<string>(),
-      exVersion: new Set<string>(),
-      section: new Set<string>(),
-      unitArea: new Set<string>(),
-      manufacturer: new Set<string>(),
-      measureUnit: new Set<string>(),
-      responsibilityZone: new Set<string>(),
-      connectionScheme: new Set<string>(),
-      power: new Set<string>(),
-      environmentCharacteristics: new Set<string>(),
-      signalPurpose: new Set<string>(),
-      designType: new Set<string>(),
-      valveType: new Set<string>(),
-      actuatorType: new Set<string>(),
-      pipePosition: new Set<string>(),
-      nominalDiameter: new Set<string>(),
-      pressureRating: new Set<string>(),
-      pipeMaterial: new Set<string>(),
-      medium: new Set<string>(),
-      positionSensor: new Set<string>(),
-      solenoidType: new Set<string>(),
-      emergencyPosition: new Set<string>(),
+    const valueCounts: Record<string, Record<string, number>> = {
+      deviceType: {},
+      systemCode: {},
+      plcType: {},
+      exVersion: {},
+      section: {},
+      unitArea: {},
+      manufacturer: {},
+      measureUnit: {},
+      responsibilityZone: {},
+      connectionScheme: {},
+      power: {},
+      environmentCharacteristics: {},
+      signalPurpose: {},
+      designType: {},
+      valveType: {},
+      actuatorType: {},
+      pipePosition: {},
+      nominalDiameter: {},
+      pressureRating: {},
+      pipeMaterial: {},
+      medium: {},
+      positionSensor: {},
+      solenoidType: {},
+      emergencyPosition: {},
     };
 
-    // Собираем уникальные значения из всех устройств
+    // Собираем значения и подсчитываем количество из всех устройств
     devices.forEach(device => {
       // Основные поля устройства
-      if (device.deviceType) values.deviceType.add(device.deviceType);
-      if (device.systemCode) values.systemCode.add(device.systemCode);
-      if (device.plcType) values.plcType.add(device.plcType);
-      if (device.exVersion) values.exVersion.add(device.exVersion);
+      if (device.deviceType) {
+        valueCounts.deviceType[device.deviceType] = (valueCounts.deviceType[device.deviceType] || 0) + 1;
+      }
+      if (device.systemCode) {
+        valueCounts.systemCode[device.systemCode] = (valueCounts.systemCode[device.systemCode] || 0) + 1;
+      }
+      if (device.plcType) {
+        valueCounts.plcType[device.plcType] = (valueCounts.plcType[device.plcType] || 0) + 1;
+      }
+      if (device.exVersion) {
+        valueCounts.exVersion[device.exVersion] = (valueCounts.exVersion[device.exVersion] || 0) + 1;
+      }
 
       // Поля КИП и ЗРА
-      // @ts-ignore - поля могут быть в расширенных данных
-      const kip = device.kip as Kip | undefined;
-      // @ts-ignore
-      const zra = device.zra as Zra | undefined;
+      const kip = (device as any).kip;
+      const zra = (device as any).zra;
 
       if (kip) {
-        if (kip.section) values.section.add(kip.section);
-        if (kip.unitArea) values.unitArea.add(kip.unitArea);
-        if (kip.manufacturer) values.manufacturer.add(kip.manufacturer);
-        if (kip.measureUnit) values.measureUnit.add(kip.measureUnit);
-        if (kip.responsibilityZone) values.responsibilityZone.add(kip.responsibilityZone);
-        if (kip.connectionScheme) values.connectionScheme.add(kip.connectionScheme);
-        if (kip.power) values.power.add(kip.power);
-        if (kip.plc) values.plcType.add(kip.plc);
-        if (kip.exVersion) values.exVersion.add(kip.exVersion);
-        if (kip.environmentCharacteristics) values.environmentCharacteristics.add(kip.environmentCharacteristics);
-        if (kip.signalPurpose) values.signalPurpose.add(kip.signalPurpose);
+        if (kip.section) valueCounts.section[kip.section] = (valueCounts.section[kip.section] || 0) + 1;
+        if (kip.unitArea) valueCounts.unitArea[kip.unitArea] = (valueCounts.unitArea[kip.unitArea] || 0) + 1;
+        if (kip.manufacturer) valueCounts.manufacturer[kip.manufacturer] = (valueCounts.manufacturer[kip.manufacturer] || 0) + 1;
+        if (kip.measureUnit) valueCounts.measureUnit[kip.measureUnit] = (valueCounts.measureUnit[kip.measureUnit] || 0) + 1;
+        if (kip.responsibilityZone) valueCounts.responsibilityZone[kip.responsibilityZone] = (valueCounts.responsibilityZone[kip.responsibilityZone] || 0) + 1;
+        if (kip.connectionScheme) valueCounts.connectionScheme[kip.connectionScheme] = (valueCounts.connectionScheme[kip.connectionScheme] || 0) + 1;
+        if (kip.power) valueCounts.power[kip.power] = (valueCounts.power[kip.power] || 0) + 1;
+        if (kip.plc) valueCounts.plcType[kip.plc] = (valueCounts.plcType[kip.plc] || 0) + 1;
+        if (kip.exVersion) valueCounts.exVersion[kip.exVersion] = (valueCounts.exVersion[kip.exVersion] || 0) + 1;
+        if (kip.environmentCharacteristics) valueCounts.environmentCharacteristics[kip.environmentCharacteristics] = (valueCounts.environmentCharacteristics[kip.environmentCharacteristics] || 0) + 1;
+        if (kip.signalPurpose) valueCounts.signalPurpose[kip.signalPurpose] = (valueCounts.signalPurpose[kip.signalPurpose] || 0) + 1;
       }
 
       if (zra) {
-        if (zra.unitArea) values.unitArea.add(zra.unitArea);
-        if (zra.designType) values.designType.add(zra.designType);
-        if (zra.valveType) values.valveType.add(zra.valveType);
-        if (zra.actuatorType) values.actuatorType.add(zra.actuatorType);
-        if (zra.pipePosition) values.pipePosition.add(zra.pipePosition);
-        if (zra.nominalDiameter) values.nominalDiameter.add(zra.nominalDiameter);
-        if (zra.pressureRating) values.pressureRating.add(zra.pressureRating);
-        if (zra.pipeMaterial) values.pipeMaterial.add(zra.pipeMaterial);
-        if (zra.medium) values.medium.add(zra.medium);
-        if (zra.positionSensor) values.positionSensor.add(zra.positionSensor);
-        if (zra.solenoidType) values.solenoidType.add(zra.solenoidType);
-        if (zra.emergencyPosition) values.emergencyPosition.add(zra.emergencyPosition);
-        if (zra.plc) values.plcType.add(zra.plc);
-        if (zra.exVersion) values.exVersion.add(zra.exVersion);
+        if (zra.unitArea) valueCounts.unitArea[zra.unitArea] = (valueCounts.unitArea[zra.unitArea] || 0) + 1;
+        if (zra.designType) valueCounts.designType[zra.designType] = (valueCounts.designType[zra.designType] || 0) + 1;
+        if (zra.valveType) valueCounts.valveType[zra.valveType] = (valueCounts.valveType[zra.valveType] || 0) + 1;
+        if (zra.actuatorType) valueCounts.actuatorType[zra.actuatorType] = (valueCounts.actuatorType[zra.actuatorType] || 0) + 1;
+        if (zra.pipePosition) valueCounts.pipePosition[zra.pipePosition] = (valueCounts.pipePosition[zra.pipePosition] || 0) + 1;
+        if (zra.nominalDiameter) valueCounts.nominalDiameter[zra.nominalDiameter] = (valueCounts.nominalDiameter[zra.nominalDiameter] || 0) + 1;
+        if (zra.pressureRating) valueCounts.pressureRating[zra.pressureRating] = (valueCounts.pressureRating[zra.pressureRating] || 0) + 1;
+        if (zra.pipeMaterial) valueCounts.pipeMaterial[zra.pipeMaterial] = (valueCounts.pipeMaterial[zra.pipeMaterial] || 0) + 1;
+        if (zra.medium) valueCounts.medium[zra.medium] = (valueCounts.medium[zra.medium] || 0) + 1;
+        if (zra.positionSensor) valueCounts.positionSensor[zra.positionSensor] = (valueCounts.positionSensor[zra.positionSensor] || 0) + 1;
+        if (zra.solenoidType) valueCounts.solenoidType[zra.solenoidType] = (valueCounts.solenoidType[zra.solenoidType] || 0) + 1;
+        if (zra.emergencyPosition) valueCounts.emergencyPosition[zra.emergencyPosition] = (valueCounts.emergencyPosition[zra.emergencyPosition] || 0) + 1;
+        if (zra.plc) valueCounts.plcType[zra.plc] = (valueCounts.plcType[zra.plc] || 0) + 1;
+        if (zra.exVersion) valueCounts.exVersion[zra.exVersion] = (valueCounts.exVersion[zra.exVersion] || 0) + 1;
       }
     });
 
-    // Преобразуем Set в массивы и сортируем
-    const result: Record<string, string[]> = {};
-    Object.keys(values).forEach(key => {
-      result[key] = Array.from(values[key]).sort();
+    // Преобразуем в массивы с сортировкой по количеству (убывающий порядок)
+    const result: Record<string, { value: string; count: number }[]> = {};
+    Object.keys(valueCounts).forEach(key => {
+      result[key] = Object.entries(valueCounts[key])
+        .map(([value, count]) => ({ value, count }))
+        .sort((a, b) => b.count - a.count); // Сортировка по количеству убыванию
     });
 
     setAvailableValues(result);
   }, [devices]);
 
   // Функция загрузки пресетов из localStorage
-  const loadPresets = () => {
-    const savedPresets = localStorage.getItem('deviceFilterPresets');
+  const loadPresets = useCallback(() => {
+    const storageKey = projectId ? `deviceFilterPresets_${projectId}` : 'deviceFilterPresets';
+    const savedPresets = localStorage.getItem(storageKey);
     if (savedPresets) {
       try {
         const parsedPresets = JSON.parse(savedPresets);
@@ -162,23 +180,25 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
         console.error('Не удалось загрузить пресеты фильтров:', e);
       }
     }
-  };
+  }, [projectId]);
 
   // Загружаем пресеты при монтировании компонента
   useEffect(() => {
     loadPresets();
-  }, []);
+  }, [loadPresets]);
 
   // Функция сохранения текущего фильтра как пресета
   const saveAsPreset = (presetName: string) => {
     const newPreset: FilterPreset = {
       name: presetName,
-      filters: { ...activeFilters } // Здесь используется activeFilters, тип которого уже обновлен
+      filters: { ...activeFilters }, // Здесь используется activeFilters, тип которого уже обновлен
+      searchText: currentSearchText
     };
 
+    const storageKey = projectId ? `deviceFilterPresets_${projectId}` : 'deviceFilterPresets';
     const updatedPresets = [...presets, newPreset];
     setPresets(updatedPresets);
-    localStorage.setItem('deviceFilterPresets', JSON.stringify(updatedPresets));
+    localStorage.setItem(storageKey, JSON.stringify(updatedPresets));
   };
 
   // Функция применения фильтра
@@ -212,6 +232,9 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
       setActiveFilters(selectedPresetData.filters);
       setSelectedPreset(presetName);
       onApplyFilters(selectedPresetData.filters);
+      if (selectedPresetData.searchText && onApplySearch) {
+        onApplySearch(selectedPresetData.searchText);
+      }
     }
   };
 
@@ -307,8 +330,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                     size="small"
                     maxTagCount={3}
                   >
-                    {availableValues.deviceType?.map(value => (
-                      <Option key={value} value={value}>{value}</Option>
+                    {availableValues.deviceType?.map(item => (
+                      <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                     ))}
                   </Select>
                 </Form.Item>
@@ -323,8 +346,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                     size="small"
                     maxTagCount={3}
                   >
-                    {availableValues.systemCode?.map(value => (
-                      <Option key={value} value={value}>{value}</Option>
+                    {availableValues.systemCode?.map(item => (
+                      <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                     ))}
                   </Select>
                 </Form.Item>
@@ -341,8 +364,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                     size="small"
                     maxTagCount={3}
                   >
-                    {availableValues.plcType?.map(value => (
-                      <Option key={value} value={value}>{value}</Option>
+                    {availableValues.plcType?.map(item => (
+                      <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                     ))}
                   </Select>
                 </Form.Item>
@@ -357,8 +380,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                     size="small"
                     maxTagCount={3}
                   >
-                    {availableValues.exVersion?.map(value => (
-                      <Option key={value} value={value}>{value}</Option>
+                    {availableValues.exVersion?.map(item => (
+                      <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                     ))}
                   </Select>
                 </Form.Item>
@@ -366,22 +389,66 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
             </Row>
             <Row gutter={[8, 8]}>
               <Col xs={24} sm={12}>
-                <Form.Item label="Обозначение позиции" name="posDesignation" style={{ marginBottom: '8px' }}>
-                  <Input 
-                    placeholder="Введите часть обозначения позиции"
-                    allowClear
-                    suffix={<SearchOutlined />}
+                <Tooltip title="Поиск по позиционному обозначению устройства (например, часть серийного номера или кода)">
+                  <Form.Item label="Обозначение позиции" name="posDesignation" style={{ marginBottom: '8px' }}>
+                    <Input
+                      placeholder="Введите часть обозначения позиции"
+                      allowClear
+                      suffix={<SearchOutlined />}
+                      size="small"
+                    />
+                  </Form.Item>
+                </Tooltip>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Tooltip title="Поиск по описанию устройства (функциональное назначение, характеристики)">
+                  <Form.Item label="Описание" name="description" style={{ marginBottom: '8px' }}>
+                    <Input
+                      placeholder="Введите часть описания"
+                      allowClear
+                      suffix={<SearchOutlined />}
+                      size="small"
+                    />
+                  </Form.Item>
+                </Tooltip>
+              </Col>
+            </Row>
+            <Row gutter={[8, 8]}>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Дата создания с" name="createdAtStart" style={{ marginBottom: '8px' }}>
+                  <DatePicker
+                    placeholder="Выберите дату"
                     size="small"
+                    style={{ width: '100%' }}
                   />
                 </Form.Item>
               </Col>
               <Col xs={24} sm={12}>
-                <Form.Item label="Описание" name="description" style={{ marginBottom: '8px' }}>
-                  <Input 
-                    placeholder="Введите часть описания"
-                    allowClear
-                    suffix={<SearchOutlined />}
+                <Form.Item label="Дата создания по" name="createdAtEnd" style={{ marginBottom: '8px' }}>
+                  <DatePicker
+                    placeholder="Выберите дату"
                     size="small"
+                    style={{ width: '100%' }}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={[8, 8]}>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Дата изменения с" name="updatedAtStart" style={{ marginBottom: '8px' }}>
+                  <DatePicker
+                    placeholder="Выберите дату"
+                    size="small"
+                    style={{ width: '100%' }}
+                  />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item label="Дата изменения по" name="updatedAtEnd" style={{ marginBottom: '8px' }}>
+                  <DatePicker
+                    placeholder="Выберите дату"
+                    size="small"
+                    style={{ width: '100%' }}
                   />
                 </Form.Item>
               </Col>
@@ -402,8 +469,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                       size="small"
                       maxTagCount={2}
                     >
-                      {availableValues.section?.map(value => (
-                        <Option key={value} value={value}>{value}</Option>
+                      {availableValues.section?.map(item => (
+                        <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -418,8 +485,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                       size="small"
                       maxTagCount={2}
                     >
-                      {availableValues.unitArea?.map(value => (
-                        <Option key={value} value={value}>{value}</Option>
+                      {availableValues.unitArea?.map(item => (
+                        <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -434,8 +501,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                       size="small"
                       maxTagCount={2}
                     >
-                      {availableValues.manufacturer?.map(value => (
-                        <Option key={value} value={value}>{value}</Option>
+                      {availableValues.manufacturer?.map(item => (
+                        <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -452,8 +519,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                       size="small"
                       maxTagCount={2}
                     >
-                      {availableValues.measureUnit?.map(value => (
-                        <Option key={value} value={value}>{value}</Option>
+                      {availableValues.measureUnit?.map(item => (
+                        <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -468,8 +535,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                       size="small"
                       maxTagCount={2}
                     >
-                      {availableValues.responsibilityZone?.map(value => (
-                        <Option key={value} value={value}>{value}</Option>
+                      {availableValues.responsibilityZone?.map(item => (
+                        <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -484,8 +551,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                       size="small"
                       maxTagCount={2}
                     >
-                      {availableValues.connectionScheme?.map(value => (
-                        <Option key={value} value={value}>{value}</Option>
+                      {availableValues.connectionScheme?.map(item => (
+                        <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -508,8 +575,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                       size="small"
                       maxTagCount={2}
                     >
-                      {availableValues.designType?.map(value => (
-                        <Option key={value} value={value}>{value}</Option>
+                      {availableValues.designType?.map(item => (
+                        <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -524,8 +591,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                       size="small"
                       maxTagCount={2}
                     >
-                      {availableValues.valveType?.map(value => (
-                        <Option key={value} value={value}>{value}</Option>
+                      {availableValues.valveType?.map(item => (
+                        <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -540,8 +607,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                       size="small"
                       maxTagCount={2}
                     >
-                      {availableValues.actuatorType?.map(value => (
-                        <Option key={value} value={value}>{value}</Option>
+                      {availableValues.actuatorType?.map(item => (
+                        <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -558,8 +625,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                       size="small"
                       maxTagCount={2}
                     >
-                      {availableValues.nominalDiameter?.map(value => (
-                        <Option key={value} value={value}>{value}</Option>
+                      {availableValues.nominalDiameter?.map(item => (
+                        <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -574,8 +641,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                       size="small"
                       maxTagCount={2}
                     >
-                      {availableValues.pipeMaterial?.map(value => (
-                        <Option key={value} value={value}>{value}</Option>
+                      {availableValues.pipeMaterial?.map(item => (
+                        <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -590,8 +657,8 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
                       size="small"
                       maxTagCount={2}
                     >
-                      {availableValues.medium?.map(value => (
-                        <Option key={value} value={value}>{value}</Option>
+                      {availableValues.medium?.map(item => (
+                        <Option key={item.value} value={item.value}>{item.value} ({item.count})</Option>
                       ))}
                     </Select>
                   </Form.Item>
@@ -651,12 +718,16 @@ const DeviceFilters: React.FC<DeviceFiltersProps> = ({ onApplyFilters, devices, 
             )}
           </div>
           <Space>
-            <Button type="primary" htmlType="submit" icon={<FilterOutlined />} size="small">
-              Применить
-            </Button>
-            <Button onClick={resetFilters} icon={<ClearOutlined />} size="small">
-              Сбросить
-            </Button>
+            <Tooltip title="Применить выбранные фильтры к списку устройств">
+              <Button type="primary" htmlType="submit" icon={<FilterOutlined />} size="small">
+                Применить
+              </Button>
+            </Tooltip>
+            <Tooltip title="Сбросить все фильтры и показать все устройства">
+              <Button onClick={resetFilters} icon={<ClearOutlined />} size="small">
+                Сбросить
+              </Button>
+            </Tooltip>
           </Space>
         </div>
       </Form>

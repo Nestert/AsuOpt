@@ -2,6 +2,104 @@ import { Request, Response } from 'express';
 import { Project } from '../models/Project';
 import { DeviceReference } from '../models/DeviceReference';
 
+/**
+ * @swagger
+ * tags:
+ *   - name: Projects
+ *     description: Управление проектами
+ * /api/projects:
+ *   get:
+ *     summary: Получить список проектов
+ *     tags: [Projects]
+ *     responses:
+ *       200:
+ *         description: Список проектов
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Project'
+ *   post:
+ *     summary: Создать новый проект
+ *     tags: [Projects]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Project'
+ *     responses:
+ *       201:
+ *         description: Проект создан
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Project'
+ *       400:
+ *         description: Ошибка валидации (например, дубликат кода)
+ * /api/projects/{id}:
+ *   get:
+ *     summary: Получить проект по ID
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID проекта
+ *     responses:
+ *       200:
+ *         description: Информация о проекте
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Project'
+ *       404:
+ *         description: Проект не найден
+ *   put:
+ *     summary: Обновить проект
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID проекта
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Project'
+ *     responses:
+ *       200:
+ *         description: Проект обновлен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Project'
+ *       404:
+ *         description: Проект не найден
+ *   delete:
+ *     summary: Удалить проект
+ *     tags: [Projects]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID проекта
+ *     responses:
+ *       200:
+ *         description: Проект удален
+ *       404:
+ *         description: Проект не найден
+ */
+
 export class ProjectController {
   // Получить все проекты
   static async getAllProjects(req: Request, res: Response): Promise<void> {

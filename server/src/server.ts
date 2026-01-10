@@ -3,6 +3,7 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import { initializeDatabase } from './config/database';
 import { initializeModels } from './config/initializeModels';
+import { swaggerUi, specs } from './config/swagger';
 import deviceRoutes from './routes/deviceRoutes';
 import exportRoutes from './routes/exportRoutes';
 import importRoutes from './routes/importRoutes';
@@ -31,6 +32,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Статический доступ к директории uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// Swagger документация
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 
 // Логирование запросов
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {

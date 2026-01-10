@@ -5,6 +5,85 @@ import { Device } from '../models/Device';
 import { DeviceReference } from '../models/DeviceReference';
 import { Op, Sequelize } from 'sequelize';
 
+/**
+ * @swagger
+ * tags:
+ *   - name: Signals
+ *     description: Управление сигналами
+ * /api/signals:
+ *   get:
+ *     summary: Получить список сигналов
+ *     tags: [Signals]
+ *     responses:
+ *       200:
+ *         description: Список сигналов
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Signal'
+ *   post:
+ *     summary: Создать новый сигнал
+ *     tags: [Signals]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Signal'
+ *     responses:
+ *       201:
+ *         description: Сигнал создан
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Signal'
+ *       400:
+ *         description: Ошибка валидации
+ * /api/signals/{id}:
+ *   put:
+ *     summary: Обновить сигнал
+ *     tags: [Signals]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID сигнала
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Signal'
+ *     responses:
+ *       200:
+ *         description: Сигнал обновлен
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Signal'
+ *       404:
+ *         description: Сигнал не найден
+ *   delete:
+ *     summary: Удалить сигнал
+ *     tags: [Signals]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID сигнала
+ *     responses:
+ *       200:
+ *         description: Сигнал удален
+ *       404:
+ *         description: Сигнал не найден
+ */
+
 // Получение всех сигналов
 export const getAllSignals = async (req: Request, res: Response) => {
   try {
@@ -132,7 +211,7 @@ export const createSignal = async (req: Request, res: Response) => {
 export const updateSignal = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { name, type, description, totalCount } = req.body;
+    const { name, type, description, totalCount, category, connectionType, voltage } = req.body;
     
     // Проверка, что тип сигнала допустим
     if (type && !['AI', 'AO', 'DI', 'DO'].includes(type)) {
@@ -164,7 +243,10 @@ export const updateSignal = async (req: Request, res: Response) => {
       name: name || signal.name,
       type: type || signal.type,
       description: description !== undefined ? description : signal.description,
-      totalCount: totalCount !== undefined ? totalCount : signal.totalCount
+      totalCount: totalCount !== undefined ? totalCount : signal.totalCount,
+      category: category !== undefined ? category : signal.category,
+      connectionType: connectionType !== undefined ? connectionType : signal.connectionType,
+      voltage: voltage !== undefined ? voltage : signal.voltage
     });
     
     return res.status(200).json(signal);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Empty, Input, Spin, Tree, Typography, Button, Dropdown, App } from 'antd';
+import { Empty, Input, Spin, Tree, Typography, Button, Dropdown, App, Tooltip } from 'antd';
 import {
   FolderOutlined,
   AppstoreOutlined,
@@ -170,10 +170,53 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     // Проверяем наличие текстового поиска
     if (searchValue) {
       const searchLower = searchValue.toLowerCase();
-      filtered = filtered.filter(device => 
-        device.posDesignation.toLowerCase().includes(searchLower) || 
-        (device.description && device.description.toLowerCase().includes(searchLower))
-      );
+      filtered = filtered.filter(device => {
+        // Поиск по основным полям устройства
+        const basicFields = [
+          device.posDesignation,
+          device.description,
+          device.deviceType,
+          device.systemCode,
+          device.plcType,
+          device.exVersion,
+          device.parentSystem
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        // Поиск по полям KIP
+        const kipData = (device as any).kip;
+        const kipFields = kipData ? [
+          kipData.section,
+          kipData.unitArea,
+          kipData.manufacturer,
+          kipData.measureUnit,
+          kipData.responsibilityZone,
+          kipData.connectionScheme,
+          kipData.power,
+          kipData.environmentCharacteristics,
+          kipData.signalPurpose
+        ].filter(Boolean).join(' ').toLowerCase() : '';
+
+        // Поиск по полям ZRA
+        const zraData = (device as any).zra;
+        const zraFields = zraData ? [
+          zraData.unitArea,
+          zraData.designType,
+          zraData.valveType,
+          zraData.actuatorType,
+          zraData.pipePosition,
+          zraData.nominalDiameter,
+          zraData.pressureRating,
+          zraData.pipeMaterial,
+          zraData.medium,
+          zraData.positionSensor,
+          zraData.solenoidType,
+          zraData.emergencyPosition
+        ].filter(Boolean).join(' ').toLowerCase() : '';
+
+        return basicFields.includes(searchLower) ||
+               kipFields.includes(searchLower) ||
+               zraFields.includes(searchLower);
+      });
     }
     
     // Применяем расширенные фильтры
@@ -238,9 +281,43 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
       // Фильтрация по описанию (description)
       if (advancedFilters.description) {
         const descSearchLower = advancedFilters.description.toLowerCase();
-        filtered = filtered.filter(device => 
+        filtered = filtered.filter(device =>
           device.description && device.description.toLowerCase().includes(descSearchLower)
         );
+      }
+
+      // Фильтрация по дате создания
+      if (advancedFilters.createdAtStart || advancedFilters.createdAtEnd) {
+        filtered = filtered.filter(device => {
+          if (!device.createdAt) return false;
+          const createdDate = new Date(device.createdAt);
+          if (advancedFilters.createdAtStart) {
+            const startDate = new Date(advancedFilters.createdAtStart);
+            if (createdDate < startDate) return false;
+          }
+          if (advancedFilters.createdAtEnd) {
+            const endDate = new Date(advancedFilters.createdAtEnd);
+            if (createdDate > endDate) return false;
+          }
+          return true;
+        });
+      }
+
+      // Фильтрация по дате изменения
+      if (advancedFilters.updatedAtStart || advancedFilters.updatedAtEnd) {
+        filtered = filtered.filter(device => {
+          if (!device.updatedAt) return false;
+          const updatedDate = new Date(device.updatedAt);
+          if (advancedFilters.updatedAtStart) {
+            const startDate = new Date(advancedFilters.updatedAtStart);
+            if (updatedDate < startDate) return false;
+          }
+          if (advancedFilters.updatedAtEnd) {
+            const endDate = new Date(advancedFilters.updatedAtEnd);
+            if (updatedDate > endDate) return false;
+          }
+          return true;
+        });
       }
       
       // Фильтрация по типу данных
@@ -568,41 +645,50 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
         marginBottom: '16px',
         gap: '8px'
       }}>
-        <Input.Search
-          placeholder="Поиск по обозначению или описанию"
-          onChange={e => handleSearch(e.target.value)}
-          value={searchValue}
-          style={{ flex: 1, minWidth: '200px', marginBottom: 0 }}
-          size="middle"
-        />
+        <Tooltip title="Поиск по обозначению позиции, описанию, типу устройства, коду системы, типу ПЛК, Ex-версии, а также по данным КИП и ЗРА">
+          <Input.Search
+            placeholder="Глобальный поиск по всем полям устройства (обозначение, описание, тип, система, КИП/ЗРА данные)"
+            onChange={e => handleSearch(e.target.value)}
+            value={searchValue}
+            style={{ flex: 1, minWidth: '300px', marginBottom: 0 }}
+            size="middle"
+          />
+        </Tooltip>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <Button 
-            type="primary" 
-            icon={<FilterOutlined />} 
-            onClick={toggleAdvancedFilters}
-            style={{ minWidth: '140px' }}
-            size="middle"
-          >
-            Фильтры
-          </Button>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />} 
-            onClick={showAddDeviceForm}
-            style={{ minWidth: '120px' }}
-            size="middle"
-          >
-            Добавить
-          </Button>
+          <Tooltip title="Показать/скрыть расширенные фильтры по типу устройства, системе, ПЛК, датам и другим параметрам">
+            <Button
+              type="primary"
+              icon={<FilterOutlined />}
+              onClick={toggleAdvancedFilters}
+              style={{ minWidth: '140px' }}
+              size="middle"
+            >
+              Фильтры
+            </Button>
+          </Tooltip>
+          <Tooltip title="Добавить новое устройство в текущий проект">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={showAddDeviceForm}
+              style={{ minWidth: '120px' }}
+              size="middle"
+            >
+              Добавить
+            </Button>
+          </Tooltip>
         </div>
       </div>
 
       {isAdvancedFilterVisible && (
         <div style={{ marginBottom: '16px' }}>
-          <DeviceFilters 
-            onApplyFilters={handleApplyFilters} 
-            devices={devices}
+          <DeviceFilters
+            onApplyFilters={handleApplyFilters}
+            onApplySearch={setSearchValue}
+            devices={filteredDevices}
             loading={loading}
+            currentSearchText={searchValue}
+            projectId={currentProjectId}
           />
         </div>
       )}

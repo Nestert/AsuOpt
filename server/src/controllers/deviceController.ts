@@ -2,6 +2,128 @@ import { Request, Response } from 'express';
 import { Device } from '../models/Device';
 import { Op } from 'sequelize';
 
+/**
+ * @swagger
+ * tags:
+ *   - name: Devices
+ *     description: Управление устройствами
+ * /api/devices/tree:
+ *   get:
+ *     summary: Получить иерархическую структуру устройств
+ *     tags: [Devices]
+ *     responses:
+ *       200:
+ *         description: Иерархическая структура устройств
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 description: Узел дерева устройств
+ * /api/devices:
+ *   get:
+ *     summary: Получить список всех устройств
+ *     tags: [Devices]
+ *     parameters:
+ *       - in: query
+ *         name: projectId
+ *         schema:
+ *           type: integer
+ *         description: ID проекта для фильтрации
+ *     responses:
+ *       200:
+ *         description: Список устройств
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Device'
+ *   post:
+ *     summary: Создать новое устройство
+ *     tags: [Devices]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Device'
+ *     responses:
+ *       201:
+ *         description: Устройство создано
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Device'
+ *       400:
+ *         description: Ошибка валидации
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ * /api/devices/{id}:
+ *   get:
+ *     summary: Получить устройство по ID
+ *     tags: [Devices]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID устройства
+ *     responses:
+ *       200:
+ *         description: Информация об устройстве
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Device'
+ *       404:
+ *         description: Устройство не найдено
+ *   put:
+ *     summary: Обновить устройство
+ *     tags: [Devices]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID устройства
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Device'
+ *     responses:
+ *       200:
+ *         description: Устройство обновлено
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Device'
+ *       404:
+ *         description: Устройство не найдено
+ *   delete:
+ *     summary: Удалить устройство
+ *     tags: [Devices]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID устройства
+ *     responses:
+ *       200:
+ *         description: Устройство удалено
+ *       404:
+ *         description: Устройство не найдено
+ */
+
 // Получить иерархическую структуру устройств
 export const getDeviceTree = async (req: Request, res: Response) => {
   try {
