@@ -85,16 +85,12 @@ export class Project extends Model<ProjectAttributes> implements ProjectAttribut
   }
 
   public static associate() {
-    // Связи с другими моделями будут добавлены после создания всех моделей
-    // Project.hasMany(models.DeviceReference, {
-    //   foreignKey: 'projectId',
-    //   as: 'devices',
-    // });
-    
-    // Project.hasMany(models.Signal, {
-    //   foreignKey: 'projectId',
-    //   as: 'signals',
-    // });
+    // Связи с другими моделями
+    const { User } = require('./User');
+    Project.belongsTo(User, {
+      foreignKey: 'createdBy',
+      as: 'creator',
+    });
   }
 }
 

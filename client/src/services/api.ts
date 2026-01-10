@@ -2,6 +2,7 @@ import axios from 'axios';
 import { DeviceReference, TreeNode, DeviceFullData } from '../interfaces/DeviceReference';
 import { Signal, DeviceSignal, SignalSummary } from '../interfaces/Signal';
 import { DeviceTypeSignal, SignalsSummary } from '../interfaces/DeviceTypeSignal';
+import { User, LoginRequest, RegisterRequest, AuthResponse } from '../interfaces/User';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
@@ -12,6 +13,35 @@ const api = axios.create({
     'Content-Type': 'application/json'
   }
 });
+
+// Interceptor для добавления JWT токена к запросам
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Interceptor для обработки ответов с ошибками аутентификации
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Токен истек или недействителен
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Можно добавить перенаправление на страницу входа
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Сервис для работы с устройствами
 export const deviceService = {
@@ -560,6 +590,52 @@ export const databaseService = {
       return response.data;
     } catch (error) {
       console.error(`API: ошибка в clearTable(${tableName}):`, error);
+      throw error;
+    }
+  }
+};
+
+// Сервис для аутентификации
+export const authService = {
+  // Вход в систему
+  login: async (credentials: LoginRequest): Promise<AuthResponse> => {
+    try {
+      const response = await api.post('/auth/login', credentials);
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в login:', error);
+      throw error;
+    }
+  },
+
+  // Регистрация нового пользователя
+  register: async (userData: RegisterRequest): Promise<AuthResponse> => {
+    try {
+      const response = await api.post('/auth/register', userData);
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в register:', error);
+      throw error;
+    }
+  },
+
+  // Получение данных текущего пользователя
+  getCurrentUser: async (): Promise<User> => {
+    try {
+      const response = await api.get('/auth/me');
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в getCurrentUser:', error);
+      throw error;
+    }
+  },
+
+  // Выход из системы
+  logout: async (): Promise<void> => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      console.error('API: ошибка в logout:', error);
       throw error;
     }
   }

@@ -41,5 +41,3 @@ Thumbs.db
 .cursor/
 uploads/
 tmp/
-
-restart_services.sh

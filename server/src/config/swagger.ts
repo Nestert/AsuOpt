@@ -15,6 +15,10 @@ const options = {
     },
     tags: [
       {
+        name: 'Auth',
+        description: 'Аутентификация пользователей'
+      },
+      {
         name: 'Devices',
         description: 'Управление устройствами'
       },
@@ -205,6 +209,86 @@ const options = {
               type: 'string',
               format: 'date-time',
               description: 'Дата обновления'
+            }
+          }
+        },
+        User: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'integer',
+              description: 'Уникальный идентификатор пользователя'
+            },
+            username: {
+              type: 'string',
+              description: 'Имя пользователя'
+            },
+            email: {
+              type: 'string',
+              description: 'Email адрес'
+            },
+            role: {
+              type: 'string',
+              enum: ['admin', 'user'],
+              description: 'Роль пользователя'
+            },
+            isActive: {
+              type: 'boolean',
+              description: 'Статус активации пользователя'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Дата создания'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Дата обновления'
+            }
+          }
+        },
+        LoginRequest: {
+          type: 'object',
+          required: ['username', 'password'],
+          properties: {
+            username: {
+              type: 'string',
+              description: 'Имя пользователя'
+            },
+            password: {
+              type: 'string',
+              description: 'Пароль'
+            }
+          }
+        },
+        RegisterRequest: {
+          type: 'object',
+          required: ['username', 'email', 'password'],
+          properties: {
+            username: {
+              type: 'string',
+              description: 'Имя пользователя'
+            },
+            email: {
+              type: 'string',
+              description: 'Email адрес'
+            },
+            password: {
+              type: 'string',
+              description: 'Пароль'
+            }
+          }
+        },
+        AuthResponse: {
+          type: 'object',
+          properties: {
+            token: {
+              type: 'string',
+              description: 'JWT токен'
+            },
+            user: {
+              $ref: '#/components/schemas/User'
             }
           }
         },

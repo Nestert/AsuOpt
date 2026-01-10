@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 // Импортируем патч для совместимости с React 19
 import '@ant-design/v5-patch-for-react-19';
-import { ConfigProvider, Layout, Tabs, App, Space } from 'antd';
+import { ConfigProvider, Layout, Tabs, App, Space, Spin, Button, Dropdown } from 'antd';
+import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
 import ruRU from 'antd/es/locale/ru_RU';
 import DeviceTree from './components/DeviceTree';
 import DeviceDetails from './components/DeviceDetails';
@@ -11,23 +12,96 @@ import SignalManagement from './components/SignalManagement';
 import DataExport from './components/DataExport';
 import ProjectSelector from './components/ProjectSelector';
 import ProjectManagement from './components/ProjectManagement';
+import Login from './components/Login';
+import Register from './components/Register';
 import { ProjectProvider, useProject } from './contexts/ProjectContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './App.css';
 
 const { Header, Sider, Content } = Layout;
 
-// Внутренний компонент, который будет иметь доступ к контексту App
+// Компонент с аутентификацией и маршрутизацией
+const MainApp: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh'
+      }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthWrapper />;
+  }
+
+  return <InnerApp />;
+};
+
+// Компонент с аутентификацией и маршрутизацией
+const AuthenticatedApp: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh'
+      }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthWrapper />;
+  }
+
+  return <InnerApp />;
+};
+
+// Компонент для управления отображением Login/Register
+const AuthWrapper: React.FC = () => {
+  const [isLogin, setIsLogin] = useState(true);
+
+  return isLogin ? (
+    <Login onSwitchToRegister={() => setIsLogin(false)} />
+  ) : (
+    <Register onSwitchToLogin={() => setIsLogin(true)} />
+  );
+};
+
+// Внутренний компонент основного приложения
 const InnerApp: React.FC = () => {
   const [selectedDeviceId, setSelectedDeviceId] = useState<number | null>(null);
   const [treeUpdateCounter, setTreeUpdateCounter] = useState<number>(0);
   const [projectManagementVisible, setProjectManagementVisible] = useState(false);
-  
+
   // Теперь notification доступен внутри компонента App
   const { notification } = App.useApp();
-  
-  // Используем контекст проектов
+
+  // Используем контексты
   const { currentProjectId, setCurrentProjectId, refreshProjects } = useProject();
-  
+  const { user, logout } = useAuth();
+
+  // Обработчик выхода
+  const handleLogout = () => {
+    logout();
+    notification.success({
+      message: 'Выход выполнен',
+      description: 'Вы успешно вышли из системы',
+      duration: 3
+    });
+  };
+
   // Проверяем конфигурацию API при загрузке
   useEffect(() => {
     // Удаляем неиспользуемую переменную apiUrl
@@ -46,7 +120,7 @@ const InnerApp: React.FC = () => {
     // console.log(`Активная вкладка: ${key}`);
     // При переключении на вкладку устройств, сбрасываем выбор, если это нужно
     if (key !== 'devices') {
-      // setSelectedDeviceId(null); 
+      // setSelectedDeviceId(null);
     }
   };
 
@@ -76,7 +150,7 @@ const InnerApp: React.FC = () => {
     // Сначала сбрасываем выбранный ID, чтобы панель деталей очистилась
     // или показала сообщение о выборе устройства
     // console.log('App: сбрасываем выбранное устройство, текущее значение:', selectedDeviceId);
-    setSelectedDeviceId(null); 
+    setSelectedDeviceId(null);
     // Затем увеличиваем счетчик, чтобы DeviceTree обновил данные
     // console.log('App: увеличиваем счетчик обновления дерева, текущее значение:', treeUpdateCounter);
     setTreeUpdateCounter(prev => prev + 1);
@@ -128,22 +202,61 @@ const InnerApp: React.FC = () => {
     });
   };
 
+  // Меню пользователя
+  const userMenuItems = [
+    {
+      key: 'user-info',
+      label: (
+        <div style={{ padding: '8px 0' }}>
+          <div><strong>{user?.username}</strong></div>
+          <div style={{ fontSize: '12px', color: '#666' }}>{user?.email}</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>Роль: {user?.role === 'admin' ? 'Администратор' : 'Пользователь'}</div>
+        </div>
+      ),
+      disabled: true,
+    },
+    {
+      type: 'divider' as const,
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Выйти',
+      onClick: handleLogout,
+    },
+  ];
+
   return (
     <Layout className="app-layout">
       <Header className="app-header">
         <Space style={{ width: '100%', justifyContent: 'space-between' }}>
           <h1 style={{ margin: 0, color: 'white' }}>АСУ-Оптимизация</h1>
-          <ProjectSelector
-            currentProjectId={currentProjectId}
-            onProjectChange={handleProjectChange}
-            onManageProjects={handleManageProjects}
-          />
+          <Space>
+            <ProjectSelector
+              currentProjectId={currentProjectId}
+              onProjectChange={handleProjectChange}
+              onManageProjects={handleManageProjects}
+            />
+            <Dropdown
+              menu={{ items: userMenuItems }}
+              placement="bottomRight"
+              trigger={['click']}
+            >
+              <Button
+                type="text"
+                icon={<UserOutlined />}
+                style={{ color: 'white' }}
+              >
+                {user?.username}
+              </Button>
+            </Dropdown>
+          </Space>
         </Space>
       </Header>
-      
+
       <Layout className="main-layout">
-        <Tabs 
-          defaultActiveKey="devices" 
+        <Tabs
+          defaultActiveKey="devices"
           onChange={handleTabChange}
           type="card"
           className="main-tabs"
@@ -154,13 +267,13 @@ const InnerApp: React.FC = () => {
               children: (
                 <Layout className="content-layout">
                   <Sider width={350} className="app-sider">
-                    <DeviceTree 
+                    <DeviceTree
                       onSelectDevice={handleSelectDevice}
                       updateCounter={treeUpdateCounter}
                     />
                   </Sider>
                   <Content className="app-content">
-                    <DeviceDetails 
+                    <DeviceDetails
                       deviceId={selectedDeviceId}
                       onDeviceDeleted={handleDeviceDeleted}
                       onDeviceUpdated={handleDeviceUpdated}
@@ -211,7 +324,7 @@ const InnerApp: React.FC = () => {
               children: (
                 <Layout className="content-layout">
                   <Content className="app-content">
-                    <DatabaseActions 
+                    <DatabaseActions
                       onDatabaseCleared={handleDatabaseCleared}
                     />
                   </Content>
@@ -221,7 +334,7 @@ const InnerApp: React.FC = () => {
           ]}
         />
       </Layout>
-      
+
       {/* Модальное окно управления проектами */}
       <ProjectManagement
         visible={projectManagementVisible}
@@ -236,7 +349,7 @@ const InnerApp: React.FC = () => {
 // Основной компонент приложения
 const AppComponent: React.FC = () => {
   return (
-    <ConfigProvider 
+    <ConfigProvider
       locale={ruRU}
       theme={{
         token: {
@@ -246,9 +359,11 @@ const AppComponent: React.FC = () => {
       }}
     >
       <App>
-        <ProjectProvider>
-          <InnerApp />
-        </ProjectProvider>
+        <AuthProvider>
+          <ProjectProvider>
+            <MainApp />
+          </ProjectProvider>
+        </AuthProvider>
       </App>
     </ConfigProvider>
   );

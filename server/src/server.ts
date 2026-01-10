@@ -14,6 +14,7 @@ import signalRoutes from './routes/signalRoutes';
 import deviceTypeSignalRoutes from './routes/deviceTypeSignalRoutes';
 import databaseRoutes from './routes/databaseRoutes';
 import projectRoutes from './routes/projectRoutes';
+import authRoutes from './routes/authRoutes';
 import path from 'path';
 import * as signalController from './controllers/signalController';
 
@@ -64,6 +65,7 @@ app.delete('/api/signals/clear', (req, res, next) => {
 });
 // --------------------------------------------------------------------------------
 
+app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/signals', signalRoutes);
 app.use('/api/devices', deviceRoutes);
