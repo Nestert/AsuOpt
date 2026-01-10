@@ -44,29 +44,6 @@ const MainApp: React.FC = () => {
   return <InnerApp />;
 };
 
-// Компонент с аутентификацией и маршрутизацией
-const AuthenticatedApp: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh'
-      }}>
-        <Spin size="large" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <AuthWrapper />;
-  }
-
-  return <InnerApp />;
-};
 
 // Компонент для управления отображением Login/Register
 const AuthWrapper: React.FC = () => {
