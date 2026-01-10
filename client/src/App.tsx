@@ -8,6 +8,7 @@ import DeviceDetails from './components/DeviceDetails';
 import ImportData from './components/ImportData';
 import DatabaseActions from './components/DatabaseActions';
 import SignalManagement from './components/SignalManagement';
+import DataExport from './components/DataExport';
 import ProjectSelector from './components/ProjectSelector';
 import ProjectManagement from './components/ProjectManagement';
 import { ProjectProvider, useProject } from './contexts/ProjectContext';
@@ -180,14 +181,25 @@ const InnerApp: React.FC = () => {
               )
             },
             {
+              key: 'export',
+              label: 'Экспорт данных',
+              children: (
+                <Layout className="content-layout">
+                  <Content className="app-content">
+                    <DataExport />
+                  </Content>
+                </Layout>
+              )
+            },
+            {
               key: 'import',
               label: 'Импорт данных',
               children: (
                 <Layout className="content-layout">
                   <Content className="app-content">
-                    <ImportData 
-                      onImportSuccess={handleImportSuccess} 
-                      onImportError={handleImportError} 
+                    <ImportData
+                      onImportSuccess={handleImportSuccess}
+                      onImportError={handleImportError}
                     />
                   </Content>
                 </Layout>

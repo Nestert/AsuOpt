@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import * as exportController from '../controllers/exportController';
+import { exportSignalsToPdfPuppeteer } from '../controllers/pdfPuppeteer';
 
 const router = express.Router();
 
@@ -12,6 +13,12 @@ router.get('/excel', (req: Request, res: Response, next: NextFunction) => {
 // Экспорт сигналов в Excel
 router.post('/signals', (req: Request, res: Response, next: NextFunction) => {
   exportController.exportSignalsToExcel(req, res)
+    .catch(next);
+});
+
+// Экспорт сигналов в PDF (через Puppeteer)
+router.post('/signals/pdf', (req: Request, res: Response, next: NextFunction) => {
+  exportSignalsToPdfPuppeteer(req, res)
     .catch(next);
 });
 

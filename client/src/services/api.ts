@@ -301,6 +301,19 @@ export const exportService = {
       console.error('API: ошибка в exportSignalsToExcel:', error);
       throw error;
     }
+  },
+
+  // Экспорт данных сигналов в PDF
+  exportSignalsToPdf: async (columns: string[], include_plc: boolean = false): Promise<Blob> => {
+    try {
+      const response = await api.post('/exports/signals/pdf', { columns, include_plc }, {
+        responseType: 'blob' // Важно для получения файла
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в exportSignalsToPdf:', error);
+      throw error;
+    }
   }
 };
 
