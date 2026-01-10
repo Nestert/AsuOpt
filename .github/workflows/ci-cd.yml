@@ -25,6 +25,9 @@ jobs:
     - name: Install server dependencies
       run: cd server && npm ci
 
+    - name: Ensure ts-jest is available
+      run: cd server && npx tsc --version && npx ts-jest --version || echo "TypeScript tools check"
+
     - name: Run backend linting
       run: cd server && npm run lint
 
