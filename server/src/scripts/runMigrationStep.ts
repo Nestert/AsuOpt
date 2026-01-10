@@ -25,7 +25,7 @@ async function runMigrationStep() {
         )
       `);
       console.log('✅ Таблица projects создана');
-    } catch (error) {
+    } catch {
       console.log('⚠️  Таблица projects уже существует');
     }
     
@@ -37,7 +37,7 @@ async function runMigrationStep() {
         VALUES ('Основной проект', 'DEFAULT', 'Проект по умолчанию для существующих данных', 'active')
       `);
       console.log('✅ Дефолтный проект создан');
-    } catch (error) {
+    } catch {
       console.log('⚠️  Дефолтный проект уже существует');
     }
     
@@ -46,7 +46,7 @@ async function runMigrationStep() {
     try {
       await sequelize.query(`ALTER TABLE device_references ADD COLUMN project_id INTEGER DEFAULT 1`);
       console.log('✅ Столбец project_id добавлен в device_references');
-    } catch (error) {
+    } catch {
       console.log('⚠️  Столбец project_id уже существует в device_references');
     }
     
@@ -55,7 +55,7 @@ async function runMigrationStep() {
     try {
       await sequelize.query(`ALTER TABLE kips ADD COLUMN project_id INTEGER DEFAULT 1`);
       console.log('✅ Столбец project_id добавлен в kips');
-    } catch (error) {
+    } catch {
       console.log('⚠️  Столбец project_id уже существует в kips');
     }
     
@@ -64,7 +64,7 @@ async function runMigrationStep() {
     try {
       await sequelize.query(`ALTER TABLE zras ADD COLUMN project_id INTEGER DEFAULT 1`);
       console.log('✅ Столбец project_id добавлен в zras');
-    } catch (error) {
+    } catch {
       console.log('⚠️  Столбец project_id уже существует в zras');
     }
     
@@ -73,7 +73,7 @@ async function runMigrationStep() {
     try {
       await sequelize.query(`ALTER TABLE signals ADD COLUMN project_id INTEGER DEFAULT 1`);
       console.log('✅ Столбец project_id добавлен в signals');
-    } catch (error) {
+    } catch {
       console.log('⚠️  Столбец project_id уже существует в signals');
     }
     
@@ -82,7 +82,7 @@ async function runMigrationStep() {
     try {
       await sequelize.query(`ALTER TABLE device_type_signals ADD COLUMN project_id INTEGER DEFAULT 1`);
       console.log('✅ Столбец project_id добавлен в device_type_signals');
-    } catch (error) {
+    } catch {
       console.log('⚠️  Столбец project_id уже существует в device_type_signals');
     }
     
@@ -102,7 +102,7 @@ async function runMigrationStep() {
       try {
         await sequelize.query(indexSQL);
         console.log(`✅ Индекс создан: ${indexSQL.split(' ')[5]}`);
-      } catch (error) {
+      } catch {
         console.log(`⚠️  Индекс уже существует: ${indexSQL.split(' ')[5]}`);
       }
     }
@@ -122,7 +122,7 @@ async function runMigrationStep() {
         )
       `);
       console.log('✅ Таблица project_templates создана');
-    } catch (error) {
+    } catch {
       console.log('⚠️  Таблица project_templates уже существует');
     }
     

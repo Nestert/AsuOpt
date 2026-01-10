@@ -31,7 +31,6 @@ export class DatabaseController {
       console.log(`Запрос на очистку таблицы ${tableName}`);
       
       let countBefore = 0;
-      let result;
       
       // Отключаем внешние ключи перед любыми операциями удаления
       await sequelize.query('PRAGMA foreign_keys = OFF;');
@@ -48,17 +47,17 @@ export class DatabaseController {
               await DeviceSignal.destroy({ where: {}, force: true });
             }
             
-            result = await Signal.destroy({ where: {}, force: true });
+            await Signal.destroy({ where: {}, force: true });
             break;
             
           case 'device_signals':
             countBefore = await DeviceSignal.count();
-            result = await DeviceSignal.destroy({ where: {}, force: true });
+            await DeviceSignal.destroy({ where: {}, force: true });
             break;
             
           case 'device_type_signals':
             countBefore = await DeviceTypeSignal.count();
-            result = await DeviceTypeSignal.destroy({ where: {}, force: true });
+            await DeviceTypeSignal.destroy({ where: {}, force: true });
             break;
             
           case 'devices':
@@ -71,22 +70,22 @@ export class DatabaseController {
               await DeviceSignal.destroy({ where: {}, force: true });
             }
             
-            result = await Device.destroy({ where: {}, force: true });
+            await Device.destroy({ where: {}, force: true });
             break;
             
           case 'device_references':
             countBefore = await DeviceReference.count();
-            result = await DeviceReference.destroy({ where: {}, force: true });
+            await DeviceReference.destroy({ where: {}, force: true });
             break;
             
           case 'kips':
             countBefore = await Kip.count();
-            result = await Kip.destroy({ where: {}, force: true });
+            await Kip.destroy({ where: {}, force: true });
             break;
             
           case 'zras':
             countBefore = await Zra.count();
-            result = await Zra.destroy({ where: {}, force: true });
+            await Zra.destroy({ where: {}, force: true });
             break;
             
           case 'signal_categories':
@@ -106,7 +105,7 @@ export class DatabaseController {
               // Сбрасываем автоинкремент
               await sequelize.query(`DELETE FROM sqlite_sequence WHERE name='signal_categories';`);
               
-              result = true;
+
               console.log(`Таблица signal_categories очищена. Удалено ${countBefore} записей.`);
             } catch (error) {
               console.error(`Ошибка при очистке таблицы signal_categories:`, error);
@@ -144,7 +143,7 @@ export class DatabaseController {
               // Сбрасываем автоинкремент
               await sequelize.query(`DELETE FROM sqlite_sequence WHERE name='${tableName}';`);
               
-              result = true;
+
             } catch (error) {
               console.error(`Ошибка при очистке таблицы ${tableName}:`, error);
               throw error;

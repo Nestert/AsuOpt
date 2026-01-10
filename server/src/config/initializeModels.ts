@@ -27,7 +27,7 @@ export const initializeModels = async () => {
     // Устанавливаем ассоциации между моделями
     console.log('🔗 Установка ассоциаций...');
     
-    Project.associate({});
+    Project.associate();
     Device.associate();
     DeviceReference.associate();
     Kip.associate();

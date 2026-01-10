@@ -1,14 +1,5 @@
 import { Sequelize } from 'sequelize';
 import path from 'path';
-import fs from 'fs';
-import { Device } from '../models/Device';
-import { DeviceReference } from '../models/DeviceReference';
-import { Kip } from '../models/Kip';
-import { Zra } from '../models/Zra';
-import { Signal } from '../models/Signal';
-import { DeviceSignal } from '../models/DeviceSignal';
-import { DeviceTypeSignal } from '../models/DeviceTypeSignal';
-import { Project } from '../models/Project';
 
 const sequelize = new Sequelize({
   dialect: 'sqlite',
@@ -75,7 +66,7 @@ const ensureProjectMigration = async () => {
         INSERT OR IGNORE INTO projects (id, name, code, description, status) 
         VALUES (1, 'Основной проект', 'DEFAULT', 'Проект по умолчанию для существующих данных', 'active')
       `);
-    } catch (error) {
+    } catch {
       console.log('⚠️  Дефолтный проект уже существует');
     }
 

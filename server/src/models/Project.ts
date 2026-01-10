@@ -84,7 +84,7 @@ export class Project extends Model<ProjectAttributes> implements ProjectAttribut
     );
   }
 
-  public static associate(models: any) {
+  public static associate() {
     // Связи с другими моделями будут добавлены после создания всех моделей
     // Project.hasMany(models.DeviceReference, {
     //   foreignKey: 'projectId',

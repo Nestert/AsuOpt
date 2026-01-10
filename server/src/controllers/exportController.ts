@@ -7,17 +7,6 @@ import { DeviceReference } from '../models/DeviceReference';
 import { Kip } from '../models/Kip';
 import { Zra } from '../models/Zra';
 
-// Интерфейсы для правильной типизации
-interface DeviceSignalWithRelations extends DeviceSignal {
-  signal?: Signal;
-  device?: Device;
-}
-
-interface DeviceReferenceWithRelations extends DeviceReference {
-  kip?: Kip;
-  zra?: Zra;
-}
-
 // Экспорт списка устройств в Excel
 export const exportToExcel = async (req: Request, res: Response) => {
   try {

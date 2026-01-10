@@ -2,9 +2,7 @@ import { Request, Response } from 'express';
 import { DeviceTypeSignal } from '../models/DeviceTypeSignal';
 import { Device } from '../models/Device';
 import { DeviceReference } from '../models/DeviceReference';
-import { DeviceSignal } from '../models/DeviceSignal';
-import { Signal } from '../models/Signal';
-import { Op, Sequelize } from 'sequelize';
+import { Op } from 'sequelize';
 
 // Интерфейс для объекта сводки
 interface SignalSummary {
@@ -221,7 +219,7 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
           { type: 'SELECT' }
         );
         deviceSignalsExists = true;
-      } catch (tableError) {
+      } catch {
         console.log('Таблица device_signals не существует или недоступна');
         deviceSignalsExists = false;
       }
@@ -233,7 +231,7 @@ export const getSignalsSummary = async (req: Request, res: Response) => {
           { type: 'SELECT' }
         );
         signalsExists = true;
-      } catch (tableError) {
+      } catch {
         console.log('Таблица signals не существует или недоступна');
         signalsExists = false;
       }

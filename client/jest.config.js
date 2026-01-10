@@ -4,6 +4,7 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^antd/es/locale/(.*)$': 'antd/lib/locale/$1',
+    '^axios$': '<rootDir>/src/__mocks__/axios.js',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
   },
   transformIgnorePatterns: [
