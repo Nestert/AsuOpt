@@ -42,8 +42,8 @@ export const initializeModels = async () => {
 
     // Синхронизируем модели с базой данных
     console.log('🔄 Синхронизация с базой данных...');
-    await sequelize.sync({ force: false });
-    console.log('✅ Синхронизация завершена');
+    // await sequelize.sync({ alter: true });
+    console.log('✅ Синхронизация завершена (пропущена)');
 
   } catch (error) {
     console.error('❌ Ошибка при инициализации моделей:', error);

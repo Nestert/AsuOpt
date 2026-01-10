@@ -233,3 +233,4 @@ export const exportSignalsToExcel = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Ошибка сервера при экспорте сигналов в Excel' });
   }
 };
+

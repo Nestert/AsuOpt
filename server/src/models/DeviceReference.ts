@@ -1,4 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
+import { Kip } from './Kip';
+import { Zra } from './Zra';
 
 interface DeviceReferenceAttributes {
   id?: number;
@@ -83,11 +85,8 @@ export class DeviceReference extends Model<DeviceReferenceAttributes> implements
     );
   }
   
-  // Определение ассоциаций с другими моделями
-  public static associate(): void {
-    // Импортируем модели здесь, чтобы избежать циклических зависимостей
-    const { Kip } = require('./Kip');
-    const { Zra } = require('./Zra');
+   // Определение ассоциаций с другими моделями
+   public static associate(): void {
     
     // Один девайс в справочнике имеет одну запись КИП
     DeviceReference.hasOne(Kip, {

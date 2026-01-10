@@ -103,12 +103,14 @@ const SignalExportContent: React.FC<SignalExportProps> = ({ projectId }) => {
     }
   };
 
+
+
   return (
     <div className="signal-export">
       <Card variant="borderless">
         <Title level={4}>Экспорт сигналов устройств</Title>
         <Paragraph>
-          Экспортируйте все сигналы по устройствам в Excel файл.
+          Экспортируйте все сигналы по устройствам в Excel или PDF файл.
           Вы можете выбрать колонки, которые будут включены в экспорт.
         </Paragraph>
         
@@ -142,25 +144,25 @@ const SignalExportContent: React.FC<SignalExportProps> = ({ projectId }) => {
             <Checkbox>Включить поле ПЛК</Checkbox>
           </Form.Item>
           
-           <Form.Item>
-             <Button
-               type="primary"
-               onClick={handleExportExcel}
-               loading={loading}
-               icon={<FileExcelOutlined />}
-               style={{ marginRight: 8 }}
-             >
-               Экспортировать в Excel
-             </Button>
-             <Button
-               type="default"
-               onClick={handleExportPdf}
-               loading={loading}
-               icon={<FilePdfOutlined />}
-             >
-               Экспортировать в PDF
-             </Button>
-           </Form.Item>
+            <Form.Item>
+              <Button
+                type="primary"
+                onClick={handleExportExcel}
+                loading={loading}
+                icon={<FileExcelOutlined />}
+                style={{ marginRight: 8 }}
+              >
+                Экспортировать в Excel
+              </Button>
+              <Button
+                type="default"
+                onClick={handleExportPdf}
+                loading={loading}
+                icon={<FilePdfOutlined />}
+              >
+                Экспортировать в PDF
+              </Button>
+            </Form.Item>
         </Form>
         
         {loading && (

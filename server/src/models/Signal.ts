@@ -1,4 +1,5 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
+import { DeviceSignal } from './DeviceSignal';
 
 interface SignalAttributes {
   id?: number;
@@ -75,7 +76,6 @@ export class Signal extends Model<SignalAttributes> implements SignalAttributes 
   
   public static associate(): void {
     // Связь с DeviceSignal
-    const { DeviceSignal } = require('./DeviceSignal');
     Signal.hasMany(DeviceSignal, {
       foreignKey: 'signalId',
       as: 'deviceSignals',

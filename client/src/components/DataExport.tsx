@@ -87,15 +87,15 @@ const DataExportContent: React.FC = () => {
                   style={{ marginBottom: 16 }}
                 />
 
-                <Button
-                  type="primary"
-                  onClick={handleExportDevices}
-                  loading={loading}
-                  icon={<FileExcelOutlined />}
-                  size="large"
-                >
-                  Экспортировать устройства в Excel
-                </Button>
+                 <Button
+                   type="primary"
+                   onClick={handleExportDevices}
+                   loading={loading}
+                   icon={<FileExcelOutlined />}
+                   size="large"
+                 >
+                   Экспортировать устройства в Excel
+                 </Button>
 
                 {loading && (
                   <div style={{ marginTop: 16, textAlign: 'center' }}>

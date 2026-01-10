@@ -1,4 +1,3 @@
-import bcrypt from 'bcryptjs';
 import { initializeDatabase, sequelize } from '../config/database';
 import { initializeModels } from '../config/initializeModels';
 import { User } from '../models/User';
@@ -15,7 +14,7 @@ async function createTestUsers() {
     console.log('🗑️  Очищены существующие пользователи');
 
     // Создаем администратора
-    const admin = await User.create({
+    await User.create({
       username: 'admin',
       email: 'admin@asuopt.local',
       password: 'admin123', // будет хэширован автоматически
@@ -24,7 +23,7 @@ async function createTestUsers() {
     });
 
     // Создаем обычного пользователя
-    const user = await User.create({
+    await User.create({
       username: 'user',
       email: 'user@asuopt.local',
       password: 'admin123', // будет хэширован автоматически

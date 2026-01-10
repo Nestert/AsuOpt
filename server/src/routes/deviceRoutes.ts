@@ -45,6 +45,12 @@ router.delete('/:id', (req: Request, res: Response, next: NextFunction) => {
     .catch(next);
 });
 
+// Получение дочерних устройств
+router.get('/:parentId/children', (req: Request, res: Response, next: NextFunction) => {
+  deviceController.getDeviceChildren(req, res)
+    .catch(next);
+});
+
 // Поиск устройств
 router.get('/search', (req: Request, res: Response, next: NextFunction) => {
   deviceController.searchDevices(req, res)

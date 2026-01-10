@@ -1,4 +1,5 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
+import { Project } from './Project';
 
 interface DeviceAttributes {
   id?: number;
@@ -97,7 +98,6 @@ export class Device extends Model<DeviceAttributes> implements DeviceAttributes 
       as: 'parent',
     });
 
-    const { Project } = require('./Project');
     Device.belongsTo(Project, {
       foreignKey: 'projectId',
       as: 'project',

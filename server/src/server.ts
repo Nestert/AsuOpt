@@ -4,6 +4,7 @@ import bodyParser from 'body-parser';
 import { initializeDatabase } from './config/database';
 import { initializeModels } from './config/initializeModels';
 import { swaggerUi, specs } from './config/swagger';
+import { sequelize } from './config/database';
 import deviceRoutes from './routes/deviceRoutes';
 import exportRoutes from './routes/exportRoutes';
 import importRoutes from './routes/importRoutes';
@@ -46,8 +47,14 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
 // Инициализация базы данных и моделей
 const initialize = async () => {
   try {
+    console.log('🚀 Инициализация базы данных...');
     await initializeDatabase();
+    console.log('✅ База данных инициализирована');
+
+    console.log('🔧 Инициализация моделей...');
     await initializeModels();
+    console.log('✅ Модели инициализированы');
+
     console.log('🎉 Система полностью инициализирована');
   } catch (error) {
     console.error('❌ Критическая ошибка при инициализации:', error);

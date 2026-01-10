@@ -1,4 +1,5 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
+import { User } from './User';
 
 interface ProjectAttributes {
   id?: number;
@@ -86,7 +87,6 @@ export class Project extends Model<ProjectAttributes> implements ProjectAttribut
 
   public static associate() {
     // Связи с другими моделями
-    const { User } = require('./User');
     Project.belongsTo(User, {
       foreignKey: 'createdBy',
       as: 'creator',

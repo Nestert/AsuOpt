@@ -1,5 +1,6 @@
 import { Model, DataTypes, Sequelize } from 'sequelize';
 import bcrypt from 'bcryptjs';
+import { Project } from './Project';
 
 interface UserAttributes {
   id?: number;
@@ -100,7 +101,6 @@ export class User extends Model<UserAttributes> implements UserAttributes {
 
   public static associate() {
     // Связи с другими моделями
-    const { Project } = require('./Project');
     User.hasMany(Project, {
       foreignKey: 'createdBy',
       as: 'createdProjects',
