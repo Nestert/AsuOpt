@@ -167,7 +167,11 @@ describe('Device Reference API', () => {
           },
           dataType: 'zra',
           zra: { designType: 'Шаровой кран', nominalDiameter: 'DN50' }
-        });
+        })
+        .expect(201);
+
+      expect(createResponse.body).toHaveProperty('reference');
+      expect(createResponse.body.reference).toHaveProperty('id');
 
       const deviceId = createResponse.body.reference.id;
       const updateData = {
@@ -198,7 +202,11 @@ describe('Device Reference API', () => {
             projectId: 1
           },
           dataType: null
-        });
+        })
+        .expect(201);
+
+      expect(createResponse.body).toHaveProperty('reference');
+      expect(createResponse.body.reference).toHaveProperty('id');
 
       const deviceId = createResponse.body.reference.id;
 

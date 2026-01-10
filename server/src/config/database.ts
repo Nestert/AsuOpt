@@ -3,12 +3,12 @@ import path from 'path';
 
 const sequelize = new Sequelize({
   dialect: 'sqlite',
-  storage: process.env.NODE_ENV === 'test' 
-    ? ':memory:' 
+  storage: process.env.NODE_ENV === 'test'
+    ? ':memory:'
     : path.join(__dirname, '../../database.sqlite'),
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   define: {
-    timestamps: true,
+    timestamps: false, // Отключаем автоматические timestamps
     underscored: false,
   },
 });

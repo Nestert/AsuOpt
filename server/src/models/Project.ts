@@ -79,7 +79,7 @@ export class Project extends Model<ProjectAttributes> implements ProjectAttribut
       {
         sequelize,
         tableName: 'projects',
-        timestamps: true,
+        timestamps: true, // Включаем timestamps для этой модели
         underscored: true, // Использует snake_case для полей
       }
     );
