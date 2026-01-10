@@ -34,14 +34,12 @@ describe('DeviceFilters', () => {
   });
 
   it('renders basic structure', async () => {
-    await act(async () => {
-      render(
-        <DeviceFilters
-          onApplyFilters={mockOnApplyFilters}
-          devices={mockDevices}
-        />
-      );
-    });
+    render(
+      <DeviceFilters
+        onApplyFilters={mockOnApplyFilters}
+        devices={mockDevices}
+      />
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Фильтры устройств')).toBeInTheDocument();
@@ -49,14 +47,12 @@ describe('DeviceFilters', () => {
   });
 
   it('calls onApplyFilters with empty filters initially', async () => {
-    await act(async () => {
-      render(
-        <DeviceFilters
-          onApplyFilters={mockOnApplyFilters}
-          devices={mockDevices}
-        />
-      );
-    });
+    render(
+      <DeviceFilters
+        onApplyFilters={mockOnApplyFilters}
+        devices={mockDevices}
+      />
+    );
 
     await waitFor(() => {
       expect(mockOnApplyFilters).toHaveBeenCalledWith({});
@@ -69,14 +65,12 @@ describe('DeviceFilters', () => {
       { name: 'Test Preset', filters: { deviceType: ['PLC'] } }
     ]));
 
-    await act(async () => {
-      render(
-        <DeviceFilters
-          onApplyFilters={mockOnApplyFilters}
-          devices={mockDevices}
-        />
-      );
-    });
+    render(
+      <DeviceFilters
+        onApplyFilters={mockOnApplyFilters}
+        devices={mockDevices}
+      />
+    );
 
     // Проверяем, что localStorage был вызван для загрузки пресетов
     expect(mockGetItem).toHaveBeenCalled();
