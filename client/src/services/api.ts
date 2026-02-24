@@ -56,7 +56,7 @@ export const deviceService = {
       throw error;
     }
   },
-  
+
   // Получить дерево устройств
   getDeviceTree: async (projectId?: number): Promise<TreeNode[]> => {
     try {
@@ -68,7 +68,7 @@ export const deviceService = {
       throw error;
     }
   },
-  
+
   // Получить детали устройства по ID
   getDeviceById: async (id: number): Promise<DeviceFullData> => {
     try {
@@ -79,7 +79,7 @@ export const deviceService = {
       throw error;
     }
   },
-  
+
   // Создать новое устройство
   createDevice: async (deviceData: any): Promise<DeviceFullData> => {
     try {
@@ -90,7 +90,7 @@ export const deviceService = {
       throw error;
     }
   },
-  
+
   // Удалить устройство по ID
   deleteDeviceById: async (id: number): Promise<void> => {
     try {
@@ -112,7 +112,7 @@ export const deviceService = {
       throw error;
     }
   },
-  
+
   // Очистить базу данных устройств
   clearAllDevices: async (): Promise<any> => {
     try {
@@ -128,7 +128,7 @@ export const deviceService = {
       throw error;
     }
   },
-  
+
   // Очистить базу данных справочников
   clearAllReferences: async (): Promise<any> => {
     try {
@@ -144,7 +144,7 @@ export const deviceService = {
       throw error;
     }
   },
-  
+
   // Поиск устройств
   searchDevices: async (query: string): Promise<DeviceReference[]> => {
     try {
@@ -160,27 +160,27 @@ export const deviceService = {
 // Сервис для работы с KIP
 export const kipService = {
   getAllKips: async () => {
-    const response = await api.get('/kips');
+    const response = await api.get('/kip');
     return response.data;
   },
-  
+
   getKipById: async (id: number) => {
-    const response = await api.get(`/kips/${id}`);
+    const response = await api.get(`/kip/${id}`);
     return response.data;
   },
-  
+
   createKip: async (kipData: any) => {
-    const response = await api.post('/kips', kipData);
+    const response = await api.post('/kip', kipData);
     return response.data;
   },
-  
+
   updateKip: async (id: number, kipData: any) => {
-    const response = await api.put(`/kips/${id}`, kipData);
+    const response = await api.put(`/kip/${id}`, kipData);
     return response.data;
   },
-  
+
   deleteKip: async (id: number) => {
-    const response = await api.delete(`/kips/${id}`);
+    const response = await api.delete(`/kip/${id}`);
     return response.data;
   }
 };
@@ -188,95 +188,94 @@ export const kipService = {
 // Сервис для работы с ZRA
 export const zraService = {
   getAllZras: async () => {
-    const response = await api.get('/zras');
+    const response = await api.get('/zra');
     return response.data;
   },
-  
+
   getZraById: async (id: number) => {
-    const response = await api.get(`/zras/${id}`);
+    const response = await api.get(`/zra/${id}`);
     return response.data;
   },
-  
+
   createZra: async (zraData: any) => {
-    const response = await api.post('/zras', zraData);
+    const response = await api.post('/zra', zraData);
     return response.data;
   },
-  
+
   updateZra: async (id: number, zraData: any) => {
-    const response = await api.put(`/zras/${id}`, zraData);
+    const response = await api.put(`/zra/${id}`, zraData);
     return response.data;
   },
-  
+
   deleteZra: async (id: number) => {
-    const response = await api.delete(`/zras/${id}`);
+    const response = await api.delete(`/zra/${id}`);
     return response.data;
   }
 };
 
 // Сервис для работы с импортом данных
 export const importService = {
-  // Импорт данных КИП из CSV файла
-  importKipFromCsv: async (
-    file: File,
-    projectId?: number
-  ): Promise<{ success: boolean; message: string; count?: number }> => {
+  // Анализ CSV файла (получение заголовков)
+  analyzeFile: async (file: File): Promise<{ success: boolean; tempFileName: string; headers: string[]; sampleData: any[]; totalRows: number }> => {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     try {
-      const query = projectId ? `?projectId=${projectId}` : '';
-      const response = await api.post(`/import/kip${query}`, formData, {
+      const response = await api.post('/import/analyze', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в analyzeFile:', error);
+      throw error;
+    }
+  },
+
+  // Импорт данных КИП из CSV файла (второй шаг)
+  importKipFromCsv: async (
+    tempFileName: string,
+    columnMap: Record<string, string>,
+    projectId?: number
+  ): Promise<{ success: boolean; message: string; count?: number }> => {
+    try {
+      const query = projectId ? `?projectId=${projectId}` : '';
+      const response = await api.post(`/import/kip${query}`, { tempFileName, columnMap });
       return response.data;
     } catch (error) {
       console.error('API: ошибка в importKipFromCsv:', error);
       throw error;
     }
   },
-  
+
   // Импорт данных ЗРА из CSV файла
   importZraFromCsv: async (
-    file: File,
+    tempFileName: string,
+    columnMap: Record<string, string>,
     projectId?: number
   ): Promise<{ success: boolean; message: string; count?: number }> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
     try {
       const query = projectId ? `?projectId=${projectId}` : '';
-      const response = await api.post(`/import/zra${query}`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await api.post(`/import/zra${query}`, { tempFileName, columnMap });
       return response.data;
     } catch (error) {
       console.error('API: ошибка в importZraFromCsv:', error);
       throw error;
     }
   },
-  
+
   // Импорт категорий сигналов из CSV файла
-  importSignalCategoriesFromCsv: async (file: File): Promise<{ success: boolean; message: string; count?: number }> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
+  importSignalCategoriesFromCsv: async (tempFileName: string, columnMap: Record<string, string>): Promise<{ success: boolean; message: string; count?: number }> => {
     try {
-      const response = await api.post('/import/signal-categories', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await api.post('/import/signal-categories', { tempFileName, columnMap });
       return response.data;
     } catch (error) {
       console.error('API: ошибка в importSignalCategoriesFromCsv:', error);
       throw error;
     }
   },
-  
+
   // Назначение сигналов устройствам определенного типа
   assignSignalsToDevicesByType: async (
     deviceType: string,
@@ -291,7 +290,7 @@ export const importService = {
       throw error;
     }
   },
-  
+
   // Назначение сигналов всем типам устройств
   assignSignalsToAllDeviceTypes: async (
     projectId?: number
@@ -305,7 +304,7 @@ export const importService = {
       throw error;
     }
   },
-  
+
   // Получение статистики импорта
   getImportStats: async (): Promise<any> => {
     try {
@@ -359,7 +358,7 @@ export const signalService = {
       throw error;
     }
   },
-  
+
   // Получить сигналы по проекту (только назначенные устройствам)
   getSignalsByProject: async (projectId: number): Promise<Signal[]> => {
     try {
@@ -371,7 +370,7 @@ export const signalService = {
       throw error;
     }
   },
-  
+
   // Получить сигналы по типу
   getSignalsByType: async (type: 'AI' | 'AO' | 'DI' | 'DO'): Promise<Signal[]> => {
     try {
@@ -382,7 +381,7 @@ export const signalService = {
       throw error;
     }
   },
-  
+
   // Получить сводку по сигналам
   getSignalsSummary: async (projectId?: number): Promise<SignalSummary[]> => {
     try {
@@ -394,7 +393,7 @@ export const signalService = {
       throw error;
     }
   },
-  
+
   // Получить сигналы для конкретного устройства
   getDeviceSignals: async (deviceId: number): Promise<DeviceSignal[]> => {
     try {
@@ -405,7 +404,7 @@ export const signalService = {
       throw error;
     }
   },
-  
+
   // Создать новый сигнал
   createSignal: async (signalData: Omit<Signal, 'id' | 'createdAt' | 'updatedAt'>): Promise<Signal> => {
     try {
@@ -416,7 +415,7 @@ export const signalService = {
       throw error;
     }
   },
-  
+
   // Обновить сигнал
   updateSignal: async (id: number, signalData: Partial<Signal>): Promise<Signal> => {
     try {
@@ -427,7 +426,7 @@ export const signalService = {
       throw error;
     }
   },
-  
+
   // Удалить сигнал
   deleteSignal: async (id: number): Promise<void> => {
     try {
@@ -437,7 +436,7 @@ export const signalService = {
       throw error;
     }
   },
-  
+
   // Назначить сигнал устройству
   assignSignalToDevice: async (deviceId: number, signalId: number, count: number): Promise<DeviceSignal> => {
     try {
@@ -451,7 +450,7 @@ export const signalService = {
       throw error;
     }
   },
-  
+
   // Удалить назначение сигнала устройству
   removeSignalFromDevice: async (deviceId: number, signalId: number): Promise<void> => {
     try {
@@ -461,7 +460,7 @@ export const signalService = {
       throw error;
     }
   },
-  
+
   // Удалить все сигналы
   clearAllSignals: async (): Promise<any> => {
     try {
@@ -486,7 +485,7 @@ export const deviceTypeSignalService = {
       throw error;
     }
   },
-  
+
   // Получить список уникальных типов устройств
   getUniqueDeviceTypes: async (): Promise<string[]> => {
     try {
@@ -497,7 +496,7 @@ export const deviceTypeSignalService = {
       throw error;
     }
   },
-  
+
   // Получить список уникальных типов устройств из справочника DeviceReference
   getUniqueDeviceTypesFromReference: async (projectId?: number): Promise<string[]> => {
     try {
@@ -509,7 +508,7 @@ export const deviceTypeSignalService = {
       throw error;
     }
   },
-  
+
   // Получить сводную таблицу сигналов
   getSignalsSummary: async (projectId?: number): Promise<SignalsSummary> => {
     try {
@@ -521,7 +520,7 @@ export const deviceTypeSignalService = {
       throw error;
     }
   },
-  
+
   // Получить запись для конкретного типа устройства
   getDeviceTypeSignalByType: async (deviceType: string): Promise<DeviceTypeSignal> => {
     try {
@@ -532,7 +531,7 @@ export const deviceTypeSignalService = {
       throw error;
     }
   },
-  
+
   // Обновить или создать запись для типа устройства
   updateDeviceTypeSignal: async (deviceTypeSignal: DeviceTypeSignal): Promise<DeviceTypeSignal> => {
     try {
@@ -543,7 +542,7 @@ export const deviceTypeSignalService = {
       throw error;
     }
   },
-  
+
   // Удалить запись для типа устройства
   deleteDeviceTypeSignal: async (deviceType: string): Promise<void> => {
     try {
@@ -553,7 +552,7 @@ export const deviceTypeSignalService = {
       throw error;
     }
   },
-  
+
   // Очистить все записи в таблице сигналов типов устройств
   clearAllDeviceTypeSignals: async (): Promise<void> => {
     try {
@@ -582,7 +581,7 @@ export const databaseService = {
       throw error;
     }
   },
-  
+
   // Очистить конкретную таблицу
   clearTable: async (tableName: string): Promise<any> => {
     try {

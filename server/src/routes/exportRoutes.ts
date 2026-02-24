@@ -22,4 +22,10 @@ router.post('/signals/pdf', (req: Request, res: Response, next: NextFunction) =>
     .catch(next);
 });
 
+// Генерация опросных листов
+router.post('/questionnaire', (req: Request, res: Response, next: NextFunction) => {
+  exportController.generateQuestionnaire(req, res)
+    .catch(next);
+});
+
 export default router; 

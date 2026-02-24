@@ -6,6 +6,8 @@ import { Signal } from '../models/Signal';
 import { DeviceReference } from '../models/DeviceReference';
 import { Kip } from '../models/Kip';
 import { Zra } from '../models/Zra';
+import { Document, Packer, Paragraph } from 'docx';
+const puppeteer: any = require('puppeteer');
 
 // Экспорт списка устройств в Excel
 export const exportToExcel = async (req: Request, res: Response) => {
@@ -231,6 +233,199 @@ export const exportSignalsToExcel = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Ошибка при экспорте сигналов в Excel:', error);
     res.status(500).json({ message: 'Ошибка сервера при экспорте сигналов в Excel' });
+  }
+};
+
+// Генерация опросных листов
+export const generateQuestionnaire = async (req: Request, res: Response) => {
+  try {
+    const { devices, format } = req.body;
+
+    if (!devices || !Array.isArray(devices)) {
+      return res.status(400).json({ message: 'Не переданы данные устройств' });
+    }
+
+    if (format === 'pdf') {
+      // Генерация PDF с помощью Puppeteer
+      let html = `<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Опросный лист</title>
+    <style>
+        body {
+            font-family: 'Arial', 'Helvetica', sans-serif;
+            margin: 20px;
+            color: #333;
+            line-height: 1.6;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        h2 {
+            color: #34495e;
+            border-bottom: 1px solid #bdc3c7;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+        h3 {
+            color: #34495e;
+            margin-top: 20px;
+        }
+        p {
+            margin: 5px 0;
+        }
+        .device {
+            margin-bottom: 40px;
+        }
+        .specs {
+            margin-left: 20px;
+        }
+        .spec-item {
+            margin: 3px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Опросный лист для закупки оборудования</h1>
+    <div class="export-info">
+        Дата генерации: ${new Date().toLocaleString('ru-RU')}<br>
+    </div>`;
+
+      devices.forEach((deviceData: any, index: number) => {
+        const { device, kip, zra } = deviceData;
+
+        html += `
+    <div class="device">
+        <h2>Устройство ${index + 1}: ${device.equipmentCode}</h2>
+        <div class="specs">
+            <p><strong>Тип устройства:</strong> ${device.deviceType}</p>
+            <p><strong>Описание:</strong> ${device.description || 'Н/Д'}</p>
+            <p><strong>Система:</strong> ${device.systemCode || 'Н/Д'}</p>
+            <p><strong>Линия:</strong> ${device.lineNumber || 'Н/Д'}</p>`;
+
+        if (kip) {
+          html += `
+            <h3>Технические данные КИП:</h3>`;
+          Object.entries(kip).forEach(([key, value]) => {
+            if (value && key !== 'id' && key !== 'deviceReferenceId') {
+              html += `<p class="spec-item"><strong>${key}:</strong> ${value}</p>`;
+            }
+          });
+        } else if (zra) {
+          html += `
+            <h3>Технические данные ЗРА:</h3>`;
+          Object.entries(zra).forEach(([key, value]) => {
+            if (value && key !== 'id' && key !== 'deviceReferenceId') {
+              html += `<p class="spec-item"><strong>${key}:</strong> ${value}</p>`;
+            }
+          });
+        }
+
+        html += `
+        </div>
+    </div>`;
+      });
+
+      html += `
+</body>
+</html>`;
+
+      // Generate PDF using Puppeteer
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-gpu'
+        ]
+      });
+
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '20mm', right: '20mm', bottom: '20mm', left: '20mm' },
+        preferCSSPageSize: false
+      });
+
+      await browser.close();
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=questionnaire_${new Date().toISOString().slice(0, 10)}.pdf`);
+      res.send(pdfBuffer);
+    } else if (format === 'word') {
+      // Генерация Word
+      const paragraphs: Paragraph[] = [];
+
+      paragraphs.push(new Paragraph({
+        text: 'Опросный лист для закупки оборудования',
+        heading: 'Title',
+      }));
+
+      devices.forEach((deviceData: any, index: number) => {
+        const { device, kip, zra } = deviceData;
+
+        paragraphs.push(new Paragraph({
+          text: `Устройство ${index + 1}: ${device.equipmentCode}`,
+          heading: 'Heading1',
+        }));
+
+        // Основные данные
+        paragraphs.push(new Paragraph(`Тип устройства: ${device.deviceType}`));
+        paragraphs.push(new Paragraph(`Описание: ${device.description || 'Н/Д'}`));
+        paragraphs.push(new Paragraph(`Система: ${device.systemCode || 'Н/Д'}`));
+        paragraphs.push(new Paragraph(`Линия: ${device.lineNumber || 'Н/Д'}`));
+
+        // Техданные
+        if (kip) {
+          paragraphs.push(new Paragraph({
+            text: 'Технические данные КИП:',
+            heading: 'Heading2',
+          }));
+
+          Object.entries(kip).forEach(([key, value]) => {
+            if (value && key !== 'id' && key !== 'deviceReferenceId') {
+              paragraphs.push(new Paragraph(`${key}: ${value}`));
+            }
+          });
+        } else if (zra) {
+          paragraphs.push(new Paragraph({
+            text: 'Технические данные ЗРА:',
+            heading: 'Heading2',
+          }));
+
+          Object.entries(zra).forEach(([key, value]) => {
+            if (value && key !== 'id' && key !== 'deviceReferenceId') {
+              paragraphs.push(new Paragraph(`${key}: ${value}`));
+            }
+          });
+        }
+      });
+
+      const doc = new Document({
+        sections: [{
+          properties: {},
+          children: paragraphs,
+        }],
+      });
+
+      const buffer = await Packer.toBuffer(doc);
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename=questionnaire_${new Date().toISOString().slice(0, 10)}.docx`);
+      res.send(buffer);
+    } else {
+      return res.status(400).json({ message: 'Неподдерживаемый формат. Используйте "pdf" или "word"' });
+    }
+  } catch (error) {
+    console.error('Ошибка при генерации опросного листа:', error);
+    res.status(500).json({ message: 'Ошибка сервера при генерации опросного листа' });
   }
 };
 

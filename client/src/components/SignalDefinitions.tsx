@@ -1,14 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, Popconfirm, Upload, Tooltip } from 'antd';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, Popconfirm, Upload, Tooltip, Steps, Result } from 'antd';
 import { signalService, importService } from '../services/api';
 import { Signal } from '../interfaces/Signal';
-import { PlusOutlined, ExclamationCircleOutlined, EditOutlined, DeleteOutlined, UploadOutlined, LinkOutlined } from '@ant-design/icons';
+import { PlusOutlined, ExclamationCircleOutlined, EditOutlined, DeleteOutlined, UploadOutlined, LinkOutlined, CheckCircleOutlined, ArrowLeftOutlined } from '@ant-design/icons';
+import ColumnMapper, { FieldDefinition } from './ColumnMapper';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { RcFile } from 'antd/es/upload';
 
 const { Title, Paragraph } = Typography;
 const { Option } = Select;
 const { Dragger } = Upload;
+
+const requiredFieldsSignal: FieldDefinition[] = [
+  { key: 'category', name: 'Категория', required: true },
+  { key: 'signalType', name: 'Вид сигнала', required: true },
+  { key: 'description', name: 'Описание сигнала', required: true },
+  { key: 'connectionType', name: 'Тип подключения' },
+  { key: 'voltage', name: 'Напряжение' },
+];
 
 interface SignalDefinitionsProps {
   projectId?: number | null;
@@ -25,6 +34,14 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [searchText, setSearchText] = useState('');
+
+  // Состояние для маппинга импорта
+  const [importStep, setImportStep] = useState(0);
+  const [tempFileName, setTempFileName] = useState<string>('');
+  const [availableColumns, setAvailableColumns] = useState<string[]>([]);
+  const [sampleData, setSampleData] = useState<any[]>([]);
+  const [columnMap, setColumnMap] = useState<Record<string, string>>({});
+  const [isMappingValid, setIsMappingValid] = useState(false);
 
   // Загрузка данных при монтировании компонента и при смене проекта
   useEffect(() => {
@@ -84,7 +101,7 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
   const handleFormSubmit = async () => {
     try {
       const values = await form.validateFields();
-      
+
       if (isEditing && currentSignal) {
         // Обновление существующего сигнала
         await signalService.updateSignal(currentSignal.id, values);
@@ -94,7 +111,7 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
         await signalService.createSignal(values);
         message.success('Сигнал успешно создан');
       }
-      
+
       setIsModalVisible(false);
       fetchSignals();
     } catch (error) {
@@ -116,6 +133,9 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
   // Показ модального окна импорта
   const showImportModal = () => {
     setFileList([]);
+    setImportStep(0);
+    setTempFileName('');
+    setColumnMap({});
     setIsImportModalVisible(true);
   };
 
@@ -133,8 +153,8 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
     setFileList(fileList.slice(-1)); // Ограничиваем до 1 файла
   };
 
-  // Импорт сигналов из CSV
-  const handleImportSignals = async () => {
+  // Анализ файла (Шаг 1)
+  const handleAnalyze = async () => {
     if (fileList.length === 0) {
       message.error('Пожалуйста, выберите файл для импорта');
       return;
@@ -148,10 +168,43 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
 
     setUploading(true);
     try {
-      const result = await importService.importSignalCategoriesFromCsv(file);
+      const response = await importService.analyzeFile(file);
+      if (response.success) {
+        setTempFileName(response.tempFileName);
+        setAvailableColumns(response.headers);
+        setSampleData(response.sampleData);
+        setImportStep(1);
+      } else {
+        message.error('Ошибка анализа файла');
+      }
+    } catch (err: any) {
+      message.error(err.response?.data?.message || 'Не удалось проанализировать файл');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleMapChange = useCallback((map: Record<string, string>) => {
+    setColumnMap(map);
+    const isValid = requiredFieldsSignal
+      .filter(f => f.required)
+      .every(f => !!map[f.key]);
+    setIsMappingValid(isValid);
+  }, []);
+
+  // Импорт сигналов (Шаг 2)
+  const handleImportSignals = async () => {
+    if (!isMappingValid) {
+      message.error('Пожалуйста, сопоставьте все обязательные поля');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const result = await importService.importSignalCategoriesFromCsv(tempFileName, columnMap);
       if (result.success) {
         message.success(result.message);
-        setIsImportModalVisible(false);
+        setImportStep(2);
         fetchSignals();
       } else {
         message.error(result.message);
@@ -273,9 +326,9 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
       key: 'actions',
       render: (_: any, record: Signal) => (
         <Space>
-          <Button 
-            icon={<EditOutlined />} 
-            size="small" 
+          <Button
+            icon={<EditOutlined />}
+            size="small"
             onClick={() => handleEditSignal(record)}
           />
           <Popconfirm
@@ -285,9 +338,9 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
             cancelText="Нет"
             icon={<ExclamationCircleOutlined style={{ color: 'red' }} />}
           >
-            <Button 
-              icon={<DeleteOutlined />} 
-              size="small" 
+            <Button
+              icon={<DeleteOutlined />}
+              size="small"
               danger
             />
           </Popconfirm>
@@ -299,7 +352,7 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
   return (
     <div className="signal-definitions">
       <Title level={2}>Справочник типов сигналов</Title>
-      
+
       {/* Поиск */}
       <div style={{ marginBottom: 16 }}>
         <Tooltip title="Поиск сигналов по названию, типу (AI/AO/DI/DO), категории и описанию">
@@ -314,27 +367,27 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
 
       {/* Кнопки действий */}
       <div style={{ marginBottom: 16, display: 'flex', gap: '8px' }}>
-        <Button 
-          type="primary" 
-          icon={<PlusOutlined />} 
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
           onClick={handleAddSignal}
         >
           Добавить сигнал
         </Button>
-        <Button 
-          icon={<UploadOutlined />} 
+        <Button
+          icon={<UploadOutlined />}
           onClick={showImportModal}
         >
           Импорт из CSV
         </Button>
-        <Button 
-          icon={<LinkOutlined />} 
+        <Button
+          icon={<LinkOutlined />}
           onClick={showAssignModal}
         >
           Назначить сигналы всем типам
         </Button>
       </div>
-      
+
       {/* Таблица сигналов */}
       <Table
         columns={columns}
@@ -343,7 +396,7 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
         loading={loading}
         pagination={{ pageSize: 10 }}
       />
-      
+
       {/* Модальное окно для добавления/редактирования сигнала */}
       <Modal
         title={isEditing ? 'Редактировать сигнал' : 'Добавить новый сигнал'}
@@ -364,7 +417,7 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
           >
             <Input placeholder="Введите название сигнала" />
           </Form.Item>
-          
+
           <Form.Item
             name="type"
             label="Тип"
@@ -377,28 +430,28 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
               <Option value="DO">DO (Дискретный выход)</Option>
             </Select>
           </Form.Item>
-          
+
           <Form.Item
             name="category"
             label="Категория"
           >
             <Input placeholder="Введите категорию сигнала" />
           </Form.Item>
-          
+
           <Form.Item
             name="connectionType"
             label="Тип подключения"
           >
             <Input placeholder="Например: 2-провод, 4-провод" />
           </Form.Item>
-          
+
           <Form.Item
             name="voltage"
             label="Напряжение"
           >
             <Input placeholder="Например: 4-20mA, 24V" />
           </Form.Item>
-          
+
           <Form.Item
             name="description"
             label="Описание"
@@ -407,45 +460,99 @@ const SignalDefinitions: React.FC<SignalDefinitionsProps> = ({ projectId }) => {
           </Form.Item>
         </Form>
       </Modal>
-      
+
       {/* Модальное окно импорта из CSV */}
       <Modal
-        title="Импорт сигналов из CSV"
+        title="Импорт категорий сигналов из CSV"
         open={isImportModalVisible}
-        onOk={handleImportSignals}
         onCancel={() => setIsImportModalVisible(false)}
-        okText="Импортировать"
-        cancelText="Отмена"
-        okButtonProps={{ loading: uploading }}
+        footer={null}
+        width={700}
       >
-        <Paragraph>
-          Загрузите CSV файл с категориями сигналов для импорта. Файл должен содержать столбцы: Категория, Вид сигнала, Тип подключения, Напряжение, Описание сигнала.
-        </Paragraph>
-        
-        <Dragger
-          fileList={fileList}
-          onChange={handleChange}
-          beforeUpload={beforeUpload}
-          maxCount={1}
-          accept=".csv"
-          disabled={uploading}
-          showUploadList={{ showRemoveIcon: !uploading }}
-          customRequest={({ onSuccess }) => {
-            if (onSuccess) {
-              setTimeout(() => {
-                onSuccess("ok");
-              }, 0);
-            }
-          }}
-        >
-          <p className="ant-upload-drag-icon">
-            <UploadOutlined />
-          </p>
-          <p className="ant-upload-text">Нажмите или перетащите файл CSV в эту область</p>
-          <p className="ant-upload-hint">
-            Поддерживаются только CSV файлы с корректной структурой
-          </p>
-        </Dragger>
+        <Steps current={importStep} style={{ marginBottom: 24 }}>
+          <Steps.Step title="Загрузка" />
+          <Steps.Step title="Настройка" />
+          <Steps.Step title="Готово" />
+        </Steps>
+
+        {importStep === 0 && (
+          <div>
+            <Paragraph>
+              Загрузите CSV файл с категориями сигналов для импорта. Файл должен содержать столбцы: Категория, Вид сигнала, Описание сигнала и опционально Тип подключения, Напряжение.
+            </Paragraph>
+            <Dragger
+              fileList={fileList}
+              onChange={handleChange}
+              beforeUpload={beforeUpload}
+              maxCount={1}
+              accept=".csv"
+              disabled={uploading}
+              showUploadList={{ showRemoveIcon: !uploading }}
+              customRequest={({ onSuccess }) => {
+                if (onSuccess) setTimeout(() => onSuccess("ok"), 0);
+              }}
+            >
+              <p className="ant-upload-drag-icon">
+                <UploadOutlined />
+              </p>
+              <p className="ant-upload-text">Нажмите или перетащите файл CSV в эту область</p>
+            </Dragger>
+            <div style={{ marginTop: 16, textAlign: 'right' }}>
+              <Button
+                type="primary"
+                onClick={handleAnalyze}
+                disabled={!fileList.length || uploading}
+                loading={uploading}
+              >
+                Далее
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {importStep === 1 && (
+          <div>
+            <ColumnMapper
+              requiredFields={requiredFieldsSignal}
+              availableColumns={availableColumns}
+              sampleData={sampleData}
+              onMapChange={handleMapChange}
+            />
+            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between' }}>
+              <Button
+                icon={<ArrowLeftOutlined />}
+                onClick={() => setImportStep(0)}
+                disabled={uploading}
+              >
+                Назад
+              </Button>
+              <Button
+                type="primary"
+                icon={<UploadOutlined />}
+                onClick={handleImportSignals}
+                disabled={!isMappingValid || uploading}
+                loading={uploading}
+              >
+                Импортировать
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {importStep === 2 && (
+          <Result
+            status="success"
+            title="Импорт успешно завершен!"
+            subTitle="Категории сигналов добавлены в базу данных."
+            icon={<CheckCircleOutlined />}
+            extra={[
+              <Button type="primary" key="console" onClick={() => setIsImportModalVisible(false)}>
+                Закрыть
+              </Button>,
+              <Button key="buy" onClick={showImportModal}>Загрузить еще</Button>,
+            ]}
+          />
+        )}
       </Modal>
     </div>
   );

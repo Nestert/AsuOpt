@@ -4,23 +4,75 @@ import { ImportService } from '../services/ImportService';
 
 export class ImportController {
   /**
-   * Импорт данных КИП из CSV файла
+   * Анализ CSV файла (получение заголовков)
    */
-  static async importKip(req: Request, res: Response): Promise<void> {
+  static async analyzeFile(req: Request, res: Response): Promise<void> {
     try {
       if (!req.file) {
         res.status(400).json({ success: false, message: 'Файл не найден' });
         return;
       }
+      const filePath = req.file.path;
+
+      // Пытаемся распарсить с запятой
+      let result = await ImportService.analyzeCsvFile(filePath, ',');
+      // Если найдена 1 или 0 колонок, возможно разделитель - точка с запятой
+      if (result.headers.length <= 1) {
+        const resultSemicolon = await ImportService.analyzeCsvFile(filePath, ';');
+        if (resultSemicolon.headers.length > result.headers.length) {
+          result = resultSemicolon;
+        }
+      }
+
+      res.json({
+        success: true,
+        tempFileName: req.file.filename,
+        headers: result.headers,
+        sampleData: result.sampleData,
+        totalRows: result.totalRows
+      });
+    } catch (error: any) {
+      console.error('Ошибка в контроллере анализа файла:', error);
+      res.status(500).json({
+        success: false,
+        message: `Ошибка при анализе: ${error.message}`
+      });
+    }
+  }
+
+  /**
+   * Импорт данных КИП из CSV файла
+   */
+  static async importKip(req: Request, res: Response): Promise<void> {
+    try {
+      const { tempFileName } = req.body;
+      let filePath = '';
+
+      if (req.file) {
+        filePath = req.file.path;
+      } else if (tempFileName) {
+        filePath = path.join(__dirname, '../../uploads', tempFileName);
+      } else {
+        res.status(400).json({ success: false, message: 'Файл не найден' });
+        return;
+      }
+
+      let columnMap = {};
+      if (req.body.columnMap) {
+        try {
+          columnMap = typeof req.body.columnMap === 'string' ? JSON.parse(req.body.columnMap) : req.body.columnMap;
+        } catch (e) {
+          console.warn('Ошибка парсинга columnMap', e);
+        }
+      }
 
       const { projectId } = req.query;
       const pid = projectId ? parseInt(projectId as string, 10) : 1;
 
-      const filePath = req.file.path;
-      const result = await ImportService.importKipFromCsv(filePath, pid);
+      const result = await ImportService.importKipFromCsv(filePath, pid, columnMap);
 
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка в контроллере импорта КИП:', error);
       res.status(500).json({
         success: false,
@@ -28,25 +80,40 @@ export class ImportController {
       });
     }
   }
-  
+
   /**
    * Импорт данных ЗРА из CSV файла
    */
   static async importZra(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.file) {
+      const { tempFileName } = req.body;
+      let filePath = '';
+
+      if (req.file) {
+        filePath = req.file.path;
+      } else if (tempFileName) {
+        filePath = path.join(__dirname, '../../uploads', tempFileName);
+      } else {
         res.status(400).json({ success: false, message: 'Файл не найден' });
         return;
+      }
+
+      let columnMap = {};
+      if (req.body.columnMap) {
+        try {
+          columnMap = typeof req.body.columnMap === 'string' ? JSON.parse(req.body.columnMap) : req.body.columnMap;
+        } catch (e) {
+          console.warn('Ошибка парсинга columnMap', e);
+        }
       }
 
       const { projectId } = req.query;
       const pid = projectId ? parseInt(projectId as string, 10) : 1;
 
-      const filePath = req.file.path;
-      const result = await ImportService.importZraFromCsv(filePath, pid);
+      const result = await ImportService.importZraFromCsv(filePath, pid, columnMap);
 
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка в контроллере импорта ЗРА:', error);
       res.status(500).json({
         success: false,
@@ -54,22 +121,37 @@ export class ImportController {
       });
     }
   }
-  
+
   /**
    * Импорт категорий сигналов из CSV файла
    */
   static async importSignalCategories(req: Request, res: Response): Promise<void> {
     try {
-      if (!req.file) {
+      const { tempFileName } = req.body;
+      let filePath = '';
+
+      if (req.file) {
+        filePath = req.file.path;
+      } else if (tempFileName) {
+        filePath = path.join(__dirname, '../../uploads', tempFileName);
+      } else {
         res.status(400).json({ success: false, message: 'Файл не найден' });
         return;
       }
-      
-      const filePath = req.file.path;
-      const result = await ImportService.importSignalCategoriesFromCsv(filePath);
-      
+
+      let columnMap = {};
+      if (req.body.columnMap) {
+        try {
+          columnMap = typeof req.body.columnMap === 'string' ? JSON.parse(req.body.columnMap) : req.body.columnMap;
+        } catch (e) {
+          console.warn('Ошибка парсинга columnMap', e);
+        }
+      }
+
+      const result = await ImportService.importSignalCategoriesFromCsv(filePath, columnMap);
+
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Ошибка в контроллере импорта категорий сигналов:', error);
       res.status(500).json({
         success: false,
@@ -77,7 +159,7 @@ export class ImportController {
       });
     }
   }
-  
+
   /**
    * Назначение сигналов устройствам по типу устройства
    */
@@ -85,15 +167,15 @@ export class ImportController {
     try {
       const { deviceType } = req.params;
       const { projectId } = req.query;
-      
+
       if (!deviceType) {
         res.status(400).json({ success: false, message: 'Не указан тип устройства' });
         return;
       }
-      
+
       const pid = projectId ? parseInt(projectId as string, 10) : undefined;
       const result = await ImportService.assignSignalsToDevicesByType(deviceType, pid);
-      
+
       res.json(result);
     } catch (error) {
       console.error('Ошибка в контроллере назначения сигналов:', error);
@@ -103,7 +185,7 @@ export class ImportController {
       });
     }
   }
-  
+
   /**
    * Назначение сигналов всем типам устройств
    */
@@ -113,7 +195,7 @@ export class ImportController {
       const { projectId } = req.query;
       const pid = projectId ? parseInt(projectId as string, 10) : undefined;
       const result = await ImportService.assignSignalsToAllDeviceTypes(pid);
-      
+
       res.json(result);
     } catch (error) {
       console.error('Ошибка в контроллере назначения сигналов всем типам устройств:', error);
@@ -123,21 +205,21 @@ export class ImportController {
       });
     }
   }
-  
+
   /**
    * Импорт файлов из временной директории
    */
   static async importFromTemp(req: Request, res: Response): Promise<void> {
     try {
       const { fileName, type } = req.body;
-      
+
       if (!fileName || !type) {
         res.status(400).json({ success: false, message: 'Не указан файл или тип импорта' });
         return;
       }
-      
+
       const filePath = path.join(__dirname, '../../tmp', fileName);
-      
+
       let result;
       if (type === 'kip') {
         result = await ImportService.importKipFromCsv(filePath);
@@ -147,7 +229,7 @@ export class ImportController {
         res.status(400).json({ success: false, message: 'Неверный тип импорта' });
         return;
       }
-      
+
       res.json(result);
     } catch (error) {
       console.error('Ошибка в контроллере импорта из tmp:', error);
@@ -157,7 +239,7 @@ export class ImportController {
       });
     }
   }
-  
+
   /**
    * Получение статистики по импорту
    */

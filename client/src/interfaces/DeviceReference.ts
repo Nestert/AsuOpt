@@ -6,6 +6,9 @@ export interface DeviceReference {
   description?: string;
   parentSystem?: string;
   systemCode?: string;
+  equipmentCode?: string;
+  lineNumber?: string;
+  cabinetName?: string;
   plcType?: string;
   exVersion?: string;
   projectId?: number;

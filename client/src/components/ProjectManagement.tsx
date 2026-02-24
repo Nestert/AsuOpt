@@ -9,7 +9,10 @@ import {
   App,
   Tag,
   Tooltip,
-  Typography
+  Typography,
+  Statistic,
+  Card,
+  Divider
 } from 'antd';
 import {
   PlusOutlined,
@@ -18,6 +21,7 @@ import {
   DownloadOutlined,
   CopyOutlined,
   BarChartOutlined,
+  CalculatorOutlined,
 } from '@ant-design/icons';
 import { Project, CreateProjectRequest, UpdateProjectRequest } from '../interfaces/Project';
 import { projectService } from '../services/projectService';
@@ -42,8 +46,11 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [copyModalVisible, setCopyModalVisible] = useState(false);
+  const [costModalVisible, setCostModalVisible] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [copyingProject, setCopyingProject] = useState<Project | null>(null);
+  const [costProject, setCostProject] = useState<Project | null>(null);
+  const [projectStats, setProjectStats] = useState<any>(null);
   const [createForm] = Form.useForm();
   const [editForm] = Form.useForm();
   const [copyForm] = Form.useForm();
@@ -143,6 +150,37 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({
       message.success('Проект экспортирован');
     } catch (error) {
       message.error('Не удалось экспортировать проект');
+    }
+  };
+
+  const handleCostEstimate = async (project: Project) => {
+    try {
+      // Получить статистику проекта (предполагаем, что есть API для этого)
+      // Пока используем deviceCount из проекта
+      const deviceCount = project.deviceCount || 0;
+
+      // Предполагаем, что шкафы - это устройства типа 'шкаф' или 'cabinet'
+      // Для простоты, оценим шкафы как 10% от устройств
+      const cabinetCount = Math.ceil(deviceCount * 0.1);
+
+      // Коэффициенты (настраиваемые)
+      const deviceCoefficient = 1.5; // на устройство
+      const cabinetCoefficient = 10; // на шкаф
+
+      const totalCost = (deviceCount * deviceCoefficient) + (cabinetCount * cabinetCoefficient);
+
+      setProjectStats({
+        deviceCount,
+        cabinetCount,
+        deviceCoefficient,
+        cabinetCoefficient,
+        totalCost: Math.round(totalCost * 100) / 100
+      });
+
+      setCostProject(project);
+      setCostModalVisible(true);
+    } catch (error) {
+      message.error('Не удалось рассчитать затраты');
     }
   };
 
@@ -282,6 +320,14 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({
                 // TODO: Показать статистику проекта
                 message.info('Статистика проекта - в разработке');
               }}
+            />
+          </Tooltip>
+
+          <Tooltip title="Оценка затрат">
+            <Button
+              icon={<CalculatorOutlined />}
+              size="small"
+              onClick={() => handleCostEstimate(project)}
             />
           </Tooltip>
           
@@ -476,6 +522,61 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({
             <Input />
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Модальное окно оценки затрат */}
+      <Modal
+        title={`Оценка трудозатрат - ${costProject?.name}`}
+        open={costModalVisible}
+        onCancel={() => {
+          setCostModalVisible(false);
+          setCostProject(null);
+          setProjectStats(null);
+        }}
+        footer={[
+          <Button key="close" onClick={() => setCostModalVisible(false)}>
+            Закрыть
+          </Button>,
+        ]}
+        width={600}
+      >
+        {projectStats && (
+          <div>
+            <Card>
+              <Statistic
+                title="Общая оценка трудозатрат"
+                value={projectStats.totalCost}
+                suffix="часов"
+                valueStyle={{ color: '#3f8600' }}
+              />
+            </Card>
+
+            <Divider />
+
+            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+              <div>
+                <Text strong>Количество устройств:</Text> {projectStats.deviceCount}
+              </div>
+              <div>
+                <Text strong>Количество шкафов:</Text> {projectStats.cabinetCount}
+              </div>
+              <div>
+                <Text strong>Коэффициент на устройство:</Text> {projectStats.deviceCoefficient} часов
+              </div>
+              <div>
+                <Text strong>Коэффициент на шкаф:</Text> {projectStats.cabinetCoefficient} часов
+              </div>
+            </Space>
+
+            <Divider />
+
+            <Text type="secondary">
+              Формула расчёта: (устройства × {projectStats.deviceCoefficient}) + (шкафы × {projectStats.cabinetCoefficient})
+              <br />
+              Оценка является приблизительной и может корректироваться в зависимости от сложности проекта.
+            </Text>
+          </div>
+        )}
       </Modal>
     </>
   );

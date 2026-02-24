@@ -18,6 +18,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Маршруты импорта
+router.post('/analyze', upload.single('file'), ImportController.analyzeFile);
 router.post('/kip', upload.single('file'), ImportController.importKip);
 router.post('/zra', upload.single('file'), ImportController.importZra);
 router.post('/signal-categories', upload.single('file'), ImportController.importSignalCategories);

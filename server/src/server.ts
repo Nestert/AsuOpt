@@ -24,7 +24,7 @@ const PORT = process.env.PORT || 3001;
 
 // Middlewares
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001'], // Разрешенные источники
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'], // Разрешенные источники
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Разрешенные методы
   allowedHeaders: ['Content-Type', 'Accept', 'Authorization'],
   credentials: true
