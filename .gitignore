@@ -40,4 +40,8 @@ Thumbs.db
 
 .cursor/
 uploads/
+server/uploads/
 tmp/
+server/tmp/
+*.backup
+*.pdf
