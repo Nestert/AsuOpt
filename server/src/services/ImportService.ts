@@ -59,6 +59,12 @@ export class ImportService {
           .on('error', (error) => reject(error));
       });
 
+      // Функция очистки текстовых полей (убирает переносы строк, лишние пробелы)
+      const cleanVal = (val: any): string => {
+        if (!val) return '';
+        return String(val).replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+      };
+
       // Счетчик импортированных записей
       let importedCount = 0;
 
@@ -85,10 +91,10 @@ export class ImportService {
 
           // Создаем или находим запись в справочнике устройств
           const [deviceRef, created] = await DeviceReference.findOrCreate({
-            where: { posDesignation, projectId },
+            where: { posDesignation: cleanVal(posDesignation), projectId },
             defaults: {
-              deviceType,
-              description: getVal(row, 'description', ['Описание']) || '',
+              deviceType: cleanVal(deviceType),
+              description: cleanVal(getVal(row, 'description', ['Описание'])),
               projectId
             }
           });
@@ -97,27 +103,37 @@ export class ImportService {
             await deviceRef.update({ projectId });
           }
 
+          // Проверяем, существует ли уже запись KIP для этого устройства
+          const existingKip = await Kip.findOne({
+            where: { deviceReferenceId: deviceRef.id }
+          });
+
+          if (existingKip) {
+            console.log(`Пропуск: запись KIP уже существует для ${cleanVal(posDesignation)}`);
+            continue; // Пропускаем - дубликат
+          }
+
           // Создаем запись КИП, связанную с устройством
           await Kip.create({
             deviceReferenceId: deviceRef.id,
-            unitArea: getVal(row, 'unitArea', ['Участок']) || '',
-            section: getVal(row, 'section', ['Секция']) || '',
-            manufacturer: getVal(row, 'manufacturer', ['Производитель']) || '',
-            article: getVal(row, 'article', ['Артикул']) || '',
-            measureUnit: getVal(row, 'measureUnit', ['Ед. измерения']) || '',
-            scale: getVal(row, 'scale', ['Шкала']) || '',
-            note: getVal(row, 'note', ['Примечание']) || '',
-            docLink: getVal(row, 'docLink', ['Ссылка на документацию']) || '',
-            responsibilityZone: getVal(row, 'responsibilityZone', ['Зона отв.']) || '',
-            connectionScheme: getVal(row, 'connectionScheme', ['Схема подключения']) || '',
-            power: getVal(row, 'power', ['Питание']) || '',
-            plc: getVal(row, 'plc', ['PLC']) || '',
-            exVersion: getVal(row, 'exVersion', ['Ex-исполнение']) || '',
-            environmentCharacteristics: getVal(row, 'environmentCharacteristics', ['Характеристика среды, физическое состояние, температура, давление, расход, Dn, плотность, содержание агрессивных примесей регулирование и пр.)']) || '',
-            signalPurpose: getVal(row, 'signalPurpose', ['Назначение сигнала: предупредительный, аварийный']) || '',
-            controlPoints: parseInt(getVal(row, 'controlPoints', ['Количество точек контроля']) || '0', 10),
-            completeness: getVal(row, 'completeness', ['Комплектность']) || '',
-            measuringLimits: getVal(row, 'measuringLimits', ['Пределы измерений и нормальное значение параметра']) || '',
+            unitArea: cleanVal(getVal(row, 'unitArea', ['Участок'])),
+            section: cleanVal(getVal(row, 'section', ['Секция'])),
+            manufacturer: cleanVal(getVal(row, 'manufacturer', ['Производитель'])),
+            article: cleanVal(getVal(row, 'article', ['Артикул'])),
+            measureUnit: cleanVal(getVal(row, 'measureUnit', ['Ед. измерения'])),
+            scale: cleanVal(getVal(row, 'scale', ['Шкала'])),
+            note: cleanVal(getVal(row, 'note', ['Примечание'])),
+            docLink: cleanVal(getVal(row, 'docLink', ['Ссылка на документацию'])),
+            responsibilityZone: cleanVal(getVal(row, 'responsibilityZone', ['Зона отв.'])),
+            connectionScheme: cleanVal(getVal(row, 'connectionScheme', ['Схема подключения'])),
+            power: cleanVal(getVal(row, 'power', ['Питание'])),
+            plc: cleanVal(getVal(row, 'plc', ['PLC'])),
+            exVersion: cleanVal(getVal(row, 'exVersion', ['Ex-исполнение'])),
+            environmentCharacteristics: cleanVal(getVal(row, 'environmentCharacteristics', ['Характеристика среды, физическое состояние, температура, давление, расход, Dn, плотность, содержание агрессивных примесей регулирование и пр.)'])),
+            signalPurpose: cleanVal(getVal(row, 'signalPurpose', ['Назначение сигнала: предупредительный, аварийный'])),
+            controlPoints: parseInt(String(getVal(row, 'controlPoints', ['Количество точек контроля']) || '0').replace(/[\r\n\s]+/g, ''), 10),
+            completeness: cleanVal(getVal(row, 'completeness', ['Комплектность'])),
+            measuringLimits: cleanVal(getVal(row, 'measuringLimits', ['Пределы измерений и нормальное значение параметра'])),
           });
 
           importedCount++;
@@ -162,6 +178,12 @@ export class ImportService {
           .on('error', (error) => reject(error));
       });
 
+      // Функция очистки текстовых полей (убирает переносы строк, лишние пробелы)
+      const cleanVal = (val: any): string => {
+        if (!val) return '';
+        return String(val).replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+      };
+
       // Счетчик импортированных записей
       let importedCount = 0;
 
@@ -188,10 +210,10 @@ export class ImportService {
 
           // Создаем или находим запись в справочнике устройств
           const [deviceRef, created] = await DeviceReference.findOrCreate({
-            where: { posDesignation, projectId },
+            where: { posDesignation: cleanVal(posDesignation), projectId },
             defaults: {
-              deviceType: getVal(row, 'deviceType', ['Конструктивное исполнение']) || 'Запорная арматура',
-              description: getVal(row, 'description', ['Описание (ТЕМП)']) || '',
+              deviceType: cleanVal(getVal(row, 'deviceType', ['Конструктивное исполнение'])) || 'Запорная арматура',
+              description: cleanVal(getVal(row, 'description', ['Описание (ТЕМП)'])),
               projectId
             }
           });
@@ -200,21 +222,31 @@ export class ImportService {
             await deviceRef.update({ projectId });
           }
 
+          // Проверяем, существует ли уже запись ZRA для этого устройства
+          const existingZra = await Zra.findOne({
+            where: { deviceReferenceId: deviceRef.id }
+          });
+
+          if (existingZra) {
+            console.log(`Пропуск: запись ZRA уже существует для ${cleanVal(posDesignation)}`);
+            continue; // Пропускаем - дубликат
+          }
+
           // Создаем запись ЗРА, связанную с устройством
           await Zra.create({
             deviceReferenceId: deviceRef.id,
-            unitArea: getVal(row, 'unitArea', ['Участок']) || '',
-            designType: getVal(row, 'designType', ['Конструктивное исполнение']) || '',
-            valveType: valveType,
-            actuatorType: getVal(row, 'actuatorType', ['Тип привода']) || '',
-            pipePosition: getVal(row, 'pipePosition', ['Позиция трубы']) || '',
-            nominalDiameter: getVal(row, 'nominalDiameter', ['Условный диаметр трубы DN']) || '',
-            pressureRating: getVal(row, 'pressureRating', ['Условное давление рабочей среды PN, бар']) || '',
-            pipeMaterial: getVal(row, 'pipeMaterial', ['Материал трубы']) || '',
-            medium: getVal(row, 'medium', ['Среда']) || '',
-            positionSensor: getVal(row, 'positionSensor', ['Датчик положения']) || '',
-            solenoidType: getVal(row, 'solenoidType', ['Тип пневмораспределителя']) || '',
-            emergencyPosition: getVal(row, 'emergencyPosition', ['Положение при аварийном отключении (НЗ/НО/БИ)']) || '',
+            unitArea: cleanVal(getVal(row, 'unitArea', ['Участок'])),
+            designType: cleanVal(getVal(row, 'designType', ['Конструктивное исполнение'])),
+            valveType: cleanVal(valveType),
+            actuatorType: cleanVal(getVal(row, 'actuatorType', ['Тип привода'])),
+            pipePosition: cleanVal(getVal(row, 'pipePosition', ['Позиция трубы'])),
+            nominalDiameter: cleanVal(getVal(row, 'nominalDiameter', ['Условный диаметр трубы DN'])),
+            pressureRating: cleanVal(getVal(row, 'pressureRating', ['Условное давление рабочей среды PN, бар'])),
+            pipeMaterial: cleanVal(getVal(row, 'pipeMaterial', ['Материал трубы'])),
+            medium: cleanVal(getVal(row, 'medium', ['Среда'])),
+            positionSensor: cleanVal(getVal(row, 'positionSensor', ['Датчик положения'])),
+            solenoidType: cleanVal(getVal(row, 'solenoidType', ['Тип пневмораспределителя'])),
+            emergencyPosition: cleanVal(getVal(row, 'emergencyPosition', ['Положение при аварийном отключении (НЗ/НО/БИ)'])),
             controlPanel: getVal(row, 'controlPanel', ['ШПУ']) || '',
             airConsumption: getVal(row, 'airConsumption', ['Расход воздуха на 1 операцию, л.']) || '',
             connectionSize: getVal(row, 'connectionSize', ['Ø и резьба пневмоприсоединения']) || '',
@@ -409,7 +441,7 @@ export class ImportService {
       const targetTypeClean = deviceType.trim().toLowerCase();
       console.log(`[DEBUG assign] category: "${deviceType}" -> clean: "${targetTypeClean}"`);
 
-      // Ищем совпадения в таблице ZRA (где категория хранится отдельно от deviceType)
+      // Ищем совпадения в таблице ZRA по полю "Категория"
       const { Zra } = require('../models/Zra');
       let zraDeviceIds: number[] = [];
       try {
@@ -423,6 +455,20 @@ export class ImportService {
         console.error('Ошибка при поиске категорий ZRA:', err);
       }
 
+      // Ищем совпадения в таблице KIP по полю "Схема подключения" (connectionScheme)
+      const { Kip } = require('../models/Kip');
+      let kipDeviceIds: number[] = [];
+      try {
+        const kips = await Kip.findAll({
+          attributes: ['deviceReferenceId', 'connectionScheme']
+        });
+        kipDeviceIds = kips
+          .filter((k: any) => k.connectionScheme && k.connectionScheme.trim().toLowerCase() === targetTypeClean)
+          .map((k: any) => k.deviceReferenceId);
+      } catch (err) {
+        console.error('Ошибка при поиске схем подключения KIP:', err);
+      }
+
       // Предзаданные маппинги для известных несовпадений
       const predefinedMappings: Record<string, string[]> = {
         'уровнемер': ['сигнализатор уровня', 'уровнемер'],
@@ -432,9 +478,15 @@ export class ImportService {
       const mappedTypes = predefinedMappings[targetTypeClean] || [targetTypeClean];
 
       const devices = allDevices.filter((d: any) => {
-        // Проверяем принадлежность к ZRA категории
+        // Проверяем принадлежность к ZRA категории (поле "Категория")
         if (zraDeviceIds.includes(d.id)) {
           console.log(`[DEBUG assign]   MATCHED via ZRA category: "${d.deviceType}" for ZRA device ID ${d.id}`);
+          return true;
+        }
+
+        // Проверяем принадлежность к KIP по схеме подключения (поле "Схема подключения")
+        if (kipDeviceIds.includes(d.id)) {
+          console.log(`[DEBUG assign]   MATCHED via KIP connectionScheme: "${d.deviceType}" for KIP device ID ${d.id}`);
           return true;
         }
 
@@ -595,51 +647,54 @@ export class ImportService {
     try {
       console.log('Начато назначение сигналов всем типам устройств');
 
-      // Получаем все уникальные категории сигналов (они же типы устройств)
-      const signalCategories = await Signal.findAll({
-        attributes: ['category'],
-        where: {
-          category: {
-            [Op.not]: null,
-            [Op.ne]: ''
-          }
-        },
-        group: ['category']
-      });
+      // Получаем все сигналы
+      const allSignals = await Signal.findAll();
 
-      // Извлекаем только значения категорий
-      const categories = signalCategories
-        .map(signal => signal.category)
-        .filter(category => !!category); // Убираем пустые значения
+      // Для КИП используем category (полную строку!), для ЗРА используем category
+      // Собираем уникальные пары (keyType, keyValue) для назначения
+      const assignmentMap = new Map<string, { type: 'category' | 'connectionType', value: string }>();
 
-      if (categories.length === 0) {
+      for (const signal of allSignals) {
+        // Определяем тип устройства на основе category сигнала
+        const category = signal.category || '';
+        
+        // ЗРА: ищем по category (например "Пневмо ЗРА-CV")
+        // КИП: тоже ищем по category (например "КИП AI 2-провод") - это полное совпадение с KIP.connectionScheme
+        if (category) {
+          assignmentMap.set(`cat_${category}`, { type: 'category', value: category });
+        }
+      }
+
+      if (assignmentMap.size === 0) {
         return {
           success: false,
-          message: 'Не найдены категории сигналов для назначения'
+          message: 'Не найдены категории или типы подключения сигналов для назначения'
         };
       }
 
-      console.log(`Найдено ${categories.length} категорий сигналов: ${categories.join(', ')}`);
+      console.log(`Найдено ${assignmentMap.size} уникальных ключей для назначения`);
 
       let totalAssignedCount = 0;
       let successfulTypes = 0;
       let failedTypes = 0;
 
-      // Назначаем сигналы для каждого типа устройства
-      for (const category of categories) {
+      // Назначаем сигналы для каждого ключа
+      for (const [key, config] of assignmentMap) {
         try {
-          console.log(`Назначение сигналов для типа устройств: ${category}`);
-          const result = await ImportService.assignSignalsToDevicesByType(category, projectId);
+          console.log(`Назначение сигналов для ${config.type}: ${config.value}`);
+          
+          // Вызываем функцию с дополнительным параметром
+          const result = await ImportService.assignSignalsByKey(config.value, config.type, projectId);
 
           if (result.success) {
             totalAssignedCount += result.count || 0;
             successfulTypes++;
           } else {
-            console.log(`Не удалось назначить сигналы для типа ${category}: ${result.message}`);
+            console.log(`Не удалось назначить сигналы для ${config.type}="${config.value}": ${result.message}`);
             failedTypes++;
           }
         } catch (error) {
-          console.error(`Ошибка при назначении сигналов для типа ${category}:`, error);
+          console.error(`Ошибка при назначении сигналов для ${config.type}="${config.value}":`, error);
           failedTypes++;
         }
       }
@@ -660,4 +715,188 @@ export class ImportService {
       };
     }
   }
-} 
+
+  /**
+   * Привязка сигналов к устройствам по ключу (category или connectionType)
+   * @param keyValue Значение ключа (категория или тип подключения)
+   * @param keyType Тип ключа ('category' или 'connectionType')
+   */
+  static async assignSignalsByKey(keyValue: string, keyType: 'category' | 'connectionType', projectId?: number): Promise<{ success: boolean; message: string; count?: number }> {
+    try {
+      const keyClean = keyValue.trim().toLowerCase();
+      console.log(`[assignSignalsByKey] ${keyType}: "${keyValue}" -> clean: "${keyClean}"`);
+
+      // Получаем сигналы для данного ключа
+      const whereClause = keyType === 'category' 
+        ? { category: keyValue }
+        : { connectionType: keyValue };
+      
+      const signals = await Signal.findAll({ where: whereClause as any });
+
+      if (signals.length === 0) {
+        return {
+          success: false,
+          message: `Сигналы для "${keyType}"="${keyValue}" не найдены`
+        };
+      }
+
+      // Получаем все устройства (фильтруем по проекту, если указан)
+      const { DeviceReference } = require('../models/DeviceReference');
+      const deviceWhereClause: any = {};
+      if (projectId) {
+        deviceWhereClause.projectId = projectId;
+      }
+
+      const allDevices = await DeviceReference.findAll({
+        where: deviceWhereClause
+      });
+
+      // Ищем устройства по соответствующему полю
+      let matchedDeviceIds: number[] = [];
+
+      // Для всех категорий ищем и в ZRA (по category) и в KIP (по connectionScheme)
+      // Это работает для обеих типов: ЗРА (category) и КИП (connectionScheme = category)
+      
+      // Ищем в ZRA по полю category
+      const { Zra } = require('../models/Zra');
+      try {
+        const zras = await Zra.findAll({
+          attributes: ['deviceReferenceId', 'category']
+        });
+        const zraMatches = zras
+          .filter((z: any) => {
+            if (!z.category) return false;
+            const zCatClean = z.category.trim().toLowerCase().replace(/\s+/g, ' ');
+            return zCatClean.includes(keyClean) || keyClean.includes(zCatClean);
+          })
+          .map((z: any) => z.deviceReferenceId);
+        matchedDeviceIds = [...matchedDeviceIds, ...zraMatches];
+        console.log(`[assignSignalsByKey] ZRA: found ${zraMatches.length} devices for category "${keyClean}"`);
+      } catch (err) {
+        console.error('Ошибка при поиске категорий ZRA:', err);
+      }
+
+      // Ищем в KIP по полю connectionScheme
+      const { Kip } = require('../models/Kip');
+      try {
+        const kips = await Kip.findAll({
+          attributes: ['deviceReferenceId', 'connectionScheme']
+        });
+        const kipMatches = kips
+          .filter((k: any) => {
+            if (!k.connectionScheme) return false;
+            const kSchemeClean = k.connectionScheme.trim().toLowerCase().replace(/\n/g, ' ').replace(/\s+/g, ' ');
+            return kSchemeClean.includes(keyClean) || keyClean.includes(kSchemeClean);
+          })
+          .map((k: any) => k.deviceReferenceId);
+        matchedDeviceIds = [...matchedDeviceIds, ...kipMatches];
+        console.log(`[assignSignalsByKey] KIP: found ${kipMatches.length} devices for connectionScheme "${keyClean}"`);
+      } catch (err) {
+        console.error('Ошибка при поиске схем подключения KIP:', err);
+      }
+
+      console.log(`[assignSignalsByKey] Found ${matchedDeviceIds.length} devices total for "${keyClean}"`);
+
+      const devices = allDevices.filter((d: any) => matchedDeviceIds.includes(d.id));
+
+      if (devices.length === 0) {
+        return {
+          success: false,
+          message: `Устройства с ${keyType}="${keyValue}" не найдены`
+        };
+      }
+
+      let assignedCount = 0;
+
+      // Предварительно проверяем существование устройств в таблице Device
+      // и создаем их если нужно
+      const validDevices = [];
+      for (const deviceRef of devices) {
+        let device = await Device.findByPk(deviceRef.id);
+
+        if (!device) {
+          try {
+            console.log(`Создаем устройство ${deviceRef.id} в таблице Device`);
+            device = await Device.create({
+              id: deviceRef.id,
+              systemCode: deviceRef.deviceType || 'Unknown',
+              equipmentCode: 'Auto',
+              lineNumber: 'Auto',
+              cabinetName: 'Auto',
+              deviceDesignation: deviceRef.posDesignation,
+              deviceType: deviceRef.deviceType,
+              description: deviceRef.description || '',
+              parentId: null
+            });
+            console.log(`Устройство ${device.id} создано успешно`);
+          } catch (err) {
+            console.error(`Ошибка при создании устройства ${deviceRef.id}:`, err);
+            continue;
+          }
+        }
+
+        if (device) {
+          validDevices.push(device);
+        }
+      }
+
+      if (validDevices.length === 0) {
+        return {
+          success: false,
+          message: `Не удалось найти или создать устройства с ${keyType}="${keyValue}" в основной таблице`
+        };
+      }
+
+      // Для каждого валидного устройства назначаем все сигналы
+      for (const device of validDevices) {
+        for (const signal of signals) {
+          try {
+            const existingAssignment = await DeviceSignal.findOne({
+              where: {
+                deviceId: device.id,
+                signalId: signal.id
+              }
+            });
+
+            if (!existingAssignment) {
+              const signalExists = await Signal.findByPk(signal.id);
+              const deviceExists = await Device.findByPk(device.id);
+
+              if (!signalExists) {
+                console.error(`Сигнал с ID ${signal.id} не существует`);
+                continue;
+              }
+
+              if (!deviceExists) {
+                console.error(`Устройство с ID ${device.id} не существует`);
+                continue;
+              }
+
+              await DeviceSignal.create({
+                deviceId: device.id,
+                signalId: signal.id,
+                count: 1
+              });
+
+              assignedCount++;
+            }
+          } catch (error) {
+            console.error(`Ошибка при назначении сигнала ${signal.id} устройству ${device.id}:`, error);
+          }
+        }
+      }
+
+      return {
+        success: true,
+        message: `Успешно назначено ${assignedCount} сигналов для ${keyType}="${keyValue}"`,
+        count: assignedCount
+      };
+    } catch (error: any) {
+      console.error(`Ошибка при assignSignalsByKey:`, error);
+      return {
+        success: false,
+        message: `Ошибка: ${error.message}`
+      };
+    }
+  }
+}
