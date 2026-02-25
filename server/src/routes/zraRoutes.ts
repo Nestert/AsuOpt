@@ -6,7 +6,15 @@ const router = express.Router();
 // Получение всех записей ЗРА
 router.get('/', async (req, res) => {
   try {
+    const { projectId } = req.query;
+    const whereCondition: any = {};
+    
+    if (projectId) {
+      whereCondition.projectId = parseInt(projectId as string, 10);
+    }
+    
     const zras = await Zra.findAll({
+      where: whereCondition,
       include: [{
         model: require('../models/DeviceReference').DeviceReference,
         as: 'deviceReference',

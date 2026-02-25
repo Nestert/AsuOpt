@@ -33,11 +33,11 @@ const QuestionnaireExport: React.FC<QuestionnaireExportProps> = ({ projectId }) 
           console.error('QuestionnaireExport: Ошибка загрузки устройств:', err);
           throw err;
         }),
-        kipService.getAllKips().catch(err => {
+        kipService.getAllKips(projectId || undefined).catch(err => {
           console.error('QuestionnaireExport: Ошибка загрузки КИП:', err);
           throw err;
         }),
-        zraService.getAllZras().catch(err => {
+        zraService.getAllZras(projectId || undefined).catch(err => {
           console.error('QuestionnaireExport: Ошибка загрузки ЗРА:', err);
           throw err;
         })

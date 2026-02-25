@@ -186,8 +186,9 @@ export const deviceService = {
 
 // Сервис для работы с KIP
 export const kipService = {
-  getAllKips: async () => {
-    const response = await api.get('/kip');
+  getAllKips: async (projectId?: number) => {
+    const params = projectId ? { projectId } : {};
+    const response = await api.get('/kip', { params });
     return response.data;
   },
 
@@ -214,8 +215,9 @@ export const kipService = {
 
 // Сервис для работы с ZRA
 export const zraService = {
-  getAllZras: async () => {
-    const response = await api.get('/zra');
+  getAllZras: async (projectId?: number) => {
+    const params = projectId ? { projectId } : {};
+    const response = await api.get('/zra', { params });
     return response.data;
   },
 
