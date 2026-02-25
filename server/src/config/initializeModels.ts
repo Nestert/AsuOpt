@@ -7,6 +7,7 @@ import { Zra } from '../models/Zra';
 import { Signal } from '../models/Signal';
 import { DeviceSignal } from '../models/DeviceSignal';
 import { User } from '../models/User';
+import { isProduction } from './env';
 
 export const initializeModels = async () => {
   console.log('🔧 Инициализация моделей...');
@@ -38,14 +39,19 @@ export const initializeModels = async () => {
 
     console.log('✅ Ассоциации установлены');
 
-    // Синхронизируем модели с базой данных (без alter, чтобы избежать ошибок)
-    console.log('🔄 Синхронизация с базой данных...');
-    try {
-      await sequelize.sync({ force: false, alter: false });
-      console.log('✅ Синхронизация завершена');
-    } catch (syncError) {
-      console.warn('⚠️  Предупреждение при синхронизации:', syncError.message);
-      console.log('⚠️  Продолжаем без полной синхронизации');
+    if (isProduction) {
+      console.log('⏭️ Пропуск sequelize.sync() в production (используйте миграции)');
+    } else {
+      // Синхронизируем модели с базой данных (без alter, чтобы избежать ошибок)
+      console.log('🔄 Синхронизация с базой данных...');
+      try {
+        await sequelize.sync({ force: false, alter: false });
+        console.log('✅ Синхронизация завершена');
+      } catch (syncError: unknown) {
+        const message = syncError instanceof Error ? syncError.message : String(syncError);
+        console.warn('⚠️  Предупреждение при синхронизации:', message);
+        console.log('⚠️  Продолжаем без полной синхронизации');
+      }
     }
 
   } catch (error) {

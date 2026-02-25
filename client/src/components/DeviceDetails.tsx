@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Card, Descriptions, Empty, Spin, Tabs, Space, App } from 'antd';
-import { deviceService, } from '../services/api';
+import { deviceService, kipService, zraService } from '../services/api';
 import { DeviceFullData } from '../interfaces/DeviceReference';
 import { EditOutlined, DeleteOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import DeviceSignals from './DeviceSignals';
@@ -59,130 +59,53 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
   };
 
   // Сохранить изменения
-  const saveChanges = () => {
+  const saveChanges = async () => {
     if (!editableData || !deviceId) return;
 
     console.log('Начало сохранения изменений для устройства с ID=', deviceId);
     setLoading(true);
     
-    const savePromises = [];
-    
-    // Сохраняем основные данные устройства (reference)
-    if (editableData.reference && editableData.reference.id) {
-      console.log('Сохранение основных данных устройства:', editableData.reference);
-      
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-      const referencePromise = fetch(`${apiUrl}/device-references/${editableData.reference.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(editableData.reference)
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`Ошибка обновления основных данных: ${response.status}`);
-        }
-        console.log('Основные данные устройства успешно обновлены');
-        return response.json();
-      })
-      .catch(error => {
-        console.error('Ошибка при обновлении основных данных:', error);
-        throw error;
-      });
-      
-      savePromises.push(referencePromise);
+    const savePromises: Promise<unknown>[] = [];
+
+    try {
+      // Сохраняем основные данные устройства (reference)
+      if (editableData.reference && editableData.reference.id) {
+        console.log('Сохранение основных данных устройства:', editableData.reference);
+        savePromises.push(deviceService.updateDeviceById(editableData.reference.id, editableData.reference));
+      }
+
+      // Сохраняем данные КИП, если есть
+      if (editableData.dataType === 'kip' && editableData.kip && editableData.kip.id) {
+        console.log('Сохранение данных КИП:', editableData.kip);
+        savePromises.push(kipService.updateKip(editableData.kip.id, editableData.kip));
+      }
+
+      // Сохраняем данные ЗРА, если есть
+      if (editableData.dataType === 'zra' && editableData.zra && editableData.zra.id) {
+        console.log('Сохранение данных ЗРА:', editableData.zra);
+        savePromises.push(zraService.updateZra(editableData.zra.id, editableData.zra));
+      }
+
+      await Promise.all(savePromises);
+
+      const updatedData = await deviceService.getDeviceById(deviceId);
+      console.log('Данные устройства обновлены:', updatedData);
+      setDeviceData(updatedData);
+      message.success('Изменения успешно сохранены');
+      setIsEditing(false);
+
+      if (onDeviceUpdated) {
+        console.log('DeviceDetails: вызываем callback onDeviceUpdated для обновления дерева');
+        onDeviceUpdated();
+      } else {
+        console.log('DeviceDetails: callback onDeviceUpdated не предоставлен');
+      }
+    } catch (err: any) {
+      console.error('Ошибка при сохранении данных:', err);
+      message.error(`Не удалось сохранить изменения: ${err?.message || 'Неизвестная ошибка'}`);
+    } finally {
+      setLoading(false);
     }
-    
-    // Сохраняем данные КИП, если есть
-    if (editableData.dataType === 'kip' && editableData.kip && editableData.kip.id) {
-      console.log('Сохранение данных КИП:', editableData.kip);
-      
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-      const kipPromise = fetch(`${apiUrl}/kip/${editableData.kip.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(editableData.kip)
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`Ошибка обновления КИП: ${response.status}`);
-        }
-        console.log('КИП успешно обновлен');
-        return response.json();
-      })
-      .catch(error => {
-        console.error('Ошибка при обновлении КИП:', error);
-        throw error;
-      });
-      
-      savePromises.push(kipPromise);
-    }
-    
-    // Сохраняем данные ЗРА, если есть
-    if (editableData.dataType === 'zra' && editableData.zra && editableData.zra.id) {
-      console.log('Сохранение данных ЗРА:', editableData.zra);
-      
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-      const zraPromise = fetch(`${apiUrl}/zra/${editableData.zra.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(editableData.zra)
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`Ошибка обновления ЗРА: ${response.status}`);
-        }
-        console.log('ЗРА успешно обновлен');
-        return response.json();
-      })
-      .catch(error => {
-        console.error('Ошибка при обновлении ЗРА:', error);
-        throw error;
-      });
-      
-      savePromises.push(zraPromise);
-    }
-    
-    // Обрабатываем результаты сохранения
-    Promise.all(savePromises)
-      .then(async () => {
-        // Обновляем данные устройства
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-        const response = await fetch(`${apiUrl}/device-references/${deviceId}`);
-            if (!response.ok) {
-              throw new Error(`Ошибка получения обновленных данных: ${response.status}`);
-            }
-        return await response.json();
-      })
-      .then((updatedData) => {
-        console.log('Данные устройства обновлены:', updatedData);
-        setDeviceData(updatedData);
-        message.success('Изменения успешно сохранены');
-        setIsEditing(false);
-        
-        // Вызываем callback для обновления дерева, если он предоставлен
-        if (onDeviceUpdated) {
-          console.log('DeviceDetails: вызываем callback onDeviceUpdated для обновления дерева');
-          onDeviceUpdated();
-        } else {
-          console.log('DeviceDetails: callback onDeviceUpdated не предоставлен');
-        }
-      })
-      .catch((err) => {
-        console.error('Ошибка при сохранении данных:', err);
-        message.error(`Не удалось сохранить изменения: ${err.message || 'Неизвестная ошибка'}`);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
   };
 
   // Отменить редактирование
@@ -241,34 +164,7 @@ const DeviceDetails: React.FC<DeviceDetailsProps> = ({ deviceId, onDeviceDeleted
     setLoading(true);
     try {
       console.log('DeviceDetails: НАЧИНАЕМ УДАЛЕНИЕ устройства с ID =', deviceId);
-      
-      // Отправляем запрос на удаление с прямым использованием fetch для диагностики
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
-      console.log(`DeviceDetails: отправляем DELETE запрос на ${apiUrl}/device-references/${deviceId}`);
-      
-      const response = await fetch(`${apiUrl}/device-references/${deviceId}`, {
-        method: 'DELETE',
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-      
-      console.log('DeviceDetails: получен ответ на удаление, статус:', response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('DeviceDetails: ошибка удаления, статус:', response.status, 'текст:', errorText);
-        throw new Error(`Ошибка ${response.status}: ${errorText}`);
-      }
-      
-      // Парсим тело ответа если есть
-      let responseData;
-      try {
-        responseData = await response.json();
-        console.log('DeviceDetails: данные ответа на удаление:', responseData);
-      } catch (e) {
-        console.log('DeviceDetails: ответ не содержит данных JSON');
-      }
+      await deviceService.deleteDeviceById(deviceId);
       
       message.success('Устройство успешно удалено');
       console.log('DeviceDetails: устройство успешно удалено');

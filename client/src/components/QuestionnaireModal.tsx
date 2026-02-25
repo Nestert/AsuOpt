@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Button, Select, Space, message } from 'antd';
 import { FilePdfOutlined, FileWordOutlined } from '@ant-design/icons';
-import { deviceService } from '../services/api';
+import { deviceService, exportService } from '../services/api';
 
 interface QuestionnaireModalProps {
   visible: boolean;
@@ -27,22 +27,10 @@ const QuestionnaireModal: React.FC<QuestionnaireModalProps> = ({ visible, device
         zra: d.zra
       }));
       
-      const response = await fetch(`http://localhost:3001/api/exports/questionnaire`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          devices: transformedDevices,
-          format
-        })
+      const blob = await exportService.generateQuestionnaire({
+        devices: transformedDevices,
+        format
       });
-
-      if (!response.ok) {
-        throw new Error('Не удалось сгенерировать опросный лист');
-      }
-
-      const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
 
       const a = document.createElement('a');

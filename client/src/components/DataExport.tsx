@@ -3,6 +3,7 @@ import { Card, Button, Typography, Spin, Alert, App, Tabs } from 'antd';
 import { FileExcelOutlined } from '@ant-design/icons';
 import SignalExport from './SignalExport';
 import { useProject } from '../contexts/ProjectContext';
+import { exportService } from '../services/api';
 
 const { Title } = Typography;
 
@@ -26,15 +27,7 @@ const DataExportContent: React.FC = () => {
     try {
       setLoading(true);
 
-      const response = await fetch(`http://localhost:3001/api/exports/excel`, {
-        method: 'GET',
-      });
-
-      if (!response.ok) {
-        throw new Error('Не удалось экспортировать устройства');
-      }
-
-      const blob = await response.blob();
+      const blob = await exportService.exportDevicesToExcel();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

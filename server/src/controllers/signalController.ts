@@ -5,6 +5,17 @@ import { Device } from '../models/Device';
 import { DeviceReference } from '../models/DeviceReference';
 import { Op, Sequelize } from 'sequelize';
 
+type SignalListQuery = {
+  projectId?: number;
+  filterByProject?: boolean;
+  limit?: number;
+  offset?: number;
+  sort?: 'type' | 'name' | 'createdAt' | 'updatedAt' | 'totalCount';
+  order?: 'ASC' | 'DESC';
+  q?: string;
+  type?: 'AI' | 'AO' | 'DI' | 'DO';
+};
+
 /**
  * @swagger
  * tags:
@@ -87,44 +98,133 @@ import { Op, Sequelize } from 'sequelize';
 // Получение всех сигналов
 export const getAllSignals = async (req: Request, res: Response) => {
   try {
-    const { projectId, filterByProject } = req.query;
-    console.log(`getAllSignals: получаем сигналы для проекта ${projectId || 'все'}, фильтр по проекту: ${filterByProject}`);
+    const {
+      projectId,
+      filterByProject,
+      limit,
+      offset,
+      sort,
+      order,
+      q,
+      type,
+    } = req.query as unknown as SignalListQuery;
+
+    const hasPagination = typeof limit === 'number' || typeof offset === 'number';
+    const sortField = sort ?? 'type';
+    const sortOrder = order ?? 'ASC';
+    const pagination: { limit?: number; offset?: number } = hasPagination
+      ? { limit: limit ?? 100, offset: offset ?? 0 }
+      : {};
+
+    const buildSignalWhere = (signalIds?: number[]) => {
+      const where: Record<PropertyKey, unknown> = {};
+
+      if (type) {
+        where.type = type;
+      }
+
+      if (q) {
+        where[Op.or] = [
+          { name: { [Op.like]: `%${q}%` } },
+          { description: { [Op.like]: `%${q}%` } },
+          { category: { [Op.like]: `%${q}%` } },
+          { connectionType: { [Op.like]: `%${q}%` } },
+          { voltage: { [Op.like]: `%${q}%` } },
+        ];
+      }
+
+      if (signalIds) {
+        where.id = { [Op.in]: signalIds };
+      }
+
+      return where;
+    };
+
+    const signalOrder: Array<[string, 'ASC' | 'DESC']> =
+      sortField === 'type'
+        ? [['type', sortOrder], ['name', 'ASC']]
+        : [[sortField, sortOrder], ['name', 'ASC']];
+
+    console.log(
+      `getAllSignals: получаем сигналы для проекта ${projectId || 'все'}, фильтр по проекту: ${String(filterByProject)}`
+    );
     
     // Если явно указан параметр filterByProject=true, фильтруем по проекту
     // Иначе возвращаем все сигналы (для справочника типов сигналов)
-    if (projectId && filterByProject === 'true') {
-      // Получаем только сигналы, связанные с устройствами этого проекта
-      const signals = await Signal.findAll({
+    if (projectId && filterByProject === true) {
+      const signalIdRows = (await DeviceSignal.findAll({
+        attributes: [[Sequelize.fn('DISTINCT', Sequelize.col('signalId')), 'signalId']],
         include: [
           {
-            model: DeviceSignal,
-            as: 'deviceSignals',
-            required: true, // INNER JOIN
-            include: [
-              {
-                model: DeviceReference,
-                as: 'deviceReference',
-                where: { projectId: parseInt(projectId as string, 10) },
-                required: true
-              }
-            ]
-          }
+            model: DeviceReference,
+            as: 'deviceReference',
+            where: { projectId },
+            required: true,
+            attributes: [],
+          },
         ],
-        order: [['type', 'ASC'], ['name', 'ASC']]
-      });
-      
-      // Убираем дубликаты сигналов (если сигнал используется несколькими устройствами)
-      const uniqueSignals = signals.filter((signal, index, self) => 
-        index === self.findIndex(s => s.id === signal.id)
+        raw: true,
+      })) as unknown as Array<{ signalId: number | string }>;
+
+      const uniqueSignalIds = Array.from(
+        new Set(
+          signalIdRows
+            .map((row) => Number(row.signalId))
+            .filter((id) => Number.isFinite(id))
+        )
       );
-      
-      console.log(`getAllSignals: найдено ${uniqueSignals.length} уникальных сигналов для проекта ${projectId}`);
-      return res.status(200).json(uniqueSignals);
+
+      if (uniqueSignalIds.length === 0) {
+        if (hasPagination) {
+          return res.status(200).json({
+            items: [],
+            total: 0,
+            limit: pagination.limit,
+            offset: pagination.offset,
+          });
+        }
+        return res.status(200).json([]);
+      }
+
+      const where = buildSignalWhere(uniqueSignalIds);
+      const signals = await Signal.findAll({
+        where,
+        order: signalOrder,
+        ...pagination,
+      });
+
+      const total = hasPagination ? await Signal.count({ where }) : undefined;
+
+      console.log(`getAllSignals: найдено ${signals.length} сигналов для проекта ${projectId}`);
+      if (hasPagination) {
+        return res.status(200).json({
+          items: signals,
+          total,
+          limit: pagination.limit,
+          offset: pagination.offset,
+        });
+      }
+      return res.status(200).json(signals);
     } else {
       // Возвращаем все сигналы (для справочника типов сигналов)
+      const where = buildSignalWhere();
       const signals = await Signal.findAll({
-        order: [['type', 'ASC'], ['name', 'ASC']]
+        where,
+        order: signalOrder,
+        ...pagination,
       });
+
+      if (hasPagination) {
+        const total = await Signal.count({ where });
+        console.log(`getAllSignals: найдено ${signals.length} сигналов (paged)`);
+        return res.status(200).json({
+          items: signals,
+          total,
+          limit: pagination.limit,
+          offset: pagination.offset,
+        });
+      }
+
       console.log(`getAllSignals: найдено ${signals.length} сигналов (все сигналы)`);
       return res.status(200).json(signals);
     }

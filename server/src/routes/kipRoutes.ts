@@ -1,7 +1,10 @@
 import express from 'express';
 import { Kip } from '../models/Kip';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
+
+router.use(authenticateToken);
 
 // Получение всех записей КИП
 router.get('/', async (req, res) => {

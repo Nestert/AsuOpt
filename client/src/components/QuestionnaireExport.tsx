@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Card, Button, Select, Typography, Spin, Alert, Checkbox, Space, App } from 'antd';
 import { FilePdfOutlined, FileWordOutlined } from '@ant-design/icons';
-import { deviceService, kipService, zraService } from '../services/api';
+import { deviceService, kipService, zraService, exportService } from '../services/api';
 import { DeviceReference } from '../interfaces/DeviceReference';
 
 const { Text } = Typography;
@@ -113,20 +113,7 @@ const QuestionnaireExport: React.FC<QuestionnaireExportProps> = ({ projectId }) 
         projectId
       };
 
-      // Отправить на сервер для генерации
-      const response = await fetch(`http://localhost:3001/api/exports/questionnaire`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(exportData)
-      });
-
-      if (!response.ok) {
-        throw new Error('Не удалось сгенерировать опросный лист');
-      }
-
-      const blob = await response.blob();
+      const blob = await exportService.generateQuestionnaire(exportData);
       const url = window.URL.createObjectURL(blob);
 
       // Скачать файл

@@ -100,7 +100,7 @@ cd client && npm run test:coverage
 - **Backend**: Jest + Supertest для API тестирования
 - **Frontend**: Jest + React Testing Library для компонентов
 - **CI/CD**: GitHub Actions с автоматической проверкой
-- **Покрытие**: Минимальный порог 70%
+- **Покрытие**: Текущие глобальные пороги backend заданы в `server/jest.config.js` (20/10/20/20 для statements/branches/functions/lines). Повышение до 70% запланировано поэтапно.
 
 ### API документация
 - **Swagger UI**: http://localhost:3001/api-docs

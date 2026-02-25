@@ -1,19 +1,24 @@
 import express from 'express';
 import { DeviceReferenceController } from '../controllers/DeviceReferenceController';
+import { authenticateToken, requireAdmin } from '../middleware/auth';
+import { validateQuery } from '../middleware/validation';
+import { deviceReferenceListQuerySchema, deviceReferenceTreeQuerySchema } from '../validation/schemas';
 
 const router = express.Router();
 
+router.use(authenticateToken);
+
 // Получение всех устройств
-router.get('/', DeviceReferenceController.getAllDevices);
+router.get('/', validateQuery(deviceReferenceListQuerySchema), DeviceReferenceController.getAllDevices);
 
 // Получение дерева устройств
-router.get('/tree', DeviceReferenceController.getDeviceTree);
+router.get('/tree', validateQuery(deviceReferenceTreeQuerySchema), DeviceReferenceController.getDeviceTree);
 
 // Очистка всех справочников
-router.delete('/clear', DeviceReferenceController.clearAllReferences);
+router.delete('/clear', requireAdmin, DeviceReferenceController.clearAllReferences);
 
 // Удаление дубликатов (до /:id, чтобы не конфликтовать)
-router.delete('/duplicates', DeviceReferenceController.removeDuplicates);
+router.delete('/duplicates', requireAdmin, DeviceReferenceController.removeDuplicates);
 
 // Поиск устройств
 router.get('/search', DeviceReferenceController.searchDevices);
@@ -22,7 +27,7 @@ router.get('/search', DeviceReferenceController.searchDevices);
 router.post('/by-ids', DeviceReferenceController.getDevicesByIds);
 
 // Массовое обновление устройств
-router.put('/batch', DeviceReferenceController.batchUpdateDevices);
+router.put('/batch', requireAdmin, DeviceReferenceController.batchUpdateDevices);
 
 // Получение устройства по ID с полными данными
 router.get('/:id', DeviceReferenceController.getDeviceById);

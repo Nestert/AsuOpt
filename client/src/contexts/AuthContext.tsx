@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, LoginRequest, RegisterRequest, AuthContextType } from '../interfaces/User';
-import { authService } from '../services/api';
+import { authService, AUTH_UNAUTHORIZED_EVENT } from '../services/api';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -85,6 +85,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Проверяем аутентификацию при монтировании
   useEffect(() => {
     checkAuth();
+  }, []);
+
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setUser(null);
+      setIsLoading(false);
+    };
+
+    window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    return () => {
+      window.removeEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+    };
   }, []);
 
   const value: AuthContextType = {

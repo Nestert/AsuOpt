@@ -2,6 +2,31 @@ import { Request, Response } from 'express';
 import path from 'path';
 import { ImportService } from '../services/ImportService';
 
+const resolveSafeFilePath = (baseDir: string, providedName: unknown): string | null => {
+  if (typeof providedName !== 'string' || !providedName.trim()) {
+    return null;
+  }
+
+  const normalizedName = providedName.trim();
+  const basename = path.basename(normalizedName);
+  if (basename !== normalizedName) {
+    return null;
+  }
+
+  // Allow only a conservative set of characters in server-side temp file names.
+  if (!/^[a-zA-Z0-9._-]+$/.test(basename)) {
+    return null;
+  }
+
+  const resolvedBase = path.resolve(baseDir);
+  const resolvedFile = path.resolve(baseDir, basename);
+  if (!resolvedFile.startsWith(`${resolvedBase}${path.sep}`) && resolvedFile !== resolvedBase) {
+    return null;
+  }
+
+  return resolvedFile;
+};
+
 export class ImportController {
   /**
    * Анализ CSV файла (получение заголовков)
@@ -51,7 +76,12 @@ export class ImportController {
       if (req.file) {
         filePath = req.file.path;
       } else if (tempFileName) {
-        filePath = path.join(__dirname, '../../uploads', tempFileName);
+        const safePath = resolveSafeFilePath(path.join(__dirname, '../../uploads'), tempFileName);
+        if (!safePath) {
+          res.status(400).json({ success: false, message: 'Некорректное имя файла' });
+          return;
+        }
+        filePath = safePath;
       } else {
         res.status(400).json({ success: false, message: 'Файл не найден' });
         return;
@@ -92,7 +122,12 @@ export class ImportController {
       if (req.file) {
         filePath = req.file.path;
       } else if (tempFileName) {
-        filePath = path.join(__dirname, '../../uploads', tempFileName);
+        const safePath = resolveSafeFilePath(path.join(__dirname, '../../uploads'), tempFileName);
+        if (!safePath) {
+          res.status(400).json({ success: false, message: 'Некорректное имя файла' });
+          return;
+        }
+        filePath = safePath;
       } else {
         res.status(400).json({ success: false, message: 'Файл не найден' });
         return;
@@ -133,7 +168,12 @@ export class ImportController {
       if (req.file) {
         filePath = req.file.path;
       } else if (tempFileName) {
-        filePath = path.join(__dirname, '../../uploads', tempFileName);
+        const safePath = resolveSafeFilePath(path.join(__dirname, '../../uploads'), tempFileName);
+        if (!safePath) {
+          res.status(400).json({ success: false, message: 'Некорректное имя файла' });
+          return;
+        }
+        filePath = safePath;
       } else {
         res.status(400).json({ success: false, message: 'Файл не найден' });
         return;
@@ -218,7 +258,11 @@ export class ImportController {
         return;
       }
 
-      const filePath = path.join(__dirname, '../../tmp', fileName);
+      const filePath = resolveSafeFilePath(path.join(__dirname, '../../tmp'), fileName);
+      if (!filePath) {
+        res.status(400).json({ success: false, message: 'Некорректное имя файла' });
+        return;
+      }
 
       let result;
       if (type === 'kip') {

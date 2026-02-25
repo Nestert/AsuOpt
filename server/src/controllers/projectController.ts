@@ -1,6 +1,15 @@
 import { Request, Response } from 'express';
+import { Op, col, fn } from 'sequelize';
 import { Project } from '../models/Project';
 import { DeviceReference } from '../models/DeviceReference';
+
+type ProjectListQuery = {
+  limit?: number;
+  offset?: number;
+  sort?: 'updatedAt' | 'createdAt' | 'name' | 'code' | 'status';
+  order?: 'ASC' | 'DESC';
+  q?: string;
+};
 
 /**
  * @swagger
@@ -104,24 +113,79 @@ export class ProjectController {
   // Получить все проекты
   static async getAllProjects(req: Request, res: Response): Promise<void> {
     try {
+      const { limit, offset, sort, order, q } = req.query as unknown as ProjectListQuery;
+      const hasPagination = typeof limit === 'number' || typeof offset === 'number';
+
+      const where: Record<PropertyKey, unknown> = {
+        status: { [Op.in]: ['active', 'archived'] },
+      };
+
+      if (q) {
+        where[Op.or] = [
+          { name: { [Op.like]: `%${q}%` } },
+          { code: { [Op.like]: `%${q}%` } },
+          { description: { [Op.like]: `%${q}%` } },
+        ];
+      }
+
+      const sortField = sort ?? 'updatedAt';
+      const sortOrder = order ?? 'DESC';
+
+      const queryOptions: {
+        where: Record<PropertyKey, unknown>;
+        order: Array<[string, 'ASC' | 'DESC']>;
+        limit?: number;
+        offset?: number;
+      } = {
+        where,
+        order: [[sortField, sortOrder]],
+      };
+
+      if (hasPagination) {
+        queryOptions.limit = limit ?? 50;
+        queryOptions.offset = offset ?? 0;
+      }
+
       const projects = await Project.findAll({
-        where: { status: ['active', 'archived'] },
-        order: [['updatedAt', 'DESC']],
+        ...queryOptions,
       });
 
-      // Получаем количество устройств для каждого проекта
-      const projectsWithStats = await Promise.all(
-        projects.map(async (project) => {
-          const deviceCount = await DeviceReference.count({
-            where: { projectId: project.id },
-          });
+      const projectIds = projects.map((project) => project.id);
+      let deviceCountsByProjectId = new Map<number, number>();
 
-          return {
-            ...project.toJSON(),
-            deviceCount,
-          };
-        })
-      );
+      if (projectIds.length > 0) {
+        const counts = (await DeviceReference.findAll({
+          attributes: ['projectId', [fn('COUNT', col('id')), 'deviceCount']],
+          where: {
+            projectId: { [Op.in]: projectIds },
+          },
+          group: ['projectId'],
+          raw: true,
+        })) as unknown as Array<{ projectId: number; deviceCount: number | string }>;
+
+        deviceCountsByProjectId = new Map(
+          counts.map((row) => [
+            Number(row.projectId),
+            typeof row.deviceCount === 'number' ? row.deviceCount : Number(row.deviceCount) || 0,
+          ])
+        );
+      }
+
+      const projectsWithStats = projects.map((project) => ({
+        ...project.toJSON(),
+        deviceCount: deviceCountsByProjectId.get(project.id) ?? 0,
+      }));
+
+      if (hasPagination) {
+        const total = await Project.count({ where });
+        res.json({
+          items: projectsWithStats,
+          total,
+          limit: queryOptions.limit,
+          offset: queryOptions.offset,
+        });
+        return;
+      }
 
       res.json(projectsWithStats);
     } catch (error) {

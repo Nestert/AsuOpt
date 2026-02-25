@@ -1,6 +1,19 @@
 import request from 'supertest';
 import express from 'express';
+
+jest.mock('../src/middleware/auth', () => ({
+  authenticateToken: (req: any, res: any, next: () => void) => {
+    req.user = { id: 1, role: 'admin' };
+    next();
+  },
+  requireAdmin: (req: any, res: any, next: () => void) => next(),
+  requireUser: (req: any, res: any, next: () => void) => next(),
+}));
+
 import signalRoutes from '../src/routes/signalRoutes';
+
+const uniqueSignalName = (prefix: string) =>
+  `${prefix}_${Date.now().toString().slice(-6)}_${Math.floor(Math.random() * 1000)}`;
 
 const createTestApp = () => {
   const app = express();
@@ -23,6 +36,52 @@ describe('Signal API', () => {
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('should return paginated response when limit/offset provided', async () => {
+      await request(app)
+        .post('/api/signals')
+        .send({ name: uniqueSignalName('PAG_AI'), type: 'AI', description: 'paginated signal 1' })
+        .expect(201);
+
+      await request(app)
+        .post('/api/signals')
+        .send({ name: uniqueSignalName('PAG_DO'), type: 'DO', description: 'paginated signal 2' })
+        .expect(201);
+
+      const response = await request(app)
+        .get('/api/signals?limit=1&offset=0')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('total');
+      expect(response.body.limit).toBe(1);
+      expect(response.body.offset).toBe(0);
+      expect(Array.isArray(response.body.items)).toBe(true);
+      expect(response.body.items.length).toBeLessThanOrEqual(1);
+      expect(response.body.total).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should support q and type filters without pagination (array response)', async () => {
+      const targetName = uniqueSignalName('FILTER_SIG');
+
+      await request(app)
+        .post('/api/signals')
+        .send({
+          name: targetName,
+          type: 'DI',
+          description: 'searchable signal',
+          category: 'Control'
+        })
+        .expect(201);
+
+      const response = await request(app)
+        .get(`/api/signals?q=${encodeURIComponent(targetName)}&type=DI`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThanOrEqual(1);
+      expect(response.body.some((signal: any) => signal.name === targetName && signal.type === 'DI')).toBe(true);
     });
   });
 

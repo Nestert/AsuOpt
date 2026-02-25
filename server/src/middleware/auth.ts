@@ -1,14 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User';
+import { getJwtSecret } from '../config/env';
+import { ApiError } from '../errors/ApiError';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const JWT_SECRET = getJwtSecret();
 
 // Расширяем интерфейс Request для добавления пользователя
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: {
+        id: number;
+        username: string;
+        email: string;
+        role: string;
+      };
+      requestId?: string;
     }
   }
 }
@@ -31,21 +39,22 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
     if (!token) {
-      res.status(401).json({
-        message: 'Требуется авторизация'
-      });
+      next(new ApiError(401, 'UNAUTHORIZED', 'Требуется авторизация'));
       return;
     }
 
     // Верификация токена
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = jwt.verify(token, JWT_SECRET) as jwt.JwtPayload;
+    const userId = typeof decoded?.id === 'number' ? decoded.id : Number(decoded?.id);
+    if (!Number.isFinite(userId)) {
+      next(new ApiError(401, 'INVALID_TOKEN', 'Неверный токен авторизации'));
+      return;
+    }
 
     // Проверка существования пользователя в базе данных
-    const user = await User.findByPk(decoded.id);
+    const user = await User.findByPk(userId);
     if (!user || !user.isActive) {
-      res.status(401).json({
-        message: 'Пользователь не найден или не активен'
-      });
+      next(new ApiError(401, 'UNAUTHORIZED', 'Пользователь не найден или не активен'));
       return;
     }
 
@@ -60,23 +69,17 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
     next();
     } catch (error) {
       if (error instanceof jwt.JsonWebTokenError) {
-        res.status(401).json({
-          message: 'Неверный токен авторизации'
-        });
+        next(new ApiError(401, 'INVALID_TOKEN', 'Неверный токен авторизации'));
         return;
       }
 
       if (error instanceof jwt.TokenExpiredError) {
-        res.status(401).json({
-          message: 'Токен авторизации истек'
-        });
+        next(new ApiError(401, 'TOKEN_EXPIRED', 'Токен авторизации истек'));
         return;
       }
 
       console.error('Ошибка аутентификации:', error);
-      res.status(500).json({
-        message: 'Внутренняя ошибка сервера'
-      });
+      next(new ApiError(500, 'AUTH_ERROR', 'Внутренняя ошибка сервера'));
       return;
     }
 };
@@ -84,17 +87,15 @@ export const authenticateToken = async (req: AuthRequest, res: Response, next: N
 /**
  * Middleware для проверки роли администратора
  */
-export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction): void => {
   if (!req.user) {
-    return res.status(401).json({
-      message: 'Требуется авторизация'
-    });
+    next(new ApiError(401, 'UNAUTHORIZED', 'Требуется авторизация'));
+    return;
   }
 
   if (req.user.role !== 'admin') {
-    return res.status(403).json({
-      message: 'Требуются права администратора'
-    });
+    next(new ApiError(403, 'FORBIDDEN', 'Требуются права администратора'));
+    return;
   }
 
   next();
@@ -103,11 +104,10 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
 /**
  * Middleware для проверки роли пользователя (admin или user)
  */
-export const requireUser = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const requireUser = (req: AuthRequest, res: Response, next: NextFunction): void => {
   if (!req.user) {
-    return res.status(401).json({
-      message: 'Требуется авторизация'
-    });
+    next(new ApiError(401, 'UNAUTHORIZED', 'Требуется авторизация'));
+    return;
   }
 
   next();

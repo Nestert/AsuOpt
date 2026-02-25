@@ -18,7 +18,7 @@ import {
   Typography,
   FormHelperText
 } from '@mui/material';
-import axios from 'axios';
+import { apiClient } from '../services/api';
 import '../App.css';
 
 interface Device {
@@ -88,7 +88,7 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ open, onClose, onDeviceAdded, p
 
   const handleSubmit = async () => {
     try {
-      await axios.post('http://localhost:3001/api/devices', formData);
+      await apiClient.post('/devices', formData);
       setSnackbar({
         open: true,
         message: 'Устройство успешно добавлено',

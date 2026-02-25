@@ -1,7 +1,10 @@
 import express, { Request, Response, NextFunction } from 'express';
 import * as deviceTypeSignalController from '../controllers/deviceTypeSignalController';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
+
+router.use(authenticateToken);
 
 // Получение списка уникальных типов устройств
 router.get('/unique-device-types', (req: Request, res: Response, next: NextFunction) => {

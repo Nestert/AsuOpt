@@ -1,10 +1,15 @@
 import express, { Request, Response, NextFunction } from 'express';
 import * as signalController from '../controllers/signalController';
+import { authenticateToken, requireAdmin } from '../middleware/auth';
+import { validateQuery } from '../middleware/validation';
+import { signalListQuerySchema } from '../validation/schemas';
 
 const router = express.Router();
 
+router.use(authenticateToken);
+
 // Получение всех сигналов
-router.get('/', (req: Request, res: Response, next: NextFunction) => {
+router.get('/', validateQuery(signalListQuerySchema), (req: Request, res: Response, next: NextFunction) => {
   signalController.getAllSignals(req, res)
     .catch(next);
 });
@@ -39,15 +44,9 @@ router.post('/', (req: Request, res: Response, next: NextFunction) => {
     .catch(next);
 });
 
-// Обновление сигнала
-router.put('/:id', (req: Request, res: Response, next: NextFunction) => {
-  signalController.updateSignal(req, res)
-    .catch(next);
-});
-
-// Удаление сигнала
-router.delete('/:id', (req: Request, res: Response, next: NextFunction) => {
-  signalController.deleteSignal(req, res)
+// Удаление всех сигналов
+router.delete('/clear', requireAdmin, (req: Request, res: Response, next: NextFunction) => {
+  signalController.clearAllSignals(req, res)
     .catch(next);
 });
 
@@ -57,9 +56,15 @@ router.delete('/device/:deviceId/signal/:signalId', (req: Request, res: Response
     .catch(next);
 });
 
-// Удаление всех сигналов
-router.delete('/clear', (req: Request, res: Response, next: NextFunction) => {
-  signalController.clearAllSignals(req, res)
+// Обновление сигнала
+router.put('/:id', (req: Request, res: Response, next: NextFunction) => {
+  signalController.updateSignal(req, res)
+    .catch(next);
+});
+
+// Удаление сигнала
+router.delete('/:id', (req: Request, res: Response, next: NextFunction) => {
+  signalController.deleteSignal(req, res)
     .catch(next);
 });
 

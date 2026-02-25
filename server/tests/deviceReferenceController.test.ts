@@ -2,8 +2,32 @@ import request from 'supertest';
 import express from 'express';
 import { sequelize } from '../src/config/database';
 import { initializeModels } from '../src/config/initializeModels';
+
+jest.mock('../src/middleware/auth', () => ({
+  authenticateToken: (req: any, res: any, next: () => void) => {
+    req.user = { id: 1, role: 'admin' };
+    next();
+  },
+  requireAdmin: (req: any, res: any, next: () => void) => next(),
+  requireUser: (req: any, res: any, next: () => void) => next(),
+}));
+
 import deviceReferenceRoutes from '../src/routes/deviceReferenceRoutes';
 import projectRoutes from '../src/routes/projectRoutes';
+
+const uniquePos = (prefix: string) =>
+  `${prefix}-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;
+
+const countTreeLeaves = (nodes: any[]): number =>
+  nodes.reduce((acc, node) => {
+    if (node?.isLeaf) {
+      return acc + 1;
+    }
+    if (Array.isArray(node?.children)) {
+      return acc + countTreeLeaves(node.children);
+    }
+    return acc;
+  }, 0);
 
 // Создаем тестовое приложение
 const createTestApp = () => {
@@ -38,6 +62,74 @@ describe('Device Reference API', () => {
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
+    });
+
+    it('should return paginated response when limit/offset provided', async () => {
+      await request(app)
+        .post('/api/device-references')
+        .send({
+          reference: {
+            posDesignation: uniquePos('PAG-001'),
+            deviceType: 'Sensor',
+            description: 'Paginated device 1',
+            systemCode: 'SYS-PAG',
+            projectId: 1
+          },
+          dataType: null
+        })
+        .expect(201);
+
+      await request(app)
+        .post('/api/device-references')
+        .send({
+          reference: {
+            posDesignation: uniquePos('PAG-002'),
+            deviceType: 'Valve',
+            description: 'Paginated device 2',
+            systemCode: 'SYS-PAG',
+            projectId: 1
+          },
+          dataType: null
+        })
+        .expect(201);
+
+      const response = await request(app)
+        .get('/api/device-references?limit=1&offset=0')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('items');
+      expect(response.body).toHaveProperty('total');
+      expect(response.body.limit).toBe(1);
+      expect(response.body.offset).toBe(0);
+      expect(Array.isArray(response.body.items)).toBe(true);
+      expect(response.body.items.length).toBeLessThanOrEqual(1);
+      expect(response.body.total).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should support q filter and keep array response without pagination', async () => {
+      const targetPos = uniquePos('FINDME');
+
+      await request(app)
+        .post('/api/device-references')
+        .send({
+          reference: {
+            posDesignation: targetPos,
+            deviceType: 'Motor',
+            description: 'Search target device',
+            systemCode: 'SYS-SEARCH',
+            projectId: 1
+          },
+          dataType: null
+        })
+        .expect(201);
+
+      const response = await request(app)
+        .get(`/api/device-references?q=${encodeURIComponent(targetPos)}`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.length).toBeGreaterThanOrEqual(1);
+      expect(response.body.some((device: any) => device.posDesignation === targetPos)).toBe(true);
     });
   });
 
@@ -149,6 +241,71 @@ describe('Device Reference API', () => {
       await request(app)
         .get('/api/device-references/99999')
         .expect(404);
+    });
+  });
+
+  describe('GET /api/device-references/tree', () => {
+    it('should support q filter and return matching tree nodes', async () => {
+      const targetPos = uniquePos('TREEFIND');
+
+      await request(app)
+        .post('/api/device-references')
+        .send({
+          reference: {
+            posDesignation: targetPos,
+            deviceType: 'Sensor',
+            description: 'Tree search device',
+            systemCode: 'SYS-TREE',
+            projectId: 1
+          },
+          dataType: null
+        })
+        .expect(201);
+
+      const response = await request(app)
+        .get(`/api/device-references/tree?q=${encodeURIComponent(targetPos)}`)
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(countTreeLeaves(response.body)).toBe(1);
+    });
+
+    it('should apply maxNodes limit before building tree', async () => {
+      await request(app)
+        .post('/api/device-references')
+        .send({
+          reference: {
+            posDesignation: uniquePos('TREELIM-001'),
+            deviceType: 'Valve',
+            description: 'Tree limited device 1',
+            systemCode: 'SYS-LIM',
+            projectId: 1
+          },
+          dataType: null
+        })
+        .expect(201);
+
+      await request(app)
+        .post('/api/device-references')
+        .send({
+          reference: {
+            posDesignation: uniquePos('TREELIM-002'),
+            deviceType: 'Valve',
+            description: 'Tree limited device 2',
+            systemCode: 'SYS-LIM',
+            projectId: 1
+          },
+          dataType: null
+        })
+        .expect(201);
+
+      const response = await request(app)
+        .get('/api/device-references/tree?maxNodes=1')
+        .expect(200);
+
+      expect(Array.isArray(response.body)).toBe(true);
+      expect(countTreeLeaves(response.body)).toBe(1);
+      expect(response.headers['x-items-limited']).toBe('true');
     });
   });
 

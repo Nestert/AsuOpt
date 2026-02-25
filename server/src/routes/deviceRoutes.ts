@@ -1,7 +1,10 @@
 import express, { Request, Response, NextFunction } from 'express';
 import * as deviceController from '../controllers/deviceController';
+import { authenticateToken, requireAdmin } from '../middleware/auth';
 
 const router = express.Router();
+
+router.use(authenticateToken);
 
 // Получение дерева устройств
 router.get('/tree', (req: Request, res: Response, next: NextFunction) => {
@@ -15,8 +18,20 @@ router.get('/', (req: Request, res: Response, next: NextFunction) => {
     .catch(next);
 });
 
+// Поиск устройств
+router.get('/search', (req: Request, res: Response, next: NextFunction) => {
+  deviceController.searchDevices(req, res)
+    .catch(next);
+});
+
+// Получение дочерних устройств
+router.get('/:parentId/children', (req: Request, res: Response, next: NextFunction) => {
+  deviceController.getDeviceChildren(req, res)
+    .catch(next);
+});
+
 // Очистка базы данных устройств
-router.delete('/clear', (req: Request, res: Response, next: NextFunction) => {
+router.delete('/clear', requireAdmin, (req: Request, res: Response, next: NextFunction) => {
   deviceController.clearAllDevices(req, res)
     .catch(next);
 });
@@ -45,16 +60,4 @@ router.delete('/:id', (req: Request, res: Response, next: NextFunction) => {
     .catch(next);
 });
 
-// Получение дочерних устройств
-router.get('/:parentId/children', (req: Request, res: Response, next: NextFunction) => {
-  deviceController.getDeviceChildren(req, res)
-    .catch(next);
-});
-
-// Поиск устройств
-router.get('/search', (req: Request, res: Response, next: NextFunction) => {
-  deviceController.searchDevices(req, res)
-    .catch(next);
-});
-
-export default router; 
+export default router;

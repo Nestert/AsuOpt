@@ -4,7 +4,8 @@ import { Signal, DeviceSignal, SignalSummary } from '../interfaces/Signal';
 import { DeviceTypeSignal, SignalsSummary } from '../interfaces/DeviceTypeSignal';
 import { User, LoginRequest, RegisterRequest, AuthResponse } from '../interfaces/User';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+export const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+export const AUTH_UNAUTHORIZED_EVENT = 'asuopt:auth-unauthorized';
 
 // Базовый экземпляр axios
 const api = axios.create({
@@ -36,12 +37,15 @@ api.interceptors.response.use(
       // Токен истек или недействителен
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // Можно добавить перенаправление на страницу входа
-      window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(AUTH_UNAUTHORIZED_EVENT));
+      }
     }
     return Promise.reject(error);
   }
 );
+
+export const apiClient = api;
 
 // Сервис для работы с устройствами
 export const deviceService = {
@@ -87,6 +91,17 @@ export const deviceService = {
       return response.data;
     } catch (error) {
       console.error('API: ошибка в createDevice:', error);
+      throw error;
+    }
+  },
+
+  // Обновить устройство (справочник) по ID
+  updateDeviceById: async (id: number, deviceData: any): Promise<any> => {
+    try {
+      const response = await api.put(`/device-references/${id}`, deviceData);
+      return response.data;
+    } catch (error) {
+      console.error(`API: ошибка в updateDeviceById(${id}):`, error);
       throw error;
     }
   },
@@ -360,6 +375,19 @@ export const importService = {
 
 // Сервис для экспорта данных
 export const exportService = {
+  // Экспорт всех устройств в Excel
+  exportDevicesToExcel: async (): Promise<Blob> => {
+    try {
+      const response = await api.get('/exports/excel', {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в exportDevicesToExcel:', error);
+      throw error;
+    }
+  },
+
   // Экспорт данных сигналов в Excel
   exportSignalsToExcel: async (columns: string[], include_plc: boolean = false): Promise<Blob> => {
     try {
@@ -382,6 +410,19 @@ export const exportService = {
       return response.data;
     } catch (error) {
       console.error('API: ошибка в exportSignalsToPdf:', error);
+      throw error;
+    }
+  },
+
+  // Генерация опросного листа
+  generateQuestionnaire: async (payload: { devices: any[]; format: 'pdf' | 'word'; projectId?: number | null }): Promise<Blob> => {
+    try {
+      const response = await api.post('/exports/questionnaire', payload, {
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в generateQuestionnaire:', error);
       throw error;
     }
   }

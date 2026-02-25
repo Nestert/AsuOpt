@@ -1,8 +1,11 @@
 import express, { Request, Response, NextFunction } from 'express';
 import * as exportController from '../controllers/exportController';
 import { exportSignalsToPdfPuppeteer } from '../controllers/pdfPuppeteer';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
+
+router.use(authenticateToken);
 
 // Экспорт в Excel
 router.get('/excel', (req: Request, res: Response, next: NextFunction) => {

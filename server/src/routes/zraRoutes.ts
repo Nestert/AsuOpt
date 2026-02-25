@@ -1,7 +1,10 @@
 import express from 'express';
 import { Zra } from '../models/Zra';
+import { authenticateToken } from '../middleware/auth';
 
 const router = express.Router();
+
+router.use(authenticateToken);
 
 // Получение всех записей ЗРА
 router.get('/', async (req, res) => {

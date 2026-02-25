@@ -2,25 +2,58 @@ import { Request, Response } from 'express';
 import { DeviceReference } from '../models/DeviceReference';
 import { Kip } from '../models/Kip';
 import { Zra } from '../models/Zra';
-import { Op } from 'sequelize';
+import { Op, WhereOptions } from 'sequelize';
+
+type DeviceReferenceListQuery = {
+  projectId?: number;
+  limit?: number;
+  offset?: number;
+  sort?: 'posDesignation' | 'deviceType' | 'description' | 'systemCode' | 'createdAt' | 'updatedAt';
+  order?: 'ASC' | 'DESC';
+  q?: string;
+};
+
+type DeviceReferenceTreeQuery = {
+  projectId?: number;
+  q?: string;
+  deviceType?: string;
+  maxNodes?: number;
+};
 
 export class DeviceReferenceController {
   // Получение всех устройств из справочника
   static async getAllDevices(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.query;
+      const { projectId, limit, offset, sort, order, q } =
+        req.query as unknown as DeviceReferenceListQuery;
+      const hasPagination = typeof limit === 'number' || typeof offset === 'number';
+      const sortField = sort ?? 'posDesignation';
+      const sortOrder = order ?? 'ASC';
+      const pagination: { limit?: number; offset?: number } = hasPagination
+        ? { limit: limit ?? 100, offset: offset ?? 0 }
+        : {};
+
       console.log(`getAllDevices: получаем устройства для проекта ${projectId || 'все'}`);
 
       // Формируем условие фильтрации по проекту
-      const whereCondition: any = {};
-      if (projectId) {
-        whereCondition.projectId = parseInt(projectId as string, 10);
+      const whereCondition: Record<PropertyKey, unknown> = {};
+      if (typeof projectId === 'number') {
+        whereCondition.projectId = projectId;
+      }
+      if (q) {
+        whereCondition[Op.or] = [
+          { posDesignation: { [Op.like]: `%${q}%` } },
+          { deviceType: { [Op.like]: `%${q}%` } },
+          { description: { [Op.like]: `%${q}%` } },
+          { systemCode: { [Op.like]: `%${q}%` } },
+          { parentSystem: { [Op.like]: `%${q}%` } },
+        ];
       }
 
       // Получаем устройства с включением связанных данных KIP и ZRA
       const devices = await DeviceReference.findAll({
         where: whereCondition,
-        order: [['posDesignation', 'ASC']],
+        order: [[sortField, sortOrder]],
         include: [
           {
             model: Kip,
@@ -32,7 +65,8 @@ export class DeviceReferenceController {
             as: 'zra',
             required: false,
           }
-        ]
+        ],
+        ...pagination,
       });
 
       console.log(`getAllDevices: Получено ${devices.length} устройств`);
@@ -41,6 +75,17 @@ export class DeviceReferenceController {
       const withKip = devices.filter(device => device.get('kip')).length;
       const withZra = devices.filter(device => device.get('zra')).length;
       console.log(`getAllDevices: С данными KIP: ${withKip}, с данными ZRA: ${withZra}`);
+
+      if (hasPagination) {
+        const total = await DeviceReference.count({ where: whereCondition as WhereOptions });
+        res.json({
+          items: devices,
+          total,
+          limit: pagination.limit,
+          offset: pagination.offset,
+        });
+        return;
+      }
 
       res.json(devices);
     } catch (error) {
@@ -242,45 +287,74 @@ export class DeviceReferenceController {
   // Получение дерева устройств
   static async getDeviceTree(req: Request, res: Response): Promise<void> {
     try {
-      const { projectId } = req.query;
-      console.log(`getDeviceTree: получаем дерево устройств для проекта ${projectId || 'все'}`);
+      const { projectId, q, deviceType, maxNodes } =
+        req.query as unknown as DeviceReferenceTreeQuery;
+      console.log(
+        `getDeviceTree: получаем дерево устройств для проекта ${projectId || 'все'}`
+      );
 
       // Формируем условие фильтрации по проекту
-      const whereCondition: any = {};
-      if (projectId) {
-        whereCondition.projectId = parseInt(projectId as string, 10);
+      const whereCondition: Record<PropertyKey, unknown> = {};
+      if (typeof projectId === 'number') {
+        whereCondition.projectId = projectId;
+      }
+      if (deviceType) {
+        whereCondition.deviceType = deviceType;
+      }
+      if (q) {
+        whereCondition[Op.or] = [
+          { posDesignation: { [Op.like]: `%${q}%` } },
+          { description: { [Op.like]: `%${q}%` } },
+          { deviceType: { [Op.like]: `%${q}%` } },
+          { systemCode: { [Op.like]: `%${q}%` } },
+          { parentSystem: { [Op.like]: `%${q}%` } },
+        ];
       }
 
       // Группируем устройства по типу и первой части позиционного обозначения
       const devices = await DeviceReference.findAll({
         where: whereCondition,
-        order: [['posDesignation', 'ASC']]
+        order: [['posDesignation', 'ASC']],
+        ...(typeof maxNodes === 'number' ? { limit: maxNodes } : {}),
       });
 
       // Создаем структуру дерева
-      const tree = [];
-      const deviceTypes = {};
+      type TreeLeafNode = {
+        id: number;
+        name: string;
+        description?: string;
+        type: string;
+        isLeaf: true;
+      };
+      type TreeBranchNode = {
+        id: string;
+        name: string;
+        children: Array<TreeBranchNode | TreeLeafNode>;
+      };
+
+      const tree: TreeBranchNode[] = [];
+      const deviceTypesMap: Record<string, TreeBranchNode> = {};
 
       // Сначала группируем по типу устройства
       devices.forEach(device => {
-        const { deviceType } = device;
+        const currentDeviceType = device.deviceType;
 
-        if (!deviceTypes[deviceType]) {
-          deviceTypes[deviceType] = {
-            id: `type_${deviceType}`,
-            name: deviceType,
+        if (!deviceTypesMap[currentDeviceType]) {
+          deviceTypesMap[currentDeviceType] = {
+            id: `type_${currentDeviceType}`,
+            name: currentDeviceType,
             children: []
           };
-          tree.push(deviceTypes[deviceType]);
+          tree.push(deviceTypesMap[currentDeviceType]);
         }
 
         // Группируем по первой части позиционного обозначения (до первой точки)
         const posDesignation = device.posDesignation;
         const posPrefix = posDesignation.split('.')[0];
 
-        let prefixGroup = deviceTypes[deviceType].children.find(
+        let prefixGroup = deviceTypesMap[currentDeviceType].children.find(
           group => group.id === `prefix_${posPrefix}`
-        );
+        ) as TreeBranchNode | undefined;
 
         if (!prefixGroup) {
           prefixGroup = {
@@ -288,7 +362,7 @@ export class DeviceReferenceController {
             name: posPrefix,
             children: []
           };
-          deviceTypes[deviceType].children.push(prefixGroup);
+          deviceTypesMap[currentDeviceType].children.push(prefixGroup);
         }
 
         // Добавляем устройство в соответствующую группу
@@ -300,6 +374,10 @@ export class DeviceReferenceController {
           isLeaf: true
         });
       });
+
+      if (typeof maxNodes === 'number' && devices.length === maxNodes) {
+        res.setHeader('X-Items-Limited', 'true');
+      }
 
       res.json(tree);
     } catch (error) {

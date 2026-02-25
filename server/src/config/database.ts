@@ -1,5 +1,6 @@
 import { Sequelize } from 'sequelize';
 import path from 'path';
+import { isProduction } from './env';
 
 const sequelize = new Sequelize({
   dialect: 'sqlite',
@@ -132,7 +133,10 @@ const ensureProjectMigration = async () => {
       try {
         await sequelize.query(indexQuery);
       } catch (error: any) {
-        if (!error.message.includes('already exists')) {
+        if (
+          !error.message.includes('already exists') &&
+          !error.message.includes('no such table')
+        ) {
           console.error('Ошибка при создании индекса:', error.message);
         }
       }
@@ -143,7 +147,9 @@ const ensureProjectMigration = async () => {
       await sequelize.query('DROP INDEX IF EXISTS sqlite_autoindex_device_references_1');
       await sequelize.query('CREATE UNIQUE INDEX IF NOT EXISTS idx_device_references_proj_pos ON device_references(project_id, posDesignation)');
     } catch (error: any) {
-      console.log('⚠️  Ошибка при создании уникального индекса:', error.message);
+      if (!error.message.includes('no such table')) {
+        console.log('⚠️  Ошибка при создании уникального индекса:', error.message);
+      }
     }
 
     // 7. Создаем триггеры
@@ -188,8 +194,12 @@ const initializeDatabase = async () => {
     await sequelize.authenticate();
     console.log('✅ Подключение к базе данных установлено');
 
-    // Выполняем миграцию проектов
-    await ensureProjectMigration();
+    if (isProduction) {
+      console.log('⏭️ Пропуск runtime schema migration в production (используйте миграции)');
+    } else {
+      // Выполняем миграцию проектов только в dev/test до полного перехода на миграции
+      await ensureProjectMigration();
+    }
 
     console.log('✅ База данных инициализирована');
   } catch (error) {
