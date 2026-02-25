@@ -6,7 +6,6 @@ import { Kip } from '../models/Kip';
 import { Zra } from '../models/Zra';
 import { Signal } from '../models/Signal';
 import { DeviceSignal } from '../models/DeviceSignal';
-import { DeviceTypeSignal } from '../models/DeviceTypeSignal';
 import { User } from '../models/User';
 
 export const initializeModels = async () => {
@@ -22,8 +21,7 @@ export const initializeModels = async () => {
     Zra.initialize(sequelize);
     Signal.initialize(sequelize);
     DeviceSignal.initialize(sequelize);
-    DeviceTypeSignal.initialize(sequelize);
-
+    
     console.log('✅ Модели инициализированы');
 
     // Устанавливаем ассоциации между моделями

@@ -393,19 +393,69 @@ export class ImportService {
         };
       }
 
-      // Получаем все устройства данного типа
+      // Получаем все устройства (фильтруем по проекту, если указан)
       const { DeviceReference } = require('../models/DeviceReference');
-      const whereClause: any = { deviceType };
+      const whereClause: any = {};
 
       if (projectId) {
         whereClause.projectId = projectId;
       }
 
-      const devices = await DeviceReference.findAll({
+      const allDevices = await DeviceReference.findAll({
         where: whereClause
       });
 
+      // Фильтруем устройства в JS для регистронезависимого сопоставления (SQLite не поддерживает кириллицу в LIKE/LOWER)
+      const targetTypeClean = deviceType.trim().toLowerCase();
+      console.log(`[DEBUG assign] category: "${deviceType}" -> clean: "${targetTypeClean}"`);
+
+      // Ищем совпадения в таблице ZRA (где категория хранится отдельно от deviceType)
+      const { Zra } = require('../models/Zra');
+      let zraDeviceIds: number[] = [];
+      try {
+        const zras = await Zra.findAll({
+          attributes: ['deviceReferenceId', 'category']
+        });
+        zraDeviceIds = zras
+          .filter((z: any) => z.category && z.category.trim().toLowerCase() === targetTypeClean)
+          .map((z: any) => z.deviceReferenceId);
+      } catch (err) {
+        console.error('Ошибка при поиске категорий ZRA:', err);
+      }
+
+      // Предзаданные маппинги для известных несовпадений
+      const predefinedMappings: Record<string, string[]> = {
+        'уровнемер': ['сигнализатор уровня', 'уровнемер'],
+        'датчик давления': ['датчик давления', 'датчик давления '],
+      };
+
+      const mappedTypes = predefinedMappings[targetTypeClean] || [targetTypeClean];
+
+      const devices = allDevices.filter((d: any) => {
+        // Проверяем принадлежность к ZRA категории
+        if (zraDeviceIds.includes(d.id)) {
+          console.log(`[DEBUG assign]   MATCHED via ZRA category: "${d.deviceType}" for ZRA device ID ${d.id}`);
+          return true;
+        }
+
+        if (!d.deviceType) return false;
+        const dClean = d.deviceType.trim().toLowerCase();
+
+        // 1. Точное совпадение с очисткой
+        // 2. Частичное совпадение (fuzzy)
+        // 3. Совпадение по предзаданному словарю
+        const isMatch = mappedTypes.includes(dClean) ||
+          dClean.includes(targetTypeClean) ||
+          targetTypeClean.includes(dClean);
+
+        if (isMatch) {
+          console.log(`[DEBUG assign]   MATCHED deviceType: "${d.deviceType}" -> clean: "${dClean}"`);
+        }
+        return isMatch;
+      });
+
       if (devices.length === 0) {
+        console.log(`[DEBUG assign]   NO MATCHES FOUND for "${targetTypeClean}" in ${allDevices.length} devices.`);
         return {
           success: false,
           message: `Устройства типа "${deviceType}" не найдены`

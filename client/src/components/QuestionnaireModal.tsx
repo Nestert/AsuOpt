@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Modal, Button, Select, Space, message } from 'antd';
 import { FilePdfOutlined, FileWordOutlined } from '@ant-design/icons';
 import { deviceService } from '../services/api';
-import { DeviceFullData } from '../interfaces/DeviceReference';
 
 interface QuestionnaireModalProps {
   visible: boolean;
@@ -21,13 +20,20 @@ const QuestionnaireModal: React.FC<QuestionnaireModalProps> = ({ visible, device
     try {
       const devicesData = await deviceService.getDevicesByIds(deviceIds);
       
+      // Преобразуем формат DeviceFullData в формат { device, kip, zra }
+      const transformedDevices = devicesData.map((d: any) => ({
+        device: d.reference,
+        kip: d.kip,
+        zra: d.zra
+      }));
+      
       const response = await fetch(`http://localhost:3001/api/exports/questionnaire`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          devices: devicesData,
+          devices: transformedDevices,
           format
         })
       });

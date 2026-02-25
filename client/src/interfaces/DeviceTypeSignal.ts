@@ -6,18 +6,18 @@ export interface DeviceTypeSignal {
   diCount: number;
   doCount: number;
   deviceCount?: number;
-}
-
-export interface SignalSummary {
-  totalAI: number;
-  totalAO: number;
-  totalDI: number;
-  totalDO: number;
-  totalSignals: number;
-  totalDevices?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface SignalsSummary {
   deviceTypeSignals: DeviceTypeSignal[];
-  summary: SignalSummary;
-} 
+  summary: {
+    totalAI: number;
+    totalAO: number;
+    totalDI: number;
+    totalDO: number;
+    totalSignals: number;
+    totalDevices: number;
+  };
+}

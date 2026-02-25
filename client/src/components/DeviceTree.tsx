@@ -737,48 +737,61 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, onSelectDevices
               Сбросить
             </Button>
           </Tooltip>
-          <Tooltip title={checkedKeys.length > 1 ? `Редактировать ${checkedKeys.length} выбранных устройств` : checkedKeys.length === 1 ? 'Редактировать выбранное устройство' : 'Добавить новое устройство'}>
-            <Button
-              type="primary"
-              icon={checkedKeys.length > 1 ? <EditOutlined /> : <PlusOutlined />}
-              onClick={() => {
-                if (checkedKeys.length > 1) {
-                  const deviceIds: number[] = [];
-                  checkedKeys.forEach((key) => {
-                    const node = findNodeByKey(String(key), treeData);
-                    if (node && node.originalId) {
-                      deviceIds.push(node.originalId);
+          {checkedKeys.length >= 1 ? (
+            <Dropdown
+              menu={{
+                items: [
+                  {
+                    key: 'edit',
+                    icon: <EditOutlined />,
+                    label: checkedKeys.length === 1 ? 'Редактировать' : `Редактировать (${checkedKeys.length})`,
+                    onClick: () => {
+                      const deviceIds: number[] = [];
+                      checkedKeys.forEach((key) => {
+                        const node = findNodeByKey(String(key), treeData);
+                        if (node && node.originalId) {
+                          deviceIds.push(node.originalId);
+                        }
+                      });
+                      if (onOpenBatchEdit) {
+                        onOpenBatchEdit(deviceIds);
+                      }
                     }
-                  });
-                  if (onOpenBatchEdit) {
-                    onOpenBatchEdit(deviceIds);
+                  },
+                  {
+                    key: 'questionnaire',
+                    icon: <FilePdfOutlined />,
+                    label: checkedKeys.length === 1 ? 'Опросный лист' : `Опросный лист (${checkedKeys.length})`,
+                    onClick: () => {
+                      const deviceIds: number[] = [];
+                      checkedKeys.forEach((key) => {
+                        const node = findNodeByKey(String(key), treeData);
+                        if (node && node.originalId) {
+                          deviceIds.push(node.originalId);
+                        }
+                      });
+                      if (onGenerateQuestionnaire) {
+                        onGenerateQuestionnaire(deviceIds);
+                      }
+                    }
                   }
-                } else {
-                  showAddDeviceForm();
-                }
+                ]
               }}
-              size="middle"
+              trigger={['click']}
             >
-              {checkedKeys.length > 1 ? `Редактировать (${checkedKeys.length})` : 'Добавить'}
-            </Button>
-          </Tooltip>
-          {checkedKeys.length > 1 && onGenerateQuestionnaire && (
-            <Tooltip title={`Сгенерировать опросный лист для ${checkedKeys.length} устройств`}>
+              <Button type="primary" size="middle">
+                {checkedKeys.length === 1 ? 'Действия ▼' : `Действия (${checkedKeys.length}) ▼`}
+              </Button>
+            </Dropdown>
+          ) : (
+            <Tooltip title="Добавить новое устройство">
               <Button
-                icon={<FilePdfOutlined />}
-                onClick={() => {
-                  const deviceIds: number[] = [];
-                  checkedKeys.forEach((key) => {
-                    const node = findNodeByKey(String(key), treeData);
-                    if (node && node.originalId) {
-                      deviceIds.push(node.originalId);
-                    }
-                  });
-                  onGenerateQuestionnaire(deviceIds);
-                }}
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={showAddDeviceForm}
                 size="middle"
               >
-                Опросный лист ({checkedKeys.length})
+                Добавить
               </Button>
             </Tooltip>
           )}

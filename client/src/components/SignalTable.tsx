@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Table, Card, Button, Typography, Row, Col, Statistic, Spin, Alert, Empty, App, Switch, Popconfirm, Space } from 'antd';
+import { Table, Card, Button, Typography, Row, Col, Statistic, Spin, Alert, Empty, App, Space } from 'antd';
 import { deviceTypeSignalService } from '../services/api';
 import { DeviceTypeSignal, SignalsSummary } from '../interfaces/DeviceTypeSignal';
-import { ReloadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { ReloadOutlined } from '@ant-design/icons';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 interface SignalTableProps {
   projectId?: number | null;
@@ -12,143 +12,36 @@ interface SignalTableProps {
 
 // Создаем внутренний компонент, использующий App.useApp()
 const SignalTableContent: React.FC<SignalTableProps> = ({ projectId }) => {
-  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const [summaryData, setSummaryData] = useState<SignalsSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [initializingTypes, setInitializingTypes] = useState(false);
-  const [autoFillEnabled, setAutoFillEnabled] = useState(false);
-
-  // Функция для автоматического добавления отсутствующих типов устройств
-  const addMissingTypes = useCallback(async (missingTypes: string[]) => {
-    setInitializingTypes(true);
-    
-    try {
-      console.log('Добавление недостающих типов устройств:', missingTypes);
-      
-      // Добавляем каждый тип по очереди
-      for (const deviceType of missingTypes) {
-        const newData: DeviceTypeSignal = {
-          deviceType,
-          aiCount: 0,
-          aoCount: 0,
-          diCount: 0,
-          doCount: 0
-        };
-        
-        await deviceTypeSignalService.updateDeviceTypeSignal(newData);
-        console.log(`Добавлен новый тип устройства: ${deviceType}`);
-      }
-      
-      // Загружаем обновленные данные после добавления всех типов
-      const updatedSummary = await deviceTypeSignalService.getSignalsSummary(projectId || undefined);
-      setSummaryData(updatedSummary);
-      
-      message.success(`Добавлено ${missingTypes.length} новых типов устройств из справочника`);
-    } catch (error) {
-      console.error('Ошибка при добавлении типов устройств:', error);
-      message.error('Не удалось добавить все типы устройств из справочника');
-    } finally {
-      setInitializingTypes(false);
-    }
-  }, [message, projectId]);
 
   // Загрузка данных при монтировании компонента
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // Загружаем список всех типов устройств из DeviceReference
-      const typesFromReference = await deviceTypeSignalService.getUniqueDeviceTypesFromReference(projectId || undefined);
-      
-      try {
-        // Загружаем сводную таблицу существующих записей
-        const summaryData = await deviceTypeSignalService.getSignalsSummary(projectId || undefined);
-        setSummaryData(summaryData);
-        
-        // Проверяем, есть ли типы устройств, которых еще нет в таблице сигналов
-        if (autoFillEnabled && typesFromReference.length > 0) {
-          const existingTypes = summaryData?.deviceTypeSignals.map(dts => dts.deviceType) || [];
-          const missingTypes = typesFromReference.filter(type => !existingTypes.includes(type));
-          
-          // Если есть недостающие типы, добавляем их автоматически
-          if (missingTypes.length > 0) {
-            await addMissingTypes(missingTypes);
-          }
-        }
-      } catch (summaryError) {
-        console.error('Ошибка при загрузке сводных данных:', summaryError);
-        setError('Не удалось загрузить полную информацию о сигналах. Данные о сигналах могут быть неточными.');
-        
-        // Загружаем список всех типов устройств из Device, несмотря на ошибку
-        try {
-          await deviceTypeSignalService.getUniqueDeviceTypes();
-        } catch (typesError) {
-          console.error('Ошибка при загрузке типов устройств:', typesError);
-        }
-      }
-      
+      // Загружаем сводную таблицу существующих записей
+      const summaryData = await deviceTypeSignalService.getSignalsSummary(projectId || undefined);
+      setSummaryData(summaryData);
       setLoading(false);
     } catch (error) {
       console.error('Ошибка при загрузке данных:', error);
       setError('Не удалось загрузить данные. Проверьте соединение с сервером.');
       setLoading(false);
     }
-  }, [autoFillEnabled, addMissingTypes, projectId]);
+  }, [projectId]);
 
-  // Загрузка данных при монтировании компонента
+  // Загрузка данных
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  // Очистка всех данных в таблице сигналов типов устройств
-  const clearAllData = async () => {
-    setLoading(true);
-    try {
-      await deviceTypeSignalService.clearAllDeviceTypeSignals();
-      message.success('Все данные по типам устройств успешно удалены');
-      
-      // Обновляем таблицу после удаления
-      await fetchData();
-    } catch (error) {
-      console.error('Ошибка при очистке данных:', error);
-      message.error('Не удалось очистить данные типов устройств');
-      setLoading(false);
-    }
-  };
-
   // Отображение кнопок управления
   const renderActionButtons = () => {
     return (
-      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>
+      <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'flex-end' }}>
         <Space>
-          <Switch 
-            checked={autoFillEnabled} 
-            onChange={setAutoFillEnabled} 
-            checkedChildren="Автозаполнение включено" 
-            unCheckedChildren="Автозаполнение выключено"
-          />
-          <Text type="secondary">
-            {autoFillEnabled 
-              ? 'Типы устройств будут добавляться автоматически' 
-              : 'Автоматическое добавление типов устройств отключено'}
-          </Text>
-        </Space>
-        <Space>
-          <Popconfirm
-            title="Очистить таблицу"
-            description="Вы уверены, что хотите удалить все данные по типам устройств?"
-            onConfirm={clearAllData}
-            okText="Да"
-            cancelText="Отмена"
-          >
-            <Button 
-              danger
-              icon={<DeleteOutlined />}
-            >
-              Очистить таблицу
-            </Button>
-          </Popconfirm>
           <Button 
             icon={<ReloadOutlined />} 
             onClick={fetchData}
@@ -210,7 +103,7 @@ const SignalTableContent: React.FC<SignalTableProps> = ({ projectId }) => {
       title: 'Всего',
       key: 'total',
       render: (_: any, record: DeviceTypeSignal) => {
-        const total = record.aiCount + record.aoCount + record.diCount + record.doCount;
+        const total = (record.aiCount || 0) + (record.aoCount || 0) + (record.diCount || 0) + (record.doCount || 0);
         return <span>{total}</span>;
       }
     }
@@ -294,11 +187,11 @@ const SignalTableContent: React.FC<SignalTableProps> = ({ projectId }) => {
         />
       )}
       
-      {loading || initializingTypes ? (
+      {loading ? (
         <div style={{ textAlign: 'center', padding: '50px 0' }}>
           <Spin size="large" />
           <div style={{ marginTop: 16 }}>
-            {initializingTypes ? 'Добавление типов устройств из справочника...' : 'Загрузка данных...'}
+            Загрузка данных...
           </div>
         </div>
       ) : (
@@ -337,4 +230,4 @@ const SignalTable: React.FC<SignalTableProps> = ({ projectId }) => {
   );
 };
 
-export default SignalTable; 
+export default SignalTable;

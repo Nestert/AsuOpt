@@ -3,7 +3,6 @@ import { sequelize } from '../config/database';
 import { Device } from '../models/Device';
 import { DeviceReference } from '../models/DeviceReference';
 import { DeviceSignal } from '../models/DeviceSignal';
-import { DeviceTypeSignal } from '../models/DeviceTypeSignal';
 import { Kip } from '../models/Kip';
 import { Signal } from '../models/Signal';
 import { Zra } from '../models/Zra';
@@ -56,8 +55,6 @@ export class DatabaseController {
             break;
             
           case 'device_type_signals':
-            countBefore = await DeviceTypeSignal.count();
-            await DeviceTypeSignal.destroy({ where: {}, force: true });
             break;
             
           case 'devices':
