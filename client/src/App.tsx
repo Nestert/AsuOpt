@@ -6,6 +6,7 @@ import { LogoutOutlined, UserOutlined } from '@ant-design/icons';
 import ruRU from 'antd/es/locale/ru_RU';
 import DeviceTree from './components/DeviceTree';
 import DeviceDetails from './components/DeviceDetails';
+import BatchEditModal from './components/BatchEditModal';
 import ImportData from './components/ImportData';
 import DatabaseActions from './components/DatabaseActions';
 import SignalManagement from './components/SignalManagement';
@@ -59,8 +60,10 @@ const AuthWrapper: React.FC = () => {
 // Внутренний компонент основного приложения
 const InnerApp: React.FC = () => {
   const [selectedDeviceId, setSelectedDeviceId] = useState<number | null>(null);
+  const [selectedDeviceIds, setSelectedDeviceIds] = useState<number[]>([]);
   const [treeUpdateCounter, setTreeUpdateCounter] = useState<number>(0);
   const [projectManagementVisible, setProjectManagementVisible] = useState(false);
+  const [batchEditVisible, setBatchEditVisible] = useState(false);
 
   // Теперь notification доступен внутри компонента App
   const { notification } = App.useApp();
@@ -90,6 +93,17 @@ const InnerApp: React.FC = () => {
   // Обработчик выбора устройства
   const handleSelectDevice = useCallback((deviceId: number | null) => {
     setSelectedDeviceId(deviceId);
+  }, []);
+
+  // Обработчик множественного выбора устройств
+  const handleSelectDevices = useCallback((deviceIds: number[]) => {
+    setSelectedDeviceIds(deviceIds);
+    // Также устанавливаем первое выбранное устройство для одиночного просмотра
+    if (deviceIds.length > 0) {
+      setSelectedDeviceId(deviceIds[0]);
+    } else {
+      setSelectedDeviceId(null);
+    }
   }, []);
 
   // Обработчик смены вкладки
@@ -246,6 +260,11 @@ const InnerApp: React.FC = () => {
                   <Sider width={350} className="app-sider">
                     <DeviceTree
                       onSelectDevice={handleSelectDevice}
+                      onSelectDevices={handleSelectDevices}
+                      onOpenBatchEdit={(deviceIds) => {
+                        setSelectedDeviceIds(deviceIds);
+                        setBatchEditVisible(true);
+                      }}
                       updateCounter={treeUpdateCounter}
                     />
                   </Sider>
@@ -318,6 +337,19 @@ const InnerApp: React.FC = () => {
         onClose={() => setProjectManagementVisible(false)}
         onProjectCreated={handleProjectCreated}
         currentProjectId={currentProjectId}
+      />
+
+      {/* Модальное окно массового редактирования */}
+      <BatchEditModal
+        visible={batchEditVisible}
+        deviceIds={selectedDeviceIds}
+        onClose={() => {
+          setBatchEditVisible(false);
+          setSelectedDeviceIds([]);
+        }}
+        onSuccess={() => {
+          setTreeUpdateCounter(prev => prev + 1);
+        }}
       />
     </Layout>
   );

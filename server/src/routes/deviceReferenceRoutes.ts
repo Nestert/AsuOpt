@@ -15,6 +15,12 @@ router.delete('/clear', DeviceReferenceController.clearAllReferences);
 // Поиск устройств
 router.get('/search', DeviceReferenceController.searchDevices);
 
+// Получение нескольких устройств по ID
+router.post('/by-ids', DeviceReferenceController.getDevicesByIds);
+
+// Массовое обновление устройств
+router.put('/batch', DeviceReferenceController.batchUpdateDevices);
+
 // Получение устройства по ID с полными данными
 router.get('/:id', DeviceReferenceController.getDeviceById);
 

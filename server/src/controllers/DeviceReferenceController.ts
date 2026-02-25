@@ -442,4 +442,135 @@ export class DeviceReferenceController {
       });
     }
   }
+
+  // Получение устройств по списку ID
+  static async getDevicesByIds(req: Request, res: Response): Promise<void> {
+    try {
+      const { ids } = req.body;
+      
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        res.status(400).json({ message: 'Необходимо указать массив ID устройств' });
+        return;
+      }
+      
+      // Получаем устройства из справочника
+      const devices = await DeviceReference.findAll({
+        where: { id: ids },
+        include: [
+          { model: Kip, as: 'kip', required: false },
+          { model: Zra, as: 'zra', required: false }
+        ]
+      });
+      
+      // Формируем полные данные для каждого устройства
+      const fullDevices = devices.map(device => ({
+        reference: device,
+        kip: (device as any).kip,
+        zra: (device as any).zra,
+        dataType: (device as any).kip ? 'kip' : ((device as any).zra ? 'zra' : 'unknown')
+      }));
+      
+      res.json(fullDevices);
+    } catch (error) {
+      console.error('Ошибка при получении устройств по ID:', error);
+      res.status(500).json({ 
+        message: 'Ошибка при получении устройств', 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
+
+  // Массовое обновление устройств
+  static async batchUpdateDevices(req: Request, res: Response): Promise<void> {
+    try {
+      const { ids, updates, kipUpdates, zraUpdates } = req.body;
+      
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        res.status(400).json({ message: 'Необходимо указать массив ID устройств' });
+        return;
+      }
+      
+      console.log(`batchUpdateDevices: обновление ${ids.length} устройств`);
+      console.log('Обновления reference:', updates);
+      console.log('Обновления KIP:', kipUpdates);
+      console.log('Обновления ZRA:', zraUpdates);
+      
+      // Начинаем транзакцию
+      const transaction = await DeviceReference.sequelize!.transaction();
+      
+      try {
+        let updatedCount = 0;
+        
+        // Обновляем данные reference для всех устройств
+        if (updates && Object.keys(updates).length > 0) {
+          const result = await DeviceReference.update(updates, {
+            where: { id: ids },
+            transaction
+          });
+          updatedCount += Array.isArray(result) ? result[0] : result;
+        }
+        
+        // Обновляем данные KIP для устройств с типом KIP
+        if (kipUpdates && Object.keys(kipUpdates).length > 0) {
+          // Находим устройства с типом KIP
+          const kipDevices = await DeviceReference.findAll({
+            where: { id: ids },
+            include: [{ model: Kip, as: 'kip', required: true }],
+            transaction
+          });
+          
+          for (const device of kipDevices) {
+            const kipData = (device as any).kip;
+            if (kipData) {
+              await Kip.update(kipUpdates, {
+                where: { id: kipData.id },
+                transaction
+              });
+            }
+          }
+        }
+        
+        // Обновляем данные ZRA для устройств с типом ZRA
+        if (zraUpdates && Object.keys(zraUpdates).length > 0) {
+          // Находим устройства с типом ZRA
+          const zraDevices = await DeviceReference.findAll({
+            where: { id: ids },
+            include: [{ model: Zra, as: 'zra', required: true }],
+            transaction
+          });
+          
+          for (const device of zraDevices) {
+            const zraData = (device as any).zra;
+            if (zraData) {
+              await Zra.update(zraUpdates, {
+                where: { id: zraData.id },
+                transaction
+              });
+            }
+          }
+        }
+        
+        // Фиксируем транзакцию
+        await transaction.commit();
+        
+        console.log(`batchUpdateDevices: успешно обновлено ${updatedCount} устройств`);
+        
+        res.json({ 
+          success: true, 
+          updatedCount: ids.length,
+          message: `Обновлено ${ids.length} устройств`
+        });
+      } catch (error) {
+        // Откатываем транзакцию в случае ошибки
+        await transaction.rollback();
+        throw error;
+      }
+    } catch (error) {
+      console.error('Ошибка при массовом обновлении устройств:', error);
+      res.status(500).json({ 
+        message: 'Ошибка при массовом обновлении устройств', 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }
 } 

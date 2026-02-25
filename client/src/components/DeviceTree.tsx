@@ -5,17 +5,21 @@ import {
   AppstoreOutlined,
   PlusOutlined,
   FilterOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import { deviceService } from '../services/api';
 import { DeviceReference } from '../interfaces/DeviceReference';
 import AddDeviceForm from './AddDeviceForm';
-import DeviceFilters, { DeviceFiltersInterface as DeviceFiltersType } from './DeviceFilters';
+import DeviceFiltersBuilder from './DeviceFiltersBuilder';
+import { DeviceFiltersInterface as DeviceFiltersType } from '../interfaces/DeviceFilters';
 import { useProject } from '../contexts/ProjectContext';
 
 const { Text } = Typography;
 
 interface DeviceTreeProps {
   onSelectDevice: (deviceId: number) => void;
+  onSelectDevices: (deviceIds: number[]) => void; // Для множественного выбора
+  onOpenBatchEdit?: (deviceIds: number[]) => void; // Открыть массовое редактирование
   updateCounter?: number; // Счетчик обновлений для триггера перезагрузки дерева
 }
 
@@ -33,7 +37,7 @@ interface CustomTreeNode {
   isLeaf?: boolean;
 }
 
-const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter = 0 }) => {
+const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, onSelectDevices, onOpenBatchEdit, updateCounter = 0 }) => {
   const [devices, setDevices] = useState<DeviceReference[]>([]);
   const [treeData, setTreeData] = useState<CustomTreeNode[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
@@ -45,7 +49,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   const [isAddDeviceVisible, setIsAddDeviceVisible] = useState(false);
   const [selectedParentId, setSelectedParentId] = useState<number | null>(null);
   const [filteredDevices, setFilteredDevices] = useState<DeviceReference[]>([]);
-  const [isAdvancedFilterVisible, setIsAdvancedFilterVisible] = useState(false);
+  const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
 
   // Состояние для контекстного меню
   const [contextMenuVisible, setContextMenuVisible] = useState(false);
@@ -53,7 +57,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   const [rightClickedNode, setRightClickedNode] = useState<any>(null); // Используем any для простоты, можно уточнить тип
 
   const { message, modal } = App.useApp(); // Добавляем modal для подтверждения удаления
-  
+
   // Используем контекст проектов
   const { currentProjectId } = useProject();
 
@@ -82,10 +86,10 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
       for (let i = 0; i < parts.length; i++) {
         const part = parts[i];
         const isLastPart = i === parts.length - 1;
-        
+
         // Ищем существующий узел для текущей части
         let childNode = currentNode.children.find(child => child.name === part);
-        
+
         if (!childNode) {
           // Создаем новый узел, если он не найден
           childNode = {
@@ -94,7 +98,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
             children: [],
             isLeaf: isLastPart
           };
-          
+
           // Если это последняя часть, добавляем оригинальный ID и полное posDesignation
           if (isLastPart) {
             childNode.originalId = device.id;
@@ -104,10 +108,10 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
             childNode.plcType = device.plcType || '';
             childNode.exVersion = device.exVersion || '';
           }
-          
+
           currentNode.children.push(childNode);
         }
-        
+
         currentNode = childNode;
       }
     });
@@ -132,19 +136,19 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     try {
       const data = await deviceService.getAllDevices(currentProjectId || undefined);
       console.log(`Загружены устройства для проекта ${currentProjectId}:`, data.length, 'элементов');
-      
+
       // Отладочный вывод для проверки значений полей
       const systemCodesDebug = data.map(device => device.systemCode).filter(Boolean);
       const plcTypesDebug = data.map(device => device.plcType).filter(Boolean);
       const exVersionsDebug = data.map(device => device.exVersion).filter(Boolean);
-      
+
       console.log('DEBUG системы:', systemCodesDebug);
       console.log('DEBUG типы ПЛК:', plcTypesDebug);
       console.log('DEBUG Ex-версии:', exVersionsDebug);
-      
+
       setDevices(data);
       setFilteredDevices(data);
-      
+
       const customTree = buildCustomTreeCallback(data);
       setTreeData(customTree);
     } catch (err) {
@@ -163,10 +167,10 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   // Эффект для фильтрации устройств при изменении фильтров
   useEffect(() => {
     if (!devices || devices.length === 0) return;
-    
+
     // Получаем исходные устройства
     let filtered = [...devices];
-    
+
     // Проверяем наличие текстового поиска
     if (searchValue) {
       const searchLower = searchValue.toLowerCase();
@@ -214,70 +218,70 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
         ].filter(Boolean).join(' ').toLowerCase() : '';
 
         return basicFields.includes(searchLower) ||
-               kipFields.includes(searchLower) ||
-               zraFields.includes(searchLower);
+          kipFields.includes(searchLower) ||
+          zraFields.includes(searchLower);
       });
     }
-    
+
     // Применяем расширенные фильтры
     if (Object.keys(advancedFilters).length > 0) {
       // Фильтрация по типу устройства
       if (advancedFilters.deviceType && advancedFilters.deviceType.length > 0) {
-        filtered = filtered.filter(device => 
+        filtered = filtered.filter(device =>
           device.deviceType && advancedFilters.deviceType?.includes(device.deviceType)
         );
       }
-      
+
       // Фильтрация по коду системы
       if (advancedFilters.systemCode && advancedFilters.systemCode.length > 0) {
-        filtered = filtered.filter(device => 
+        filtered = filtered.filter(device =>
           (device.systemCode && advancedFilters.systemCode?.includes(device.systemCode)) ||
           (device.parentSystem && advancedFilters.systemCode?.includes(device.parentSystem))
         );
       }
-      
+
       // Фильтрация по типу ПЛК
       if (advancedFilters.plcType && advancedFilters.plcType.length > 0) {
         filtered = filtered.filter(device => {
           // Проверяем совпадение с plcType в основном объекте
           if (device.plcType && advancedFilters.plcType?.includes(device.plcType)) return true;
-          
+
           // Дополнительная проверка: устройство может содержать скрытое поле с данными kip или zra
           // @ts-ignore (игнорируем отсутствие типизации для этих полей)
           const kipPlc = device.kip?.plc;
           // @ts-ignore
           const zraPlc = device.zra?.plc;
-          
-          return (kipPlc && advancedFilters.plcType?.includes(kipPlc)) || 
-                 (zraPlc && advancedFilters.plcType?.includes(zraPlc));
+
+          return (kipPlc && advancedFilters.plcType?.includes(kipPlc)) ||
+            (zraPlc && advancedFilters.plcType?.includes(zraPlc));
         });
       }
-      
+
       // Фильтрация по Ex-версии
       if (advancedFilters.exVersion && advancedFilters.exVersion.length > 0) {
         filtered = filtered.filter(device => {
           // Проверяем совпадение с exVersion в основном объекте
           if (device.exVersion && advancedFilters.exVersion?.includes(device.exVersion)) return true;
-          
+
           // Дополнительная проверка: устройство может содержать скрытое поле с данными kip или zra
           // @ts-ignore (игнорируем отсутствие типизации для этих полей)
           const kipExVersion = device.kip?.exVersion;
           // @ts-ignore
           const zraExVersion = device.zra?.exVersion;
-          
-          return (kipExVersion && advancedFilters.exVersion?.includes(kipExVersion)) || 
-                 (zraExVersion && advancedFilters.exVersion?.includes(zraExVersion));
+
+          return (kipExVersion && advancedFilters.exVersion?.includes(kipExVersion)) ||
+            (zraExVersion && advancedFilters.exVersion?.includes(zraExVersion));
         });
       }
-      
+
       // Фильтрация по обозначению позиции (posDesignation)
       if (advancedFilters.posDesignation) {
         const posSearchLower = advancedFilters.posDesignation.toLowerCase();
-        filtered = filtered.filter(device => 
+        filtered = filtered.filter(device =>
           device.posDesignation.toLowerCase().includes(posSearchLower)
         );
       }
-      
+
       // Фильтрация по описанию (description)
       if (advancedFilters.description) {
         const descSearchLower = advancedFilters.description.toLowerCase();
@@ -319,7 +323,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
           return true;
         });
       }
-      
+
       // Фильтрация по типу данных
       if (advancedFilters.dataType && advancedFilters.dataType.length > 0) {
         filtered = filtered.filter(device => {
@@ -327,39 +331,67 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
           const hasKip = Boolean(device.kip);
           // @ts-ignore
           const hasZra = Boolean(device.zra);
-          
+
           const dataType = hasKip ? 'kip' : (hasZra ? 'zra' : 'unknown');
-          
+
           return advancedFilters.dataType?.includes(dataType);
         });
       }
-      
+
       // Дополнительные фильтры для полей КИП
-      if (advancedFilters.section && advancedFilters.section.length > 0) {
-        filtered = filtered.filter(device => {
-          // @ts-ignore
-          const section = device.kip?.section;
-          return section && advancedFilters.section?.includes(section);
-        });
-      }
-      
-      // Здесь можно добавить дополнительные фильтры для других полей КИП и ЗРА
+      const kipFields: Array<keyof DeviceFiltersType> = [
+        'section', 'unitArea', 'manufacturer', 'measureUnit',
+        'responsibilityZone', 'connectionScheme', 'power',
+        'environmentCharacteristics', 'signalPurpose'
+      ];
+
+      kipFields.forEach(field => {
+        const filterValue = advancedFilters[field as keyof DeviceFiltersType];
+        if (filterValue && filterValue.length > 0) {
+          filtered = filtered.filter(device => {
+            const dev = device as any;
+            const val = dev.kip?.[field as string];
+            return val && (filterValue as string[]).includes(val);
+          });
+        }
+      });
+
+      // Дополнительные фильтры для полей ЗРА
+      const zraFields: Array<keyof DeviceFiltersType> = [
+        'designType', 'valveType', 'actuatorType', 'pipePosition',
+        'nominalDiameter', 'pressureRating', 'pipeMaterial',
+        'medium', 'positionSensor', 'solenoidType', 'emergencyPosition'
+      ];
+
+      zraFields.forEach(field => {
+        const filterValue = advancedFilters[field as keyof DeviceFiltersType];
+        if (filterValue && filterValue.length > 0) {
+          filtered = filtered.filter(device => {
+            const dev = device as any;
+            let val = dev.zra?.[field as string];
+            // Особая обработка, если unitArea ищется для ЗРА, но хранится в общем объекте или в самом zra
+            if (field === 'unitArea' && !val && dev.zra) {
+              val = dev.kip?.unitArea; // Фолбэк, если нужно (в зависимости от структуры)
+            }
+            return val && (filterValue as string[]).includes(val);
+          });
+        }
+      });
     }
-    
+
     // Отладочный вывод
     console.log('Активные фильтры:', advancedFilters);
     console.log('Отфильтрованные устройства:', filtered.length);
-    
+
     // Обновляем дерево с отфильтрованными устройствами
     const customTree = buildCustomTreeCallback(filtered);
-    
+
     setFilteredDevices(filtered);
     setTreeData(customTree);
-    
+
     // Сбрасываем развернутые узлы при изменении фильтра
     setExpandedKeys([]);
     setAutoExpandParent(false);
-    setIsAdvancedFilterVisible(false);
   }, [advancedFilters, searchValue, devices, buildCustomTreeCallback]);
 
   // Обработчик применения расширенных фильтров
@@ -377,30 +409,30 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     }
 
     const expandKeys: React.Key[] = [];
-    
+
     // Рекурсивный поиск в дереве
     const searchTree = (nodes: CustomTreeNode[], parentKey: string = '') => {
       nodes.forEach(node => {
         const nodeKey = node.id;
-        
+
         // Если узел содержит искомый текст, добавляем его и все родительские узлы
-        if (node.name.toLowerCase().includes(value.toLowerCase()) || 
-            (node.posDesignation && node.posDesignation.toLowerCase().includes(value.toLowerCase()))) {
+        if (node.name.toLowerCase().includes(value.toLowerCase()) ||
+          (node.posDesignation && node.posDesignation.toLowerCase().includes(value.toLowerCase()))) {
           expandKeys.push(nodeKey);
-          
+
           // Добавляем родительский ключ, если он существует
           if (parentKey) {
             expandKeys.push(parentKey);
           }
         }
-        
+
         // Рекурсивно ищем в дочерних узлах
         if (node.children && node.children.length > 0) {
           searchTree(node.children, nodeKey);
         }
       });
     };
-    
+
     searchTree(treeData);
     setExpandedKeys(Array.from(new Set(expandKeys)));
     setAutoExpandParent(true);
@@ -412,7 +444,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     setAutoExpandParent(false);
   };
 
-  // Обработчик выбора узла в дереве
+  // Обработчик выбора узла в дереве (одиночный выбор - клик)
   const onSelect = (selectedKeys: React.Key[], info: any) => {
     const { node } = info;
     console.log('Выбран узел:', node);
@@ -448,6 +480,43 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     }
   };
 
+  // Обработчик множественного выбора (через чекбоксы)
+  const onCheck = (checked: React.Key[] | { checked: React.Key[]; halfChecked: React.Key[] }, info: any) => {
+    // Получаем массив ключей (может быть объект с checked и halfChecked или просто массив)
+    const checkedKeyArray = Array.isArray(checked) ? checked : checked.checked;
+    
+    // Фильтруем только листья (устройства), исключая папки
+    const leafKeys = checkedKeyArray.filter((key) => {
+      const node = findNodeByKey(String(key), treeData);
+      return node && node.isLeaf && node.originalId;
+    });
+    
+    // Получаем ID устройств из ключей
+    const deviceIds: number[] = [];
+    leafKeys.forEach((key) => {
+      const node = findNodeByKey(String(key), treeData);
+      if (node && node.originalId) {
+        deviceIds.push(node.originalId);
+      }
+    });
+    
+    setCheckedKeys(leafKeys as React.Key[]);
+    console.log('Выбраны устройства:', deviceIds);
+    onSelectDevices(deviceIds);
+  };
+
+  // Вспомогательная функция для поиска узла по ключу
+  const findNodeByKey = (key: string, nodes: CustomTreeNode[]): CustomTreeNode | null => {
+    for (const node of nodes) {
+      if (node.id === key) return node;
+      if (node.children && node.children.length > 0) {
+        const found = findNodeByKey(key, node.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
   // Показать форму добавления устройства
   const showAddDeviceForm = () => {
     setIsAddDeviceVisible(true);
@@ -470,19 +539,19 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   // Функция для рендеринга заголовка узла с подсветкой поискового запроса
   const renderTitle = (node: CustomTreeNode) => {
     const name = node.name;
-    
+
     // Для листьев показываем полное обозначение позиции
     const displayText = node.isLeaf && node.posDesignation ? node.posDesignation : name;
-    
+
     if (!searchValue || displayText.toLowerCase().indexOf(searchValue.toLowerCase()) === -1) {
       return <span>{displayText}</span>;
     }
-    
+
     const index = displayText.toLowerCase().indexOf(searchValue.toLowerCase());
     const beforeStr = displayText.substring(0, index);
     const matchStr = displayText.substring(index, index + searchValue.length);
     const afterStr = displayText.substring(index + searchValue.length);
-    
+
     return (
       <span>
         {beforeStr}
@@ -496,7 +565,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   const processTreeData = (nodes: CustomTreeNode[]): { title: React.ReactNode, key: string, icon: React.ReactNode, children?: any[], isLeaf?: boolean, originalId?: number }[] => {
     return nodes.map(node => {
       const title = renderTitle(node);
-      
+
       if (node.children && node.children.length > 0) {
         return {
           title,
@@ -506,7 +575,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
           isLeaf: false
         };
       }
-      
+
       return {
         title,
         key: node.id,
@@ -517,10 +586,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
     });
   };
 
-  // Обработчик переключения видимости расширенных фильтров
-  const toggleAdvancedFilters = () => {
-    setIsAdvancedFilterVisible(!isAdvancedFilterVisible);
-  };
+  // Удалено переключение видимости в пользу встроенного отображения Builder
 
   // Обработчик правого клика по узлу дерева
   const onRightClick = ({ event, node }: { event: React.MouseEvent, node: any }) => {
@@ -601,16 +667,16 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
   const getMenuItems = () => {
     const items = [];
     const isLeaf = rightClickedNode?.isLeaf;
-    
+
     if (isLeaf) {
-        items.push({ key: 'edit', label: 'Редактировать' });
-        items.push({ key: 'delete', label: 'Удалить', danger: true });
-        items.push({ key: 'addChild', label: 'Добавить дочерний' });
+      items.push({ key: 'edit', label: 'Редактировать' });
+      items.push({ key: 'delete', label: 'Удалить', danger: true });
+      items.push({ key: 'addChild', label: 'Добавить дочерний' });
     } else {
-        // Для папок можно добавить только дочерний элемент
-        items.push({ key: 'addChild', label: 'Добавить устройство сюда' });
+      // Для папок можно добавить только дочерний элемент
+      items.push({ key: 'addChild', label: 'Добавить устройство сюда' });
     }
-    
+
     return items;
   };
 
@@ -637,11 +703,11 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
 
   return (
     // Добавляем стили flexbox для основного контейнера
-    <div className="device-tree-container" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}> 
-      <div className="device-tree-header" style={{ 
-        display: 'flex', 
-        flexWrap: 'wrap', 
-        alignItems: 'center', 
+    <div className="device-tree-container" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div className="device-tree-header" style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
         marginBottom: '16px',
         gap: '8px'
       }}>
@@ -655,63 +721,73 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
           />
         </Tooltip>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <Tooltip title="Показать/скрыть расширенные фильтры по типу устройства, системе, ПЛК, датам и другим параметрам">
+          <Tooltip title="Сбросить все фильтры">
             <Button
-              type="primary"
+              type="default"
               icon={<FilterOutlined />}
-              onClick={toggleAdvancedFilters}
-              style={{ minWidth: '140px' }}
+              onClick={() => {
+                setAdvancedFilters({});
+                setSearchValue('');
+              }}
+              style={{ minWidth: '100px' }}
               size="middle"
             >
-              Фильтры
+              Сбросить
             </Button>
           </Tooltip>
-          <Tooltip title="Добавить новое устройство в текущий проект">
+          <Tooltip title={checkedKeys.length > 1 ? `Редактировать ${checkedKeys.length} выбранных устройств` : checkedKeys.length === 1 ? 'Редактировать выбранное устройство' : 'Добавить новое устройство'}>
             <Button
               type="primary"
-              icon={<PlusOutlined />}
-              onClick={showAddDeviceForm}
-              style={{ minWidth: '120px' }}
+              icon={checkedKeys.length > 1 ? <EditOutlined /> : <PlusOutlined />}
+              onClick={() => {
+                if (checkedKeys.length > 1) {
+                  const deviceIds: number[] = [];
+                  checkedKeys.forEach((key) => {
+                    const node = findNodeByKey(String(key), treeData);
+                    if (node && node.originalId) {
+                      deviceIds.push(node.originalId);
+                    }
+                  });
+                  if (onOpenBatchEdit) {
+                    onOpenBatchEdit(deviceIds);
+                  }
+                } else {
+                  showAddDeviceForm();
+                }
+              }}
               size="middle"
             >
-              Добавить
+              {checkedKeys.length > 1 ? `Редактировать (${checkedKeys.length})` : 'Добавить'}
             </Button>
           </Tooltip>
         </div>
       </div>
 
-      {isAdvancedFilterVisible && (
-        <div style={{ marginBottom: '16px' }}>
-          <DeviceFilters
-            onApplyFilters={handleApplyFilters}
-            onApplySearch={setSearchValue}
-            devices={filteredDevices}
-            loading={loading}
-            currentSearchText={searchValue}
-            projectId={currentProjectId}
-          />
-        </div>
-      )}
-      
-      {/* Контейнер для дерева или сообщения Empty */}
-      <div style={{ 
-          flex: 1, // Занимать всё оставшееся пространство
-          minHeight: 0, // Важно для flex item
-          display: 'flex', // Используем flex для центрирования Empty
-          flexDirection: 'column' // Элементы внутри (рамка/Empty) идут друг за другом
+      <div style={{ marginBottom: '16px' }}>
+        <DeviceFiltersBuilder
+          onApplyFilters={handleApplyFilters}
+          devices={filteredDevices}
+          initialFilters={advancedFilters}
+        />
+      </div>
+      <div style={{
+        flex: 1, // Занимать всё оставшееся пространство
+        minHeight: 0, // Важно для flex item
+        display: 'flex', // Используем flex для центрирования Empty
+        flexDirection: 'column' // Элементы внутри (рамка/Empty) идут друг за другом
       }}>
         {filteredDevices.length > 0 ? (
-          <div style={{ 
+          <div style={{
             // Убираем фиксированную высоту, добавляем flex: 1
             flex: 1,
             minHeight: 0, // Добавляем и сюда на всякий случай
-            overflow: 'auto', 
+            overflow: 'auto',
             border: '1px solid #f0f0f0',
             borderRadius: '4px',
             padding: '8px',
             backgroundColor: '#fafafa'
           }}>
-            {/* Оборачиваем Tree в Dropdown */} 
+            {/* Оборачиваем Tree в Dropdown */}
             <Dropdown
               menu={{ items: getMenuItems(), onClick: handleMenuClick }}
               trigger={['contextMenu']}
@@ -719,24 +795,27 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
               onOpenChange={setContextMenuVisible}
               // Используем dropdownRender для позиционирования по координатам мыши
               dropdownRender={menu => (
-                <div style={{ 
-                    position: 'fixed',
-                    left: contextMenuPosition.x,
-                    top: contextMenuPosition.y,
-                 }}>
+                <div style={{
+                  position: 'fixed',
+                  left: contextMenuPosition.x,
+                  top: contextMenuPosition.y,
+                }}>
                   {menu}
                 </div>
               )}
             >
               {/* Пустой div нужен, чтобы Dropdown корректно отлавливал событие contextMenu */}
               {/* На саму Tree вешаем onRightClick для получения координат */}
-              <div> 
+              <div>
                 <Tree
                   showIcon
+                  checkable
+                  checkedKeys={checkedKeys}
                   expandedKeys={expandedKeys}
                   autoExpandParent={autoExpandParent}
                   onExpand={onExpand}
                   onSelect={onSelect}
+                  onCheck={onCheck}
                   treeData={processTreeData(treeData)}
                   style={{ backgroundColor: '#fff' }}
                   onRightClick={onRightClick} // Этот обработчик получает координаты и данные узла
@@ -746,7 +825,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, updateCounter =
           </div>
         ) : (
           // Оборачиваем Empty для центрирования в flex-контейнере
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}> 
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <Empty description="Устройства не найдены" />
           </div>
         )}

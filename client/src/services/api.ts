@@ -154,6 +154,33 @@ export const deviceService = {
       console.error(`API: ошибка в searchDevices("${query}"):`, error);
       throw error;
     }
+  },
+
+  // Получить несколько устройств по ID
+  getDevicesByIds: async (ids: number[]): Promise<DeviceFullData[]> => {
+    try {
+      const response = await api.post('/device-references/by-ids', { ids });
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в getDevicesByIds:', error);
+      throw error;
+    }
+  },
+
+  // Массовое обновление устройств
+  batchUpdateDevices: async (
+    ids: number[], 
+    updates: any, 
+    kipUpdates?: any, 
+    zraUpdates?: any
+  ): Promise<{ success: boolean; updatedCount: number }> => {
+    try {
+      const response = await api.put('/device-references/batch', { ids, updates, kipUpdates, zraUpdates });
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в batchUpdateDevices:', error);
+      throw error;
+    }
   }
 };
 
