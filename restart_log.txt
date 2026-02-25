@@ -1088,7 +1088,19 @@ Error: listen EADDRINUSE: address already in use :::3001
   port: 3001
 }
 [31m[nodemon] app crashed - waiting for file changes before starting...[39m
-35:24)
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+🚀 Инициализация базы данных...
+🚀 Инициализация базы данных...
+Error: listen EADDRINUSE: address already in use :::3001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at Function.listen (/Users/valentinbelousov/AsuOpt/server/node_modules/express/lib/application.js:635:24)
     at Object.<anonymous> (/Users/valentinbelousov/AsuOpt/server/src/server.ts:106:5)
     at Module._compile (node:internal/modules/cjs/loader:1706:14)
     at Module.m._compile (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/index.ts:1618:23)
@@ -1136,7 +1148,83 @@ Error: listen EADDRINUSE: address already in use :::3001
   port: 3001
 }
 [31m[nodemon] app crashed - waiting for file changes before starting...[39m
+usov/AsuOpt/server/node_modules/ts-node/src/index.ts:1618:23)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1839:10)
+    at Object.require.extensions.<computed> [as .ts] (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function.Module._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at phase4 (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/bin.ts:649:14)
+    at bootstrap (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/bin.ts:95:10) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 3001
+}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
 [32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+🚀 Инициализация базы данных...
+🚀 Инициализация базы данных...
+Error: listen EADDRINUSE: address already in use :::3001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at Function.listen (/Users/valentinbelousov/AsuOpt/server/node_modules/express/lib/application.js:635:24)
+    at Object.<anonymous> (/Users/valentinbelousov/AsuOpt/server/src/server.ts:106:5)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Module.m._compile (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/index.ts:1618:23)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1839:10)
+    at Object.require.extensions.<computed> [as .ts] (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function.Module._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at phase4 (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/bin.ts:649:14)
+    at bootstrap (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/bin.ts:95:10) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 3001
+}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts[32m[nodemon] restarting [32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+🚀 Инициализация базы данных...
+🚀 Инициал🚀 Инициализация базы данных...
+🚀 Инициализация базы данных...
+Error: listen EADDRINUSE: address already in use :::3001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at Function.listen (/Users/valentinbelousov/AsuOpt/server/node_modules/express/lib/application.js:635:24)
+    at Object.<anonymous> (/Users/valentinbelousov/AsuOpt/server/src/server.ts:106:5)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Module.m._compile (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/index.ts:1618:23)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1839:10)
+    at Object.require.extensions.<computed> [as .ts] (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function.Module._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at phase4 (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/bin.ts:649:14)
+    at bootstrap (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/bin.ts:95:10) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 3001
+}
+[[32m[nodemon] restarting due to changes...[39m
 [32m[nodemon] starting `ts[32m[nodemon] restarting 🚀 Инициализация базы данных...
 🚀 Инициализация базы данных...
 Error: listen EADDRINUSE: address already in use :::3001
@@ -1163,72 +1251,7 @@ Error: listen EADDRINUSE: address already in use :::3001
   port: 3001
 }
 [31m[nodemon] app crashed - waiting for file changes before starting...[39m
-[32m[nodemon] restarting due to changes...[39m
-[32m[nodemon] starting `ts-node src/server.ts`[39m
-🚀 Инициализация базы данных...
-🚀 Инициализация базы данных...
-Error: listen EADDRINUSE: address already in use :::3001
-    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
-    at listenInCluster (node:net:1997:12)
-    at Server.listen (node:net:2102:7)
-    at Function.listen (/Users/valentinbelousov/AsuOpt/server/node_modules/express/lib/application.js:635:24)
-    at Object.<anonymous> (/Users/valentinbelousov/AsuOpt/server/src/server.ts:106:5)
-    at Module._compile (node:internal/modules/cjs/loader:1706:14)
-    at Module.m._compile (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/index.ts:1618:23)
-    at Module._extensions..js (node:internal/modules/cjs/loader:1839:10)
-    at Object.require.extensions.<computed> [as .ts] (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/index.ts:1621:12)
-    at Module.load (node:internal/modules/cjs/loader:1441:32)
-    at Function.Module._load (node:internal/modules/cjs/loader:1263:12)
-    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
-    at phase4 (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/bin.ts:649:14)
-    at bootstrap (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/bin.ts:95:10) {
-  code: 'EADDRINUSE',
-  errno: -48,
-  syscall: 'listen',
-  address: '::',
-  port: 3001
-}
-[31m[nodemon] app crashed - waiting for file changes before starting...[39m
 31m[nodemon] app crashed - waiting for file changes before starting...[39m
-D 1403
-[DEBUG assign]   MATCHED via ZRA category: "Шиберно-ножевая задвижка" for ZRA device ID 1404
-[DEBUG assign]   MATCHED via ZRA category: "Шиберно-ножевая задвижка" for ZRA device ID 1412
-[DEBUG assign]   MATCHED via ZRA category: "Шиберно-ножевая задвижка" for ZRA device ID 1413
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1440
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1441
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1444
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1445
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1461
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1462
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1465
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1466
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1471
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1472
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1475
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1476
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1677
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1678
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1680
-[DEBUG assign]   MATCHED via ZRA category: "Шиберно-ножевая задвижка" for ZRA device ID 1697
-[DEBUG assign]   MATCHED via ZRA category: "Шиберно-ножевая задвижка" for ZRA device ID 1699
-[DEBUG assign]   MATCHED via ZRA category: "Шиберно-ножевая задвижка" for ZRA device ID 1702
-[DEBUG assign]   MATCHED via ZRA category: "Шиберно-ножевая задвижка" for ZRA device ID 1704
-[DEBUG assign]   MATCHED via ZRA category: "Шиберно-ножевая задвижка" for ZRA device ID 1708
-[DEBUG assign]   MATCHED via ZRA category: "Шиберно-ножевая задвижка" for ZRA device ID 1709
-[DEBUG assign]   MATCHED via ZRA category: "Шиберно-ножевая задвижка" for ZRA device ID 1710
-[DEBUG assign]   MATCHED via ZRA category: "Шиберно-ножевая задвижка" for ZRA device ID 1711
-[DEBUG assign]   MATCHED via ZRA category: "Шиберно-ножевая задвижка" for ZRA device ID 1712
-[DEBUG assign]   MATCHED via ZRA category: "Шиберно-ножевая задвижка" for ZRA device ID 1713
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1738
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1739
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1740
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1741
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1742
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1743
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1744
-[DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1745
 [DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1746
 [DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1770
 [DEBUG assign]   MATCHED via ZRA category: "Шаровый кран" for ZRA device ID 1771
@@ -7695,3 +7718,63 @@ Compiling...
 Compiled successfully!
 webpack compiled successfully
 No issues found.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+🚀 Инициализация базы данных...
+🚀 Инициализация базы данных...
+Error: listen EADDRINUSE: address already in use :::3001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at Function.listen (/Users/valentinbelousov/AsuOpt/server/node_modules/express/lib/application.js:635:24)
+    at Object.<anonymous> (/Users/valentinbelousov/AsuOpt/server/src/server.ts:106:5)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Module.m._compile (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/index.ts:1618:23)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1839:10)
+    at Object.require.extensions.<computed> [as .ts] (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function.Module._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at phase4 (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/bin.ts:649:14)
+    at bootstrap (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/bin.ts:95:10) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 3001
+}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `ts-node src/server.ts`[39m
+🚀 Инициализация базы данных...
+🚀 Инициализация базы данных...
+Error: listen EADDRINUSE: address already in use :::3001
+    at Server.setupListenHandle [as _listen2] (node:net:1940:16)
+    at listenInCluster (node:net:1997:12)
+    at Server.listen (node:net:2102:7)
+    at Function.listen (/Users/valentinbelousov/AsuOpt/server/node_modules/express/lib/application.js:635:24)
+    at Object.<anonymous> (/Users/valentinbelousov/AsuOpt/server/src/server.ts:106:5)
+    at Module._compile (node:internal/modules/cjs/loader:1706:14)
+    at Module.m._compile (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/index.ts:1618:23)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1839:10)
+    at Object.require.extensions.<computed> [as .ts] (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/index.ts:1621:12)
+    at Module.load (node:internal/modules/cjs/loader:1441:32)
+    at Function.Module._load (node:internal/modules/cjs/loader:1263:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:328:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:237:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:171:5)
+    at phase4 (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/bin.ts:649:14)
+    at bootstrap (/Users/valentinbelousov/AsuOpt/server/node_modules/ts-node/src/bin.ts:95:10) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 3001
+}
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m

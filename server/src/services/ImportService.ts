@@ -678,7 +678,9 @@ export class ImportService {
       let failedTypes = 0;
 
       // Назначаем сигналы для каждого ключа
-      for (const [_key, config] of assignmentMap) {
+      const assignmentEntries = Array.from(assignmentMap.entries());
+      for (let i = 0; i < assignmentEntries.length; i++) {
+        const config = assignmentEntries[i][1];
         try {
           console.log(`Назначение сигналов для ${config.type}: ${config.value}`);
           
