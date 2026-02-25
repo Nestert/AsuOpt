@@ -7,6 +7,7 @@ import ruRU from 'antd/es/locale/ru_RU';
 import DeviceTree from './components/DeviceTree';
 import DeviceDetails from './components/DeviceDetails';
 import BatchEditModal from './components/BatchEditModal';
+import QuestionnaireModal from './components/QuestionnaireModal';
 import ImportData from './components/ImportData';
 import DatabaseActions from './components/DatabaseActions';
 import SignalManagement from './components/SignalManagement';
@@ -64,6 +65,8 @@ const InnerApp: React.FC = () => {
   const [treeUpdateCounter, setTreeUpdateCounter] = useState<number>(0);
   const [projectManagementVisible, setProjectManagementVisible] = useState(false);
   const [batchEditVisible, setBatchEditVisible] = useState(false);
+  const [questionnaireVisible, setQuestionnaireVisible] = useState(false);
+  const [questionnaireDeviceIds, setQuestionnaireDeviceIds] = useState<number[]>([]);
 
   // Теперь notification доступен внутри компонента App
   const { notification } = App.useApp();
@@ -265,6 +268,10 @@ const InnerApp: React.FC = () => {
                         setSelectedDeviceIds(deviceIds);
                         setBatchEditVisible(true);
                       }}
+                      onGenerateQuestionnaire={(deviceIds) => {
+                        setQuestionnaireDeviceIds(deviceIds);
+                        setQuestionnaireVisible(true);
+                      }}
                       updateCounter={treeUpdateCounter}
                     />
                   </Sider>
@@ -349,6 +356,16 @@ const InnerApp: React.FC = () => {
         }}
         onSuccess={() => {
           setTreeUpdateCounter(prev => prev + 1);
+        }}
+      />
+
+      {/* Модальное окно генерации опросного листа */}
+      <QuestionnaireModal
+        visible={questionnaireVisible}
+        deviceIds={questionnaireDeviceIds}
+        onClose={() => {
+          setQuestionnaireVisible(false);
+          setQuestionnaireDeviceIds([]);
         }}
       />
     </Layout>

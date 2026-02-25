@@ -6,6 +6,7 @@ import {
   PlusOutlined,
   FilterOutlined,
   EditOutlined,
+  FilePdfOutlined,
 } from '@ant-design/icons';
 import { deviceService } from '../services/api';
 import { DeviceReference } from '../interfaces/DeviceReference';
@@ -20,6 +21,7 @@ interface DeviceTreeProps {
   onSelectDevice: (deviceId: number) => void;
   onSelectDevices: (deviceIds: number[]) => void; // Для множественного выбора
   onOpenBatchEdit?: (deviceIds: number[]) => void; // Открыть массовое редактирование
+  onGenerateQuestionnaire?: (deviceIds: number[]) => void; // Генерация опросного листа
   updateCounter?: number; // Счетчик обновлений для триггера перезагрузки дерева
 }
 
@@ -37,7 +39,7 @@ interface CustomTreeNode {
   isLeaf?: boolean;
 }
 
-const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, onSelectDevices, onOpenBatchEdit, updateCounter = 0 }) => {
+const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, onSelectDevices, onOpenBatchEdit, onGenerateQuestionnaire, updateCounter = 0 }) => {
   const [devices, setDevices] = useState<DeviceReference[]>([]);
   const [treeData, setTreeData] = useState<CustomTreeNode[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
@@ -760,6 +762,26 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, onSelectDevices
               {checkedKeys.length > 1 ? `Редактировать (${checkedKeys.length})` : 'Добавить'}
             </Button>
           </Tooltip>
+          {checkedKeys.length > 1 && onGenerateQuestionnaire && (
+            <Tooltip title={`Сгенерировать опросный лист для ${checkedKeys.length} устройств`}>
+              <Button
+                icon={<FilePdfOutlined />}
+                onClick={() => {
+                  const deviceIds: number[] = [];
+                  checkedKeys.forEach((key) => {
+                    const node = findNodeByKey(String(key), treeData);
+                    if (node && node.originalId) {
+                      deviceIds.push(node.originalId);
+                    }
+                  });
+                  onGenerateQuestionnaire(deviceIds);
+                }}
+                size="middle"
+              >
+                Опросный лист ({checkedKeys.length})
+              </Button>
+            </Tooltip>
+          )}
         </div>
       </div>
 

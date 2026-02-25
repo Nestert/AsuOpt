@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Card, Button, Typography, Spin, Alert, App, Tabs } from 'antd';
 import { FileExcelOutlined } from '@ant-design/icons';
 import SignalExport from './SignalExport';
-import QuestionnaireExport from './QuestionnaireExport';
 import { useProject } from '../contexts/ProjectContext';
 
 const { Title } = Typography;
@@ -107,11 +106,6 @@ const DataExportContent: React.FC = () => {
               </Card>
             )
           },
-          {
-            key: 'questionnaires',
-            label: 'Опросные листы',
-            children: <QuestionnaireExport projectId={currentProjectId} />
-          }
         ]}
       />
     </div>
