@@ -221,15 +221,30 @@ const BatchEditModal: React.FC<BatchEditModalProps> = ({ visible, deviceIds, onC
     const { value, isMixed } = fieldData;
     
     if (isMixed) {
+      if (isTextArea) {
+        return (
+          <Form.Item key={`${section}-${field}`} label={label}>
+            <Input.TextArea
+              placeholder="Введите новое значение"
+              rows={2}
+              style={{ borderColor: '#faad14' }}
+              onChange={e => handleFieldChange(section, field, e.target.value)}
+            />
+            <div style={{ color: '#faad14', fontSize: '12px', marginTop: '4px' }}>
+              ⚠️ Разные значения у выбранных устройств - будет установлено новое значение
+            </div>
+          </Form.Item>
+        );
+      }
       return (
         <Form.Item key={`${section}-${field}`} label={label}>
           <Input
-            placeholder="Выберите значение"
-            disabled
-            style={{ borderColor: '#ff4d4f', background: '#fff1f0' }}
+            placeholder="Введите новое значение"
+            style={{ borderColor: '#faad14' }}
+            onChange={e => handleFieldChange(section, field, e.target.value)}
           />
-          <div style={{ color: '#ff4d4f', fontSize: '12px', marginTop: '4px' }}>
-            ⚠️ Разные значения у выбранных устройств
+          <div style={{ color: '#faad14', fontSize: '12px', marginTop: '4px' }}>
+            ⚠️ Разные значения у выбранных устройств - будет установлено новое значение
           </div>
         </Form.Item>
       );
