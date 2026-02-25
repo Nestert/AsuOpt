@@ -6,7 +6,6 @@ import { Zra } from '../models/Zra';
 import { Signal } from '../models/Signal';
 import { DeviceSignal } from '../models/DeviceSignal';
 import { Device } from '../models/Device';
-import { Op } from 'sequelize';
 
 export class ImportService {
   /**
@@ -679,7 +678,7 @@ export class ImportService {
       let failedTypes = 0;
 
       // Назначаем сигналы для каждого ключа
-      for (const [key, config] of assignmentMap) {
+      for (const [_key, config] of assignmentMap) {
         try {
           console.log(`Назначение сигналов для ${config.type}: ${config.value}`);
           

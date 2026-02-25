@@ -7,6 +7,7 @@ import {
   FilterOutlined,
   EditOutlined,
   FilePdfOutlined,
+  DeleteOutlined,
 } from '@ant-design/icons';
 import { deviceService } from '../services/api';
 import { DeviceReference } from '../interfaces/DeviceReference';
@@ -486,13 +487,13 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, onSelectDevices
   const onCheck = (checked: React.Key[] | { checked: React.Key[]; halfChecked: React.Key[] }, info: any) => {
     // Получаем массив ключей (может быть объект с checked и halfChecked или просто массив)
     const checkedKeyArray = Array.isArray(checked) ? checked : checked.checked;
-    
+
     // Фильтруем только листья (устройства), исключая папки
     const leafKeys = checkedKeyArray.filter((key) => {
       const node = findNodeByKey(String(key), treeData);
       return node && node.isLeaf && node.originalId;
     });
-    
+
     // Получаем ID устройств из ключей
     const deviceIds: number[] = [];
     leafKeys.forEach((key) => {
@@ -501,7 +502,7 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, onSelectDevices
         deviceIds.push(node.originalId);
       }
     });
-    
+
     setCheckedKeys(leafKeys as React.Key[]);
     console.log('Выбраны устройства:', deviceIds);
     onSelectDevices(deviceIds);
@@ -527,6 +528,34 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, onSelectDevices
   // Скрыть форму добавления устройства
   const hideAddDeviceForm = () => {
     setIsAddDeviceVisible(false);
+  };
+
+  // Метод для удаления дубликатов
+  const handleRemoveDuplicates = () => {
+    modal.confirm({
+      title: 'Подтвердите удаление дубликатов',
+      content: 'Будут найдены устройства с одинаковым "Обозначение" (description) в рамках текущего проекта. Если такие есть, останется только одно устройство (предпочтительно с данными КИП или ЗРА), а остальные будут безвозвратно удалены. Вы уверены?',
+      okText: 'Удалить дубликаты',
+      okType: 'danger',
+      cancelText: 'Отмена',
+      onOk: async () => {
+        try {
+          setLoading(true);
+          const res = await deviceService.removeDuplicates(currentProjectId || undefined);
+          if (res.count > 0) {
+            message.success(`Удалено дубликатов: ${res.count}`);
+            fetchDevices(); // Обновляем дерево
+          } else {
+            message.info('Дубликаты не найдены');
+            setLoading(false);
+          }
+        } catch (err: any) {
+          console.error('Ошибка при удалении дубликатов:', err);
+          message.error('Не удалось удалить дубликаты');
+          setLoading(false);
+        }
+      },
+    });
   };
 
   // Обработчик успешного добавления устройства
@@ -710,19 +739,22 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, onSelectDevices
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: '16px',
         gap: '8px'
       }}>
-        <Tooltip title="Поиск по обозначению позиции, описанию, типу устройства, коду системы, типу ПЛК, Ex-версии, а также по данным КИП и ЗРА">
-          <Input.Search
-            placeholder="Глобальный поиск по всем полям устройства (обозначение, описание, тип, система, КИП/ЗРА данные)"
-            onChange={e => handleSearch(e.target.value)}
-            value={searchValue}
-            style={{ flex: 1, minWidth: '300px', marginBottom: 0 }}
-            size="middle"
-          />
-        </Tooltip>
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ flex: '1 1 300px', minWidth: '250px' }}>
+          <Tooltip title="Поиск по обозначению позиции, описанию, типу устройства, коду системы, типу ПЛК, Ex-версии, а также по данным КИП и ЗРА">
+            <Input.Search
+              placeholder="Глобальный поиск по всем полям устройства (обозначение, описание, тип, система, КИП/ЗРА данные)"
+              onChange={e => handleSearch(e.target.value)}
+              value={searchValue}
+              style={{ width: '100%', marginBottom: 0 }}
+              size="middle"
+            />
+          </Tooltip>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', flex: '1 1 auto' }}>
           <Tooltip title="Сбросить все фильтры">
             <Button
               type="default"
@@ -735,6 +767,17 @@ const DeviceTree: React.FC<DeviceTreeProps> = ({ onSelectDevice, onSelectDevices
               size="middle"
             >
               Сбросить
+            </Button>
+          </Tooltip>
+          <Tooltip title="Найти и удалить дубликаты устройств (одинаковое Обозначение/Описание)">
+            <Button
+              type="default"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={handleRemoveDuplicates}
+              size="middle"
+            >
+              Удалить дубликаты
             </Button>
           </Tooltip>
           {checkedKeys.length >= 1 ? (

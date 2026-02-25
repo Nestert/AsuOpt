@@ -145,6 +145,18 @@ export const deviceService = {
     }
   },
 
+  // Удалить дубликаты устройств
+  removeDuplicates: async (projectId?: number): Promise<{ message: string, count: number }> => {
+    try {
+      const params = projectId ? { projectId } : {};
+      const response = await api.delete('/device-references/duplicates', { params });
+      return response.data;
+    } catch (error) {
+      console.error('API: ошибка в removeDuplicates:', error);
+      throw error;
+    }
+  },
+
   // Поиск устройств
   searchDevices: async (query: string): Promise<DeviceReference[]> => {
     try {
@@ -169,9 +181,9 @@ export const deviceService = {
 
   // Массовое обновление устройств
   batchUpdateDevices: async (
-    ids: number[], 
-    updates: any, 
-    kipUpdates?: any, 
+    ids: number[],
+    updates: any,
+    kipUpdates?: any,
     zraUpdates?: any
   ): Promise<{ success: boolean; updatedCount: number }> => {
     try {

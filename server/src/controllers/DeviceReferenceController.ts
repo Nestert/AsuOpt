@@ -610,7 +610,7 @@ export class DeviceReferenceController {
       const idsToDelete: number[] = [];
 
       // Для каждой группы
-      for (const [key, group] of Array.from(groupedByDesc.entries())) {
+      for (const [_key, group] of Array.from(groupedByDesc.entries())) {
         if (group.length > 1) {
           // Сортируем так, чтобы в начале были устройства с данными КИП или ЗРА, затем по id (старые)
           group.sort((a, b) => {
@@ -656,7 +656,7 @@ export class DeviceReferenceController {
             },
             transaction
           });
-        } catch (devError: any) {
+        } catch (_devError: any) {
           console.log('removeDuplicates: таблица Device не найдена или не содержит связей');
         }
 

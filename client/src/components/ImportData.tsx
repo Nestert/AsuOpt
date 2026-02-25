@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Card, Upload, Button, Select, Typography, Progress, Space, App, Steps, Result } from 'antd';
+import { Card, Upload, Button, Select, Typography, Progress, App, Steps, Result } from 'antd';
 import { UploadOutlined, InboxOutlined, ArrowLeftOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { importService } from '../services/api';
 import type { UploadFile } from 'antd/es/upload/interface';

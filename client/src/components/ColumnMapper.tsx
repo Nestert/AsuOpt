@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Select, Typography, Alert, Card } from 'antd';
+import { Table, Select, Typography, Alert } from 'antd';
 
 const { Option } = Select;
 const { Text } = Typography;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, Select, Button, Space, Spin, Alert, Tabs, message } from 'antd';
+import { Modal, Form, Input, Select, Button, Spin, Alert, Tabs, message } from 'antd';
 import { deviceService } from '../services/api';
 import { DeviceFullData } from '../interfaces/DeviceReference';
 
@@ -15,12 +15,10 @@ interface FieldValue {
   isMixed: boolean;
 }
 
-const { Option } = Select;
-
 const BatchEditModal: React.FC<BatchEditModalProps> = ({ visible, deviceIds, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [devices, setDevices] = useState<DeviceFullData[]>([]);
+  const [_devices, setDevices] = useState<DeviceFullData[]>([]);
   const [error, setError] = useState<string | null>(null);
   
   const [referenceFields, setReferenceFields] = useState<Record<string, FieldValue>>({});

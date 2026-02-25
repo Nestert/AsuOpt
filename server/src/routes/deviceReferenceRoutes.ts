@@ -12,6 +12,9 @@ router.get('/tree', DeviceReferenceController.getDeviceTree);
 // Очистка всех справочников
 router.delete('/clear', DeviceReferenceController.clearAllReferences);
 
+// Удаление дубликатов (до /:id, чтобы не конфликтовать)
+router.delete('/duplicates', DeviceReferenceController.removeDuplicates);
+
 // Поиск устройств
 router.get('/search', DeviceReferenceController.searchDevices);
 
