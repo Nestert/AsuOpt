@@ -7608,3 +7608,90 @@ src/components/BatchEditModal.tsx
 
 webpack compiled with 1 warning
 No issues found.
+Compiling...
+Failed to compile.
+
+[eslint] 
+src/components/BatchEditModal.tsx
+Syntax error: ')' expected (76:3)
+ERROR in ./src/components/BatchEditModal.tsx
+Module build failed (from ./node_modules/babel-loader/lib/index.js):
+SyntaxError: /Users/valentinbelousov/AsuOpt/client/src/components/BatchEditModal.tsx: Unexpected token, expected "," (76:3)
+
+  74 |       setLoading(false);
+  75 |     }
+> 76 |   };
+     |    ^
+  77 |
+  78 |   const analyzeReferenceFields = (devices: DeviceFullData[]): Record<string, FieldValue> => {
+  79 |     const fields: Record<string, FieldValue> = {};
+    at constructor (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:360:19)
+    at TypeScriptParserMixin.raise (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:3327:19)
+    at TypeScriptParserMixin.unexpected (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:3347:16)
+    at TypeScriptParserMixin.expect (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:3657:12)
+    at TypeScriptParserMixin.parseCallExpressionArguments (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10919:14)
+    at TypeScriptParserMixin.parseCoverCallAndAsyncArrowHead (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10862:29)
+    at TypeScriptParserMixin.parseSubscript (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10799:19)
+    at TypeScriptParserMixin.parseSubscript (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:9181:18)
+    at TypeScriptParserMixin.parseSubscripts (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10772:19)
+    at TypeScriptParserMixin.parseExprSubscripts (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10763:17)
+    at TypeScriptParserMixin.parseUpdate (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10744:21)
+    at TypeScriptParserMixin.parseMaybeUnary (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10724:23)
+    at TypeScriptParserMixin.parseMaybeUnary (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:9676:18)
+    at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10577:61)
+    at TypeScriptParserMixin.parseExprOps (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10582:23)
+    at TypeScriptParserMixin.parseMaybeConditional (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10559:23)
+    at TypeScriptParserMixin.parseMaybeAssign (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10522:21)
+    at TypeScriptParserMixin.parseMaybeAssign (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:9625:20)
+    at /Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10493:39
+    at TypeScriptParserMixin.allowInAnd (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:12096:16)
+    at TypeScriptParserMixin.parseMaybeAssignAllowIn (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10493:17)
+    at TypeScriptParserMixin.parseVar (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:13023:91)
+    at TypeScriptParserMixin.parseVarStatement (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:12869:10)
+    at TypeScriptParserMixin.parseVarStatement (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:9321:31)
+    at TypeScriptParserMixin.parseStatementContent (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:12490:23)
+    at TypeScriptParserMixin.parseStatementContent (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:9351:18)
+    at TypeScriptParserMixin.parseStatementLike (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:12407:17)
+    at TypeScriptParserMixin.parseStatementListItem (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:12387:17)
+    at TypeScriptParserMixin.parseBlockOrModuleBlockBody (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:12955:61)
+    at TypeScriptParserMixin.parseBlockBody (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:12948:10)
+    at TypeScriptParserMixin.parseBlock (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:12936:10)
+    at TypeScriptParserMixin.parseFunctionBody (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:11784:24)
+    at TypeScriptParserMixin.parseArrowExpression (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:11759:10)
+    at TypeScriptParserMixin.parseParenAndDistinguishExpression (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:11372:12)
+    at TypeScriptParserMixin.parseExprAtom (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:11007:23)
+    at TypeScriptParserMixin.parseExprAtom (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:6936:20)
+    at TypeScriptParserMixin.parseExprSubscripts (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10759:23)
+    at TypeScriptParserMixin.parseUpdate (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10744:21)
+    at TypeScriptParserMixin.parseMaybeUnary (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10724:23)
+    at TypeScriptParserMixin.parseMaybeUnary (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:9676:18)
+    at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10577:61)
+    at TypeScriptParserMixin.parseExprOps (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10582:23)
+    at TypeScriptParserMixin.parseMaybeConditional (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10559:23)
+    at TypeScriptParserMixin.parseMaybeAssign (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10522:21)
+    at TypeScriptParserMixin.parseMaybeAssign (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:9625:20)
+    at /Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10493:39
+    at TypeScriptParserMixin.allowInAnd (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:12096:16)
+    at TypeScriptParserMixin.parseMaybeAssignAllowIn (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:10493:17)
+    at TypeScriptParserMixin.parseVar (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:13023:91)
+    at TypeScriptParserMixin.parseVarStatement (/Users/valentinbelousov/AsuOpt/client/node_modules/@babel/parser/lib/index.js:12869:10)
+
+ERROR in [eslint] 
+src/components/BatchEditModal.tsx
+  Line 76:3:  Parsing error: ')' expected
+
+webpack compiled with 2 errors
+ERROR in src/components/BatchEditModal.tsx:76:4
+TS1005: ')' expected.
+    74 |       setLoading(false);
+    75 |     }
+  > 76 |   };
+       |    ^
+    77 |
+    78 |   const analyzeReferenceFields = (devices: DeviceFullData[]): Record<string, FieldValue> => {
+    79 |     const fields: Record<string, FieldValue> = {};
+
+Compiling...
+Compiled successfully!
+webpack compiled successfully
+No issues found.

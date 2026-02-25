@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, Select, Button, Spin, Alert, Tabs, message } from 'antd';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Modal, Form, Input, Button, Spin, Alert, Tabs, message } from 'antd';
 import { deviceService } from '../services/api';
 import { DeviceFullData } from '../interfaces/DeviceReference';
 
@@ -18,7 +18,6 @@ interface FieldValue {
 const BatchEditModal: React.FC<BatchEditModalProps> = ({ visible, deviceIds, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [_devices, setDevices] = useState<DeviceFullData[]>([]);
   const [error, setError] = useState<string | null>(null);
   
   const [referenceFields, setReferenceFields] = useState<Record<string, FieldValue>>({});
@@ -29,19 +28,12 @@ const BatchEditModal: React.FC<BatchEditModalProps> = ({ visible, deviceIds, onC
   const [hasKipData, setHasKipData] = useState(false);
   const [hasZraData, setHasZraData] = useState(false);
 
-  useEffect(() => {
-    if (visible && deviceIds.length > 0) {
-      loadDevices();
-    }
-  }, [visible, deviceIds]);
-
-  const loadDevices = async () => {
+  const loadDevices = useCallback(async () => {
     setLoading(true);
     setError(null);
     
     try {
       const data = await deviceService.getDevicesByIds(deviceIds);
-      setDevices(data);
       
       // Определяем тип данных
       const kipCount = data.filter(d => d.dataType === 'kip').length;
@@ -81,7 +73,13 @@ const BatchEditModal: React.FC<BatchEditModalProps> = ({ visible, deviceIds, onC
     } finally {
       setLoading(false);
     }
-  };
+  }, [deviceIds]);
+
+  useEffect(() => {
+    if (visible && deviceIds.length > 0) {
+      loadDevices();
+    }
+  }, [visible, deviceIds, loadDevices]);
 
   const analyzeReferenceFields = (devices: DeviceFullData[]): Record<string, FieldValue> => {
     const fields: Record<string, FieldValue> = {};
