@@ -295,32 +295,88 @@ export const generateQuestionnaire = async (req: Request, res: Response) => {
         Дата генерации: ${new Date().toLocaleString('ru-RU')}<br>
     </div>`;
 
+      // Словари русских названий полей КИП и ЗРА
+      const kipFieldLabels: Record<string, string> = {
+        section: 'Секция',
+        unitArea: 'Установка/Зона',
+        manufacturer: 'Производитель',
+        article: 'Артикул',
+        measureUnit: 'Единица измерения',
+        scale: 'Шкала',
+        note: 'Примечание',
+        docLink: 'Ссылка на документацию',
+        responsibilityZone: 'Зона ответственности',
+        connectionScheme: 'Схема подключения',
+        power: 'Питание',
+        plc: 'ПЛК',
+        exVersion: 'Ex-версия',
+        environmentCharacteristics: 'Характеристики окружающей среды',
+        signalPurpose: 'Назначение сигнала',
+        controlPoints: 'Контрольные точки',
+        completeness: 'Комплектность',
+        measuringLimits: 'Пределы измерений',
+      };
+
+      const zraFieldLabels: Record<string, string> = {
+        unitArea: 'Установка/Зона',
+        designType: 'Тип конструкции',
+        valveType: 'Тип клапана',
+        actuatorType: 'Тип привода',
+        pipePosition: 'Положение трубы',
+        nominalDiameter: 'Номинальный диаметр',
+        pressureRating: 'Номинальное давление',
+        pipeMaterial: 'Материал трубы',
+        medium: 'Среда',
+        positionSensor: 'Датчик положения',
+        solenoidType: 'Тип соленоида',
+        emergencyPosition: 'Аварийное положение',
+        controlPanel: 'Панель управления',
+        airConsumption: 'Расход воздуха',
+        connectionSize: 'Размер соединения',
+        fittingsCount: 'Количество фитингов',
+        tubeDiameter: 'Диаметр трубы',
+        limitSwitchType: 'Тип концевого выключателя',
+        positionerType: 'Тип позиционера',
+        deviceDescription: 'Описание устройства',
+        category: 'Категория',
+        plc: 'ПЛК',
+        exVersion: 'Ex-версия',
+        operation: 'Управление',
+        note: 'Примечание',
+      };
+
+      const excludedKeys = new Set(['id', 'deviceReferenceId', 'createdAt', 'updatedAt']);
+
       devices.forEach((deviceData: any, index: number) => {
         const { device, kip, zra } = deviceData;
 
         html += `
     <div class="device">
-        <h2>Устройство ${index + 1}: ${device.equipmentCode}</h2>
+        <h2>Устройство ${index + 1}: ${device.posDesignation || device.equipmentCode || ''}</h2>
         <div class="specs">
-            <p><strong>Тип устройства:</strong> ${device.deviceType}</p>
+            <p><strong>Тип устройства:</strong> ${device.deviceType || 'Н/Д'}</p>
             <p><strong>Описание:</strong> ${device.description || 'Н/Д'}</p>
-            <p><strong>Система:</strong> ${device.systemCode || 'Н/Д'}</p>
-            <p><strong>Линия:</strong> ${device.lineNumber || 'Н/Д'}</p>`;
+            <p><strong>Код системы:</strong> ${device.systemCode || 'Н/Д'}</p>
+            <p><strong>Родительская система:</strong> ${device.parentSystem || 'Н/Д'}</p>
+            <p><strong>Тип ПЛК:</strong> ${device.plcType || 'Н/Д'}</p>
+            <p><strong>Ex-версия:</strong> ${device.exVersion || 'Н/Д'}</p>`;
 
         if (kip) {
           html += `
             <h3>Технические данные КИП:</h3>`;
           Object.entries(kip).forEach(([key, value]) => {
-            if (value && key !== 'id' && key !== 'deviceReferenceId') {
-              html += `<p class="spec-item"><strong>${key}:</strong> ${value}</p>`;
+            if (value !== null && value !== undefined && value !== '' && !excludedKeys.has(key)) {
+              const label = kipFieldLabels[key] || key;
+              html += `<p class="spec-item"><strong>${label}:</strong> ${value}</p>`;
             }
           });
         } else if (zra) {
           html += `
             <h3>Технические данные ЗРА:</h3>`;
           Object.entries(zra).forEach(([key, value]) => {
-            if (value && key !== 'id' && key !== 'deviceReferenceId') {
-              html += `<p class="spec-item"><strong>${key}:</strong> ${value}</p>`;
+            if (value !== null && value !== undefined && value !== '' && !excludedKeys.has(key)) {
+              const label = zraFieldLabels[key] || key;
+              html += `<p class="spec-item"><strong>${label}:</strong> ${value}</p>`;
             }
           });
         }
@@ -363,6 +419,58 @@ export const generateQuestionnaire = async (req: Request, res: Response) => {
       // Генерация Word
       const paragraphs: Paragraph[] = [];
 
+      // Словари русских названий полей КИП и ЗРА (Word)
+      const kipFieldLabelsWord: Record<string, string> = {
+        section: 'Секция',
+        unitArea: 'Установка/Зона',
+        manufacturer: 'Производитель',
+        article: 'Артикул',
+        measureUnit: 'Единица измерения',
+        scale: 'Шкала',
+        note: 'Примечание',
+        docLink: 'Ссылка на документацию',
+        responsibilityZone: 'Зона ответственности',
+        connectionScheme: 'Схема подключения',
+        power: 'Питание',
+        plc: 'ПЛК',
+        exVersion: 'Ex-версия',
+        environmentCharacteristics: 'Характеристики окружающей среды',
+        signalPurpose: 'Назначение сигнала',
+        controlPoints: 'Контрольные точки',
+        completeness: 'Комплектность',
+        measuringLimits: 'Пределы измерений',
+      };
+
+      const zraFieldLabelsWord: Record<string, string> = {
+        unitArea: 'Установка/Зона',
+        designType: 'Тип конструкции',
+        valveType: 'Тип клапана',
+        actuatorType: 'Тип привода',
+        pipePosition: 'Положение трубы',
+        nominalDiameter: 'Номинальный диаметр',
+        pressureRating: 'Номинальное давление',
+        pipeMaterial: 'Материал трубы',
+        medium: 'Среда',
+        positionSensor: 'Датчик положения',
+        solenoidType: 'Тип соленоида',
+        emergencyPosition: 'Аварийное положение',
+        controlPanel: 'Панель управления',
+        airConsumption: 'Расход воздуха',
+        connectionSize: 'Размер соединения',
+        fittingsCount: 'Количество фитингов',
+        tubeDiameter: 'Диаметр трубы',
+        limitSwitchType: 'Тип концевого выключателя',
+        positionerType: 'Тип позиционера',
+        deviceDescription: 'Описание устройства',
+        category: 'Категория',
+        plc: 'ПЛК',
+        exVersion: 'Ex-версия',
+        operation: 'Управление',
+        note: 'Примечание',
+      };
+
+      const excludedKeysWord = new Set(['id', 'deviceReferenceId', 'createdAt', 'updatedAt']);
+
       paragraphs.push(new Paragraph({
         text: 'Опросный лист для закупки оборудования',
         heading: 'Title',
@@ -372,15 +480,17 @@ export const generateQuestionnaire = async (req: Request, res: Response) => {
         const { device, kip, zra } = deviceData;
 
         paragraphs.push(new Paragraph({
-          text: `Устройство ${index + 1}: ${device.equipmentCode}`,
+          text: `Устройство ${index + 1}: ${device.posDesignation || device.equipmentCode || ''}`,
           heading: 'Heading1',
         }));
 
         // Основные данные
-        paragraphs.push(new Paragraph(`Тип устройства: ${device.deviceType}`));
+        paragraphs.push(new Paragraph(`Тип устройства: ${device.deviceType || 'Н/Д'}`));
         paragraphs.push(new Paragraph(`Описание: ${device.description || 'Н/Д'}`));
-        paragraphs.push(new Paragraph(`Система: ${device.systemCode || 'Н/Д'}`));
-        paragraphs.push(new Paragraph(`Линия: ${device.lineNumber || 'Н/Д'}`));
+        paragraphs.push(new Paragraph(`Код системы: ${device.systemCode || 'Н/Д'}`));
+        paragraphs.push(new Paragraph(`Родительская система: ${device.parentSystem || 'Н/Д'}`));
+        paragraphs.push(new Paragraph(`Тип ПЛК: ${device.plcType || 'Н/Д'}`));
+        paragraphs.push(new Paragraph(`Ex-версия: ${device.exVersion || 'Н/Д'}`));
 
         // Техданные
         if (kip) {
@@ -390,8 +500,9 @@ export const generateQuestionnaire = async (req: Request, res: Response) => {
           }));
 
           Object.entries(kip).forEach(([key, value]) => {
-            if (value && key !== 'id' && key !== 'deviceReferenceId') {
-              paragraphs.push(new Paragraph(`${key}: ${value}`));
+            if (value !== null && value !== undefined && value !== '' && !excludedKeysWord.has(key)) {
+              const label = kipFieldLabelsWord[key] || key;
+              paragraphs.push(new Paragraph(`${label}: ${value}`));
             }
           });
         } else if (zra) {
@@ -401,8 +512,9 @@ export const generateQuestionnaire = async (req: Request, res: Response) => {
           }));
 
           Object.entries(zra).forEach(([key, value]) => {
-            if (value && key !== 'id' && key !== 'deviceReferenceId') {
-              paragraphs.push(new Paragraph(`${key}: ${value}`));
+            if (value !== null && value !== undefined && value !== '' && !excludedKeysWord.has(key)) {
+              const label = zraFieldLabelsWord[key] || key;
+              paragraphs.push(new Paragraph(`${label}: ${value}`));
             }
           });
         }
