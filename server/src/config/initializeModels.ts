@@ -7,6 +7,7 @@ import { Zra } from '../models/Zra';
 import { Signal } from '../models/Signal';
 import { DeviceSignal } from '../models/DeviceSignal';
 import { User } from '../models/User';
+import { Document, DocumentVersion } from '../models/Document';
 import { isProduction } from './env';
 
 export const initializeModels = async () => {
@@ -22,12 +23,14 @@ export const initializeModels = async () => {
     Zra.initialize(sequelize);
     Signal.initialize(sequelize);
     DeviceSignal.initialize(sequelize);
-    
+    Document.initialize(sequelize);
+    DocumentVersion.initialize(sequelize);
+
     console.log('✅ Модели инициализированы');
 
     // Устанавливаем ассоциации между моделями
     console.log('🔗 Установка ассоциаций...');
-    
+
     User.associate();
     Project.associate();
     Device.associate();
@@ -36,6 +39,8 @@ export const initializeModels = async () => {
     Zra.associate();
     Signal.associate();
     DeviceSignal.associate();
+    Document.associate();
+    DocumentVersion.associate();
 
     console.log('✅ Ассоциации установлены');
 

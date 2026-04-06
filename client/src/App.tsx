@@ -16,6 +16,7 @@ import ProjectSelector from './components/ProjectSelector';
 import ProjectManagement from './components/ProjectManagement';
 import Login from './components/Login';
 import Register from './components/Register';
+import DocumentManager from './components/DocumentManager';
 import { ProjectProvider, useProject } from './contexts/ProjectContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import './App.css';
@@ -292,6 +293,17 @@ const InnerApp: React.FC = () => {
                 <Layout className="content-layout">
                   <Content className="app-content">
                     <SignalManagement />
+                  </Content>
+                </Layout>
+              )
+            },
+            {
+              key: 'documents',
+              label: 'Документы',
+              children: (
+                <Layout className="content-layout">
+                  <Content className="app-content">
+                    <DocumentManager />
                   </Content>
                 </Layout>
               )

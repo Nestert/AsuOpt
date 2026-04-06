@@ -722,4 +722,49 @@ export const authService = {
   }
 };
 
-export default api; 
+// Сервис для работы с документами
+export const documentService = {
+  listDocuments: async (projectId: number) => {
+    const response = await api.get('/documents', { params: { projectId } });
+    return response.data;
+  },
+
+  createDocument: async (formData: FormData) => {
+    const response = await api.post('/documents', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  getDocument: async (documentId: number) => {
+    const response = await api.get(`/documents/${documentId}`);
+    return response.data;
+  },
+
+  listVersions: async (documentId: number) => {
+    const response = await api.get(`/documents/${documentId}/versions`);
+    return response.data;
+  },
+
+  uploadVersion: async (documentId: number, formData: FormData) => {
+    const response = await api.post(`/documents/${documentId}/versions`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  downloadVersion: async (documentId: number, versionId: number): Promise<Blob> => {
+    const response = await api.get(`/documents/${documentId}/versions/${versionId}/download`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  deleteDocument: async (documentId: number) => {
+    const response = await api.delete(`/documents/${documentId}`);
+    return response.data;
+  },
+};
+
+export default api;
+

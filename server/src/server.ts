@@ -17,6 +17,7 @@ import deviceTypeSignalRoutes from './routes/deviceTypeSignalRoutes';
 import databaseRoutes from './routes/databaseRoutes';
 import projectRoutes from './routes/projectRoutes';
 import authRoutes from './routes/authRoutes';
+import documentRoutes from './routes/documentRoutes';
 import path from 'path';
 import { PORT, isTest, assertRequiredEnv } from './config/env';
 import { attachRequestContext, requestLogger } from './middleware/requestContext';
@@ -96,6 +97,7 @@ app.use('/api/kip', kipRoutes);
 app.use('/api/zra', zraRoutes);
 app.use('/api/device-type-signals', deviceTypeSignalRoutes);
 app.use('/api/database', databaseRoutes);
+app.use('/api/documents', documentRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

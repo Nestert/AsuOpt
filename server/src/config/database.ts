@@ -155,7 +155,7 @@ const ensureProjectMigration = async () => {
     // 7. Создаем триггеры
     try {
       await sequelize.query(`
-        CREATE TRIGGER IF NOT EXISTS update_projects_updated_at 
+        CREATE TRIGGER IF NOT EXISTS update_projects_updated_at
         AFTER UPDATE ON projects
         FOR EACH ROW
         BEGIN
@@ -164,6 +164,46 @@ const ensureProjectMigration = async () => {
       `);
     } catch (error: any) {
       console.log('⚠️  Ошибка при создании триггера:', error.message);
+    }
+
+    // 8. Таблицы для документов с версионностью
+    const documentsTableExists = await checkTableExists('documents');
+    if (!documentsTableExists) {
+      console.log('📝 Создание таблицы documents...');
+      await sequelize.query(`
+        CREATE TABLE documents (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          project_id INTEGER NOT NULL,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          created_by INTEGER,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await sequelize.query('CREATE INDEX IF NOT EXISTS idx_documents_project_id ON documents(project_id)');
+      console.log('✅ Таблица documents создана');
+    }
+
+    const documentVersionsTableExists = await checkTableExists('document_versions');
+    if (!documentVersionsTableExists) {
+      console.log('📝 Создание таблицы document_versions...');
+      await sequelize.query(`
+        CREATE TABLE document_versions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          document_id INTEGER NOT NULL,
+          version_number INTEGER NOT NULL,
+          filename VARCHAR(255) NOT NULL,
+          storage_path VARCHAR(500) NOT NULL,
+          mime_type VARCHAR(100),
+          file_size INTEGER,
+          change_comment TEXT,
+          uploaded_by INTEGER,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await sequelize.query('CREATE INDEX IF NOT EXISTS idx_document_versions_document_id ON document_versions(document_id)');
+      console.log('✅ Таблица document_versions создана');
     }
 
     console.log('✅ Проверка и обновление схемы базы данных завершены');
