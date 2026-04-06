@@ -2,6 +2,75 @@ import { Model, DataTypes, Sequelize } from 'sequelize';
 import { Project } from './Project';
 import { User } from './User';
 
+export type ComparisonStatus = 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED';
+
+interface DocumentComparisonAttributes {
+  id?: number;
+  documentId: number;
+  baseVersionId: number;
+  targetVersionId: number;
+  status: ComparisonStatus;
+  reportText?: string | null;
+  reportJson?: string | null;
+  warnings?: string | null;
+  artifactsPath?: string | null;
+  startedAt?: Date | null;
+  finishedAt?: Date | null;
+}
+
+export class DocumentComparison
+  extends Model<DocumentComparisonAttributes>
+  implements DocumentComparisonAttributes {
+  public id!: number;
+  public documentId!: number;
+  public baseVersionId!: number;
+  public targetVersionId!: number;
+  public status!: ComparisonStatus;
+  public reportText!: string | null;
+  public reportJson!: string | null;
+  public warnings!: string | null;
+  public artifactsPath!: string | null;
+  public startedAt!: Date | null;
+  public finishedAt!: Date | null;
+
+  public readonly createdAt!: Date;
+
+  public static initialize(sequelize: Sequelize): void {
+    DocumentComparison.init(
+      {
+        id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
+        documentId: { type: DataTypes.INTEGER, allowNull: false, field: 'document_id' },
+        baseVersionId: { type: DataTypes.INTEGER, allowNull: false, field: 'base_version_id' },
+        targetVersionId: { type: DataTypes.INTEGER, allowNull: false, field: 'target_version_id' },
+        status: {
+          type: DataTypes.STRING(20),
+          allowNull: false,
+          defaultValue: 'PENDING',
+        },
+        reportText: { type: DataTypes.TEXT, allowNull: true, field: 'report_text' },
+        reportJson: { type: DataTypes.TEXT, allowNull: true, field: 'report_json' },
+        warnings: { type: DataTypes.TEXT, allowNull: true },
+        artifactsPath: { type: DataTypes.STRING(500), allowNull: true, field: 'artifacts_path' },
+        startedAt: { type: DataTypes.DATE, allowNull: true, field: 'started_at' },
+        finishedAt: { type: DataTypes.DATE, allowNull: true, field: 'finished_at' },
+      },
+      {
+        sequelize,
+        tableName: 'document_comparisons',
+        timestamps: true,
+        updatedAt: false,
+        underscored: true,
+      }
+    );
+  }
+
+  public static associate(): void {
+    DocumentComparison.belongsTo(Document, { foreignKey: 'documentId', as: 'document' });
+    DocumentComparison.belongsTo(DocumentVersion, { foreignKey: 'baseVersionId', as: 'baseVersion' });
+    DocumentComparison.belongsTo(DocumentVersion, { foreignKey: 'targetVersionId', as: 'targetVersion' });
+  }
+}
+
 interface DocumentAttributes {
   id?: number;
   projectId: number;
@@ -60,6 +129,7 @@ export class Document extends Model<DocumentAttributes> implements DocumentAttri
     Document.belongsTo(Project, { foreignKey: 'projectId', as: 'project' });
     Document.belongsTo(User, { foreignKey: 'createdBy', as: 'creator' });
     Document.hasMany(DocumentVersion, { foreignKey: 'documentId', as: 'versions' });
+    Document.hasMany(DocumentComparison, { foreignKey: 'documentId', as: 'comparisons' });
   }
 }
 
@@ -149,5 +219,7 @@ export class DocumentVersion extends Model<DocumentVersionAttributes> implements
   public static associate(): void {
     DocumentVersion.belongsTo(Document, { foreignKey: 'documentId', as: 'document' });
     DocumentVersion.belongsTo(User, { foreignKey: 'uploadedBy', as: 'uploader' });
+    DocumentVersion.hasMany(DocumentComparison, { foreignKey: 'baseVersionId', as: 'comparisonsAsBase' });
+    DocumentVersion.hasMany(DocumentComparison, { foreignKey: 'targetVersionId', as: 'comparisonsAsTarget' });
   }
 }

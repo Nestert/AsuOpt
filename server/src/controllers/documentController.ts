@@ -2,10 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { Document, DocumentVersion } from '../models/Document';
+import { Document, DocumentVersion, DocumentComparison } from '../models/Document';
 import { User } from '../models/User';
 import { ApiError } from '../errors/ApiError';
 import { AuthRequest } from '../middleware/auth';
+import { scheduleComparison } from '../services/comparisonService';
 
 const DOCUMENTS_DIR = path.join(__dirname, '../../uploads/documents');
 
@@ -18,7 +19,8 @@ const storage = multer.diskStorage({
   },
   filename: (_req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + '-' + file.originalname);
+    const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    cb(null, uniqueSuffix + '-' + originalName);
   },
 });
 
@@ -92,14 +94,15 @@ export const createDocument = async (req: AuthRequest, res: Response, next: Next
     // Перемещаем файл из tmp в uploads/documents/{docId}/
     const docDir = path.join(DOCUMENTS_DIR, String(doc.id));
     fs.mkdirSync(docDir, { recursive: true });
-    const destFilename = `v1_${file.originalname}`;
+    const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    const destFilename = `v1_${originalName}`;
     const destPath = path.join(docDir, destFilename);
     fs.renameSync(file.path, destPath);
 
     const version = await DocumentVersion.create({
       documentId: doc.id,
       versionNumber: 1,
-      filename: file.originalname,
+      filename: originalName,
       storagePath: path.relative(path.join(__dirname, '../..'), destPath),
       mimeType: file.mimetype || null,
       fileSize: file.size,
@@ -166,14 +169,15 @@ export const uploadVersion = async (req: AuthRequest, res: Response, next: NextF
 
     const docDir = path.join(DOCUMENTS_DIR, String(doc.id));
     fs.mkdirSync(docDir, { recursive: true });
-    const destFilename = `v${nextVersionNumber}_${file.originalname}`;
+    const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+    const destFilename = `v${nextVersionNumber}_${originalName}`;
     const destPath = path.join(docDir, destFilename);
     fs.renameSync(file.path, destPath);
 
     const version = await DocumentVersion.create({
       documentId: doc.id,
       versionNumber: nextVersionNumber,
-      filename: file.originalname,
+      filename: originalName,
       storagePath: path.relative(path.join(__dirname, '../..'), destPath),
       mimeType: file.mimetype || null,
       fileSize: file.size,
@@ -184,7 +188,20 @@ export const uploadVersion = async (req: AuthRequest, res: Response, next: NextF
     // Обновляем updated_at документа
     await doc.update({ updatedAt: new Date() } as any);
 
-    res.status(201).json(version);
+    // Автоматически запускаем сравнение с предыдущей версией
+    let comparisonId: number | null = null;
+    let comparisonStatus: string | null = null;
+    if (lastVersion) {
+      try {
+        const comparison = await scheduleComparison(doc.id, lastVersion.id, version.id);
+        comparisonId = comparison.id;
+        comparisonStatus = comparison.status;
+      } catch (err) {
+        console.error('[uploadVersion] Failed to schedule comparison:', err);
+      }
+    }
+
+    res.status(201).json({ ...version.toJSON(), comparisonId, comparisonStatus });
   } catch (err) {
     if (file && fs.existsSync(file.path)) fs.unlinkSync(file.path);
     next(err);
@@ -202,7 +219,7 @@ export const downloadVersion = async (req: Request, res: Response, next: NextFun
     const absPath = path.join(__dirname, '../..', version.storagePath);
     if (!fs.existsSync(absPath)) return next(new ApiError(404, 'FILE_NOT_FOUND', 'Файл не найден на диске'));
 
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(version.filename)}"`);
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(version.filename)}`);
     if (version.mimeType) res.setHeader('Content-Type', version.mimeType);
     res.sendFile(absPath);
   } catch (err) {
@@ -226,6 +243,85 @@ export const deleteDocument = async (req: Request, res: Response, next: NextFunc
 
     await doc.destroy();
     res.json({ message: 'Документ удалён' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/documents/:id/comparisons/:comparisonId
+export const getComparison = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const comparison = await DocumentComparison.findOne({
+      where: { id: req.params.comparisonId, documentId: req.params.id },
+      include: [
+        { model: DocumentVersion, as: 'baseVersion', attributes: ['id', 'versionNumber', 'filename'] },
+        { model: DocumentVersion, as: 'targetVersion', attributes: ['id', 'versionNumber', 'filename'] },
+      ],
+    });
+    if (!comparison) return next(new ApiError(404, 'NOT_FOUND', 'Сравнение не найдено'));
+
+    const plain = comparison.toJSON() as any;
+    if (plain.reportJson) {
+      try { plain.reportJson = JSON.parse(plain.reportJson); } catch { /* keep raw */ }
+    }
+    if (plain.warnings) {
+      try { plain.warnings = JSON.parse(plain.warnings); } catch { /* keep raw */ }
+    }
+    res.json(plain);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/documents/:id/versions/:versionId/comparison
+export const getVersionComparison = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const version = await DocumentVersion.findOne({
+      where: { id: req.params.versionId, documentId: req.params.id },
+    });
+    if (!version) return next(new ApiError(404, 'NOT_FOUND', 'Версия не найдена'));
+
+    const comparison = await DocumentComparison.findOne({
+      where: { documentId: req.params.id, targetVersionId: version.id },
+      include: [
+        { model: DocumentVersion, as: 'baseVersion', attributes: ['id', 'versionNumber', 'filename'] },
+        { model: DocumentVersion, as: 'targetVersion', attributes: ['id', 'versionNumber', 'filename'] },
+      ],
+      order: [['id', 'DESC']],
+    });
+
+    if (!comparison) {
+      res.json(null);
+      return;
+    }
+
+    const plain = comparison.toJSON() as any;
+    if (plain.reportJson) {
+      try { plain.reportJson = JSON.parse(plain.reportJson); } catch { /* keep raw */ }
+    }
+    if (plain.warnings) {
+      try { plain.warnings = JSON.parse(plain.warnings); } catch { /* keep raw */ }
+    }
+    res.json(plain);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/documents/:id/comparisons/:comparisonId/download?format=txt
+export const downloadComparisonReport = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const comparison = await DocumentComparison.findOne({
+      where: { id: req.params.comparisonId, documentId: req.params.id },
+    });
+    if (!comparison) return next(new ApiError(404, 'NOT_FOUND', 'Сравнение не найдено'));
+    if (comparison.status !== 'DONE' || !comparison.reportText) {
+      return next(new ApiError(409, 'NOT_READY', 'Отчёт ещё не готов'));
+    }
+
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="comparison_${req.params.comparisonId}.txt"`);
+    res.send(comparison.reportText);
   } catch (err) {
     next(err);
   }

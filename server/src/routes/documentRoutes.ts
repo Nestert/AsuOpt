@@ -38,8 +38,21 @@ router.get('/:id/versions/:versionId/download', (req: Request, res: Response, ne
   documentController.downloadVersion(req, res, next).catch(next);
 });
 
+router.get('/:id/versions/:versionId/comparison', (req: Request, res: Response, next: NextFunction) => {
+  documentController.getVersionComparison(req, res, next).catch(next);
+});
+
+router.get('/:id/comparisons/:comparisonId', (req: Request, res: Response, next: NextFunction) => {
+  documentController.getComparison(req, res, next).catch(next);
+});
+
+router.get('/:id/comparisons/:comparisonId/download', (req: Request, res: Response, next: NextFunction) => {
+  documentController.downloadComparisonReport(req, res, next).catch(next);
+});
+
 router.delete('/:id', (req: Request, res: Response, next: NextFunction) => {
   documentController.deleteDocument(req, res, next).catch(next);
 });
 
 export default router;
+

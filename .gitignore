@@ -45,3 +45,5 @@ tmp/
 server/tmp/
 *.backup
 *.pdf
+
+.claude/

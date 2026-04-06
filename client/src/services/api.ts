@@ -764,6 +764,24 @@ export const documentService = {
     const response = await api.delete(`/documents/${documentId}`);
     return response.data;
   },
+
+  getComparison: async (documentId: number, comparisonId: number) => {
+    const response = await api.get(`/documents/${documentId}/comparisons/${comparisonId}`);
+    return response.data;
+  },
+
+  getVersionComparison: async (documentId: number, versionId: number) => {
+    const response = await api.get(`/documents/${documentId}/versions/${versionId}/comparison`);
+    return response.data;
+  },
+
+  downloadComparisonReport: async (documentId: number, comparisonId: number): Promise<Blob> => {
+    const response = await api.get(
+      `/documents/${documentId}/comparisons/${comparisonId}/download`,
+      { params: { format: 'txt' }, responseType: 'blob' }
+    );
+    return response.data;
+  },
 };
 
 export default api;

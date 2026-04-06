@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Table, Button, Modal, Form, Input, Upload, Space, Typography,
-  Tooltip, Popconfirm, Tag, App
+  Tooltip, Popconfirm, Tag, App, Alert, Spin
 } from 'antd';
 import {
   UploadOutlined, HistoryOutlined, DownloadOutlined, DeleteOutlined,
-  PlusOutlined, FileOutlined
+  PlusOutlined, FileOutlined, DiffOutlined, ReloadOutlined, WarningOutlined
 } from '@ant-design/icons';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { documentService } from '../services/api';
@@ -22,6 +22,8 @@ interface DocumentVersion {
   changeComment: string | null;
   createdAt: string;
   uploader?: { id: number; username: string } | null;
+  comparisonId?: number | null;
+  comparisonStatus?: string | null;
 }
 
 interface DocumentRecord {
@@ -33,6 +35,18 @@ interface DocumentRecord {
   updatedAt: string;
   latestVersion: DocumentVersion | null;
   versions?: DocumentVersion[];
+}
+
+interface ComparisonReport {
+  id: number;
+  status: 'PENDING' | 'RUNNING' | 'DONE' | 'FAILED';
+  reportText: string | null;
+  reportJson: any;
+  warnings: string[] | null;
+  baseVersion: { id: number; versionNumber: number; filename: string } | null;
+  targetVersion: { id: number; versionNumber: number; filename: string } | null;
+  startedAt: string | null;
+  finishedAt: string | null;
 }
 
 const formatFileSize = (bytes: number | null): string => {
@@ -51,6 +65,18 @@ const triggerDownload = (blob: Blob, filename: string) => {
   a.click();
   document.body.removeChild(a);
   window.URL.revokeObjectURL(url);
+};
+
+const comparisonStatusTag = (status: string | null | undefined) => {
+  if (!status) return null;
+  const map: Record<string, { color: string; label: string }> = {
+    PENDING: { color: 'default', label: 'В очереди' },
+    RUNNING: { color: 'processing', label: 'Выполняется' },
+    DONE: { color: 'success', label: 'Готово' },
+    FAILED: { color: 'error', label: 'Ошибка' },
+  };
+  const cfg = map[status] || { color: 'default', label: status };
+  return <Tag color={cfg.color}>{cfg.label}</Tag>;
 };
 
 const DocumentManagerContent: React.FC = () => {
@@ -79,6 +105,14 @@ const DocumentManagerContent: React.FC = () => {
   const [versions, setVersions] = useState<DocumentVersion[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(false);
 
+  // Версии с активным polling сравнения (comparisonId → documentId)
+  const pollingRef = useRef<Map<number, ReturnType<typeof setInterval>>>(new Map());
+
+  // Модалка отчёта сравнения
+  const [reportVisible, setReportVisible] = useState(false);
+  const [reportData, setReportData] = useState<ComparisonReport | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
+
   const loadDocuments = useCallback(async () => {
     if (!currentProjectId) return;
     setLoading(true);
@@ -95,6 +129,12 @@ const DocumentManagerContent: React.FC = () => {
   useEffect(() => {
     loadDocuments();
   }, [loadDocuments]);
+
+  // Очистка polling при unmount
+  useEffect(() => {
+    const map = pollingRef.current;
+    return () => { map.forEach(t => clearInterval(t)); };
+  }, []);
 
   // --- Создание ---
   const handleCreate = async () => {
@@ -118,7 +158,7 @@ const DocumentManagerContent: React.FC = () => {
       setCreateFileList([]);
       loadDocuments();
     } catch (err: any) {
-      if (err?.errorFields) return; // form validation
+      if (err?.errorFields) return;
       message.error('Ошибка при создании документа');
     } finally {
       setCreateLoading(false);
@@ -145,17 +185,50 @@ const DocumentManagerContent: React.FC = () => {
       const formData = new FormData();
       if (values.changeComment) formData.append('changeComment', values.changeComment);
       formData.append('file', uploadFileList[0].originFileObj as File);
-      await documentService.uploadVersion(uploadTargetDoc.id, formData);
+      const newVersion = await documentService.uploadVersion(uploadTargetDoc.id, formData);
       message.success('Новая версия загружена');
       setUploadVisible(false);
       setUploadTargetDoc(null);
       loadDocuments();
+
+      // Если запустилось сравнение — начать polling
+      if (newVersion.comparisonId && newVersion.comparisonStatus && newVersion.comparisonStatus !== 'DONE' && newVersion.comparisonStatus !== 'FAILED') {
+        startComparisonPolling(uploadTargetDoc.id, newVersion.comparisonId);
+        message.info('Сравнение версий запущено, статус обновится автоматически');
+      }
     } catch (err: any) {
       if (err?.errorFields) return;
       message.error('Ошибка при загрузке версии');
     } finally {
       setUploadLoading(false);
     }
+  };
+
+  const startComparisonPolling = (documentId: number, comparisonId: number) => {
+    if (pollingRef.current.has(comparisonId)) return;
+    const timer = setInterval(async () => {
+      try {
+        const data = await documentService.getComparison(documentId, comparisonId);
+        if (data.status === 'DONE' || data.status === 'FAILED') {
+          clearInterval(timer);
+          pollingRef.current.delete(comparisonId);
+          if (data.status === 'DONE') {
+            message.success('Сравнение версий завершено');
+          } else {
+            message.warning('Сравнение версий завершилось с ошибкой');
+          }
+          // Обновить список версий если модалка открыта
+          if (versionsVisible && versionsDoc?.id === documentId) {
+            const updated = await documentService.listVersions(documentId);
+            setVersions(updated);
+          }
+        }
+      } catch {
+        clearInterval(timer);
+        pollingRef.current.delete(comparisonId);
+      }
+    }, 3000);
+    pollingRef.current.set(comparisonId, timer);
   };
 
   // --- История версий ---
@@ -168,6 +241,19 @@ const DocumentManagerContent: React.FC = () => {
       setVersions(data);
     } catch {
       message.error('Не удалось загрузить историю версий');
+    } finally {
+      setVersionsLoading(false);
+    }
+  };
+
+  const refreshVersionComparisons = async () => {
+    if (!versionsDoc) return;
+    setVersionsLoading(true);
+    try {
+      const data = await documentService.listVersions(versionsDoc.id);
+      setVersions(data);
+    } catch {
+      message.error('Не удалось обновить историю версий');
     } finally {
       setVersionsLoading(false);
     }
@@ -191,6 +277,50 @@ const DocumentManagerContent: React.FC = () => {
       loadDocuments();
     } catch {
       message.error('Ошибка при удалении документа');
+    }
+  };
+
+  // --- Просмотр отчёта ---
+  const openReport = async (documentId: number, comparisonId: number) => {
+    setReportVisible(true);
+    setReportLoading(true);
+    try {
+      const data = await documentService.getComparison(documentId, comparisonId);
+      setReportData(data);
+    } catch {
+      message.error('Не удалось загрузить отчёт');
+      setReportVisible(false);
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const openVersionComparison = async (documentId: number, versionId: number) => {
+    setReportVisible(true);
+    setReportLoading(true);
+    try {
+      const data = await documentService.getVersionComparison(documentId, versionId);
+      if (!data) {
+        message.info('Отчёт сравнения для этой версии не найден');
+        setReportVisible(false);
+      } else {
+        setReportData(data);
+      }
+    } catch {
+      message.error('Не удалось загрузить отчёт');
+      setReportVisible(false);
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
+  const handleDownloadReport = async () => {
+    if (!reportData || !versionsDoc) return;
+    try {
+      const blob = await documentService.downloadComparisonReport(versionsDoc.id, reportData.id);
+      triggerDownload(blob, `comparison_${reportData.id}.txt`);
+    } catch {
+      message.error('Ошибка при скачивании отчёта');
     }
   };
 
@@ -325,6 +455,54 @@ const DocumentManagerContent: React.FC = () => {
       render: (v: string) => new Date(v).toLocaleString('ru-RU'),
     },
     {
+      title: 'Сравнение',
+      key: 'comparison',
+      width: 160,
+      render: (_: unknown, record: DocumentVersion) => {
+        if (!versionsDoc) return null;
+        if (!record.comparisonId && !record.comparisonStatus) {
+          // Попробуем загрузить сравнение по версии
+          return (
+            <Tooltip title="Загрузить отчёт сравнения">
+              <Button
+                icon={<DiffOutlined />}
+                size="small"
+                onClick={() => openVersionComparison(versionsDoc.id, record.id)}
+              />
+            </Tooltip>
+          );
+        }
+        return (
+          <Space size={4}>
+            {comparisonStatusTag(record.comparisonStatus)}
+            {record.comparisonStatus === 'DONE' && record.comparisonId && (
+              <Tooltip title="Просмотр отчёта">
+                <Button
+                  icon={<DiffOutlined />}
+                  size="small"
+                  onClick={() => openReport(versionsDoc.id, record.comparisonId!)}
+                />
+              </Tooltip>
+            )}
+            {(record.comparisonStatus === 'PENDING' || record.comparisonStatus === 'RUNNING') && record.comparisonId && (
+              <Tooltip title="Обновить статус">
+                <Button
+                  icon={<ReloadOutlined spin={record.comparisonStatus === 'RUNNING'} />}
+                  size="small"
+                  onClick={() => {
+                    if (record.comparisonId) {
+                      startComparisonPolling(versionsDoc.id, record.comparisonId);
+                      refreshVersionComparisons();
+                    }
+                  }}
+                />
+              </Tooltip>
+            )}
+          </Space>
+        );
+      },
+    },
+    {
       title: '',
       key: 'download',
       width: 50,
@@ -426,11 +604,16 @@ const DocumentManagerContent: React.FC = () => {
 
       {/* Модалка истории версий */}
       <Modal
-        title={`История версий: ${versionsDoc?.name}`}
+        title={
+          <Space>
+            <span>История версий: {versionsDoc?.name}</span>
+            <Button icon={<ReloadOutlined />} size="small" onClick={refreshVersionComparisons} />
+          </Space>
+        }
         open={versionsVisible}
         onCancel={() => setVersionsVisible(false)}
         footer={null}
-        width={800}
+        width={920}
       >
         <Table
           rowKey="id"
@@ -440,6 +623,85 @@ const DocumentManagerContent: React.FC = () => {
           pagination={false}
           size="small"
         />
+      </Modal>
+
+      {/* Модалка отчёта сравнения */}
+      <Modal
+        title={
+          reportData
+            ? `Сравнение: v${reportData.baseVersion?.versionNumber} → v${reportData.targetVersion?.versionNumber}`
+            : 'Отчёт сравнения'
+        }
+        open={reportVisible}
+        onCancel={() => { setReportVisible(false); setReportData(null); }}
+        footer={
+          reportData?.status === 'DONE' ? (
+            <Button icon={<DownloadOutlined />} onClick={handleDownloadReport}>
+              Скачать .txt
+            </Button>
+          ) : null
+        }
+        width={800}
+      >
+        {reportLoading && <Spin style={{ display: 'block', textAlign: 'center', padding: 32 }} />}
+        {!reportLoading && reportData && (
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Space>
+              <Text type="secondary">Статус:</Text>
+              {comparisonStatusTag(reportData.status)}
+              {reportData.finishedAt && (
+                <Text type="secondary" style={{ fontSize: 12 }}>
+                  {new Date(reportData.finishedAt).toLocaleString('ru-RU')}
+                </Text>
+              )}
+            </Space>
+
+            {reportData.warnings && reportData.warnings.length > 0 && (
+              <Alert
+                type="warning"
+                icon={<WarningOutlined />}
+                showIcon
+                message="Предупреждения"
+                description={
+                  <ul style={{ margin: 0, paddingLeft: 16 }}>
+                    {reportData.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                  </ul>
+                }
+              />
+            )}
+
+            {reportData.status === 'DONE' && reportData.reportJson && (
+              <Alert
+                type="info"
+                message={`Изменено листов: ${reportData.reportJson.changedPages ?? '?'} из ${reportData.reportJson.pageCount ?? '?'}`}
+              />
+            )}
+
+            {reportData.status === 'DONE' && reportData.reportText && (
+              <pre style={{
+                background: '#f6f8fa',
+                border: '1px solid #d0d7de',
+                borderRadius: 6,
+                padding: 12,
+                fontSize: 12,
+                maxHeight: 400,
+                overflow: 'auto',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+              }}>
+                {reportData.reportText}
+              </pre>
+            )}
+
+            {(reportData.status === 'PENDING' || reportData.status === 'RUNNING') && (
+              <Alert type="info" message="Сравнение ещё выполняется. Попробуйте открыть позже." />
+            )}
+
+            {reportData.status === 'FAILED' && (
+              <Alert type="error" message="Сравнение завершилось с ошибкой." />
+            )}
+          </Space>
+        )}
       </Modal>
     </div>
   );

@@ -206,6 +206,31 @@ const ensureProjectMigration = async () => {
       console.log('✅ Таблица document_versions создана');
     }
 
+    // 9. Таблица сравнений версий
+    const documentComparisonsTableExists = await checkTableExists('document_comparisons');
+    if (!documentComparisonsTableExists) {
+      console.log('📝 Создание таблицы document_comparisons...');
+      await sequelize.query(`
+        CREATE TABLE document_comparisons (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          document_id INTEGER NOT NULL,
+          base_version_id INTEGER NOT NULL,
+          target_version_id INTEGER NOT NULL,
+          status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+          report_text TEXT,
+          report_json TEXT,
+          warnings TEXT,
+          artifacts_path VARCHAR(500),
+          started_at DATETIME,
+          finished_at DATETIME,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      await sequelize.query('CREATE INDEX IF NOT EXISTS idx_document_comparisons_document_id ON document_comparisons(document_id)');
+      await sequelize.query('CREATE INDEX IF NOT EXISTS idx_document_comparisons_target ON document_comparisons(target_version_id)');
+      console.log('✅ Таблица document_comparisons создана');
+    }
+
     console.log('✅ Проверка и обновление схемы базы данных завершены');
 
   } catch (error) {
