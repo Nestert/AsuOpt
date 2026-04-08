@@ -20,6 +20,12 @@ module.exports = [
         module: 'readonly',
         Buffer: 'readonly',
         global: 'readonly',
+        setImmediate: 'readonly',
+        clearImmediate: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
       },
     },
     plugins: {
