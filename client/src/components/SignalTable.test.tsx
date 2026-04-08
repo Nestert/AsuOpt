@@ -35,7 +35,7 @@ describe('SignalTable', () => {
   });
 
   it('handles API calls', async () => {
-    const { rerender } = render(<SignalTable projectId={1} />);
+    render(<SignalTable projectId={1} />);
 
     // Проверяем, что компонент рендерится без ошибок
     await waitFor(() => {

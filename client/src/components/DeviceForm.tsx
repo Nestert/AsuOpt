@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
-  Box,
   Button,
   Dialog,
   DialogActions,
@@ -12,10 +11,8 @@ import {
   FormControl,
   InputLabel,
   Select,
-  SelectChangeEvent,
   Snackbar,
   Alert,
-  Typography,
   FormHelperText
 } from '@mui/material';
 import { apiClient } from '../services/api';
@@ -60,7 +57,7 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ open, onClose, onDeviceAdded, p
     message: '',
     severity: 'success' as 'success' | 'error'
   });
-  const [errors, setErrors] = useState({
+  const [errors] = useState({
     systemCode: '',
     equipmentCode: '',
     lineNumber: '',
@@ -75,14 +72,6 @@ const DeviceForm: React.FC<DeviceFormProps> = ({ open, onClose, onDeviceAdded, p
     setFormData({
       ...formData,
       [name]: value
-    });
-  };
-
-  const handleSelectChange = (e: SelectChangeEvent) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value === '' ? null : Number(value)
     });
   };
 

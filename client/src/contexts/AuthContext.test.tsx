@@ -60,9 +60,9 @@ describe('AuthContext unauthorized flow', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('loading')).toHaveTextContent('false');
-      expect(screen.getByTestId('auth')).toHaveTextContent('true');
-      expect(screen.getByTestId('user')).toHaveTextContent('tester');
     });
+    expect(screen.getByTestId('auth')).toHaveTextContent('true');
+    expect(screen.getByTestId('user')).toHaveTextContent('tester');
 
     act(() => {
       window.dispatchEvent(new CustomEvent('asuopt:auth-unauthorized'));
