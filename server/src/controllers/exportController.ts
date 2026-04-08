@@ -9,6 +9,57 @@ import { Zra } from '../models/Zra';
 import { Document, Packer, Paragraph } from 'docx';
 const puppeteer: any = require('puppeteer');
 
+const KIP_FIELD_LABELS: Record<string, string> = {
+  section: 'Секция',
+  unitArea: 'Установка/Зона',
+  manufacturer: 'Производитель',
+  article: 'Артикул',
+  measureUnit: 'Единица измерения',
+  scale: 'Шкала',
+  note: 'Примечание',
+  docLink: 'Ссылка на документацию',
+  responsibilityZone: 'Зона ответственности',
+  connectionScheme: 'Схема подключения',
+  power: 'Питание',
+  plc: 'ПЛК',
+  exVersion: 'Ex-версия',
+  environmentCharacteristics: 'Характеристики окружающей среды',
+  signalPurpose: 'Назначение сигнала',
+  controlPoints: 'Контрольные точки',
+  completeness: 'Комплектность',
+  measuringLimits: 'Пределы измерений',
+};
+
+const ZRA_FIELD_LABELS: Record<string, string> = {
+  unitArea: 'Установка/Зона',
+  designType: 'Тип конструкции',
+  valveType: 'Тип клапана',
+  actuatorType: 'Тип привода',
+  pipePosition: 'Положение трубы',
+  nominalDiameter: 'Номинальный диаметр',
+  pressureRating: 'Номинальное давление',
+  pipeMaterial: 'Материал трубы',
+  medium: 'Среда',
+  positionSensor: 'Датчик положения',
+  solenoidType: 'Тип соленоида',
+  emergencyPosition: 'Аварийное положение',
+  controlPanel: 'Панель управления',
+  airConsumption: 'Расход воздуха',
+  connectionSize: 'Размер соединения',
+  fittingsCount: 'Количество фитингов',
+  tubeDiameter: 'Диаметр трубы',
+  limitSwitchType: 'Тип концевого выключателя',
+  positionerType: 'Тип позиционера',
+  deviceDescription: 'Описание устройства',
+  category: 'Категория',
+  plc: 'ПЛК',
+  exVersion: 'Ex-версия',
+  operation: 'Управление',
+  note: 'Примечание',
+};
+
+const EXCLUDED_KEYS = new Set(['id', 'deviceReferenceId', 'createdAt', 'updatedAt']);
+
 // Экспорт списка устройств в Excel
 export const exportToExcel = async (req: Request, res: Response) => {
   try {
@@ -296,56 +347,7 @@ export const generateQuestionnaire = async (req: Request, res: Response) => {
     </div>`;
 
       // Словари русских названий полей КИП и ЗРА
-      const kipFieldLabels: Record<string, string> = {
-        section: 'Секция',
-        unitArea: 'Установка/Зона',
-        manufacturer: 'Производитель',
-        article: 'Артикул',
-        measureUnit: 'Единица измерения',
-        scale: 'Шкала',
-        note: 'Примечание',
-        docLink: 'Ссылка на документацию',
-        responsibilityZone: 'Зона ответственности',
-        connectionScheme: 'Схема подключения',
-        power: 'Питание',
-        plc: 'ПЛК',
-        exVersion: 'Ex-версия',
-        environmentCharacteristics: 'Характеристики окружающей среды',
-        signalPurpose: 'Назначение сигнала',
-        controlPoints: 'Контрольные точки',
-        completeness: 'Комплектность',
-        measuringLimits: 'Пределы измерений',
-      };
-
-      const zraFieldLabels: Record<string, string> = {
-        unitArea: 'Установка/Зона',
-        designType: 'Тип конструкции',
-        valveType: 'Тип клапана',
-        actuatorType: 'Тип привода',
-        pipePosition: 'Положение трубы',
-        nominalDiameter: 'Номинальный диаметр',
-        pressureRating: 'Номинальное давление',
-        pipeMaterial: 'Материал трубы',
-        medium: 'Среда',
-        positionSensor: 'Датчик положения',
-        solenoidType: 'Тип соленоида',
-        emergencyPosition: 'Аварийное положение',
-        controlPanel: 'Панель управления',
-        airConsumption: 'Расход воздуха',
-        connectionSize: 'Размер соединения',
-        fittingsCount: 'Количество фитингов',
-        tubeDiameter: 'Диаметр трубы',
-        limitSwitchType: 'Тип концевого выключателя',
-        positionerType: 'Тип позиционера',
-        deviceDescription: 'Описание устройства',
-        category: 'Категория',
-        plc: 'ПЛК',
-        exVersion: 'Ex-версия',
-        operation: 'Управление',
-        note: 'Примечание',
-      };
-
-      const excludedKeys = new Set(['id', 'deviceReferenceId', 'createdAt', 'updatedAt']);
+      const excludedKeys = EXCLUDED_KEYS;
 
       devices.forEach((deviceData: any, index: number) => {
         const { device, kip, zra } = deviceData;
@@ -366,7 +368,7 @@ export const generateQuestionnaire = async (req: Request, res: Response) => {
             <h3>Технические данные КИП:</h3>`;
           Object.entries(kip).forEach(([key, value]) => {
             if (value !== null && value !== undefined && value !== '' && !excludedKeys.has(key)) {
-              const label = kipFieldLabels[key] || key;
+              const label = KIP_FIELD_LABELS[key] || key;
               html += `<p class="spec-item"><strong>${label}:</strong> ${value}</p>`;
             }
           });
@@ -375,7 +377,7 @@ export const generateQuestionnaire = async (req: Request, res: Response) => {
             <h3>Технические данные ЗРА:</h3>`;
           Object.entries(zra).forEach(([key, value]) => {
             if (value !== null && value !== undefined && value !== '' && !excludedKeys.has(key)) {
-              const label = zraFieldLabels[key] || key;
+              const label = ZRA_FIELD_LABELS[key] || key;
               html += `<p class="spec-item"><strong>${label}:</strong> ${value}</p>`;
             }
           });
@@ -419,58 +421,6 @@ export const generateQuestionnaire = async (req: Request, res: Response) => {
       // Генерация Word
       const paragraphs: Paragraph[] = [];
 
-      // Словари русских названий полей КИП и ЗРА (Word)
-      const kipFieldLabelsWord: Record<string, string> = {
-        section: 'Секция',
-        unitArea: 'Установка/Зона',
-        manufacturer: 'Производитель',
-        article: 'Артикул',
-        measureUnit: 'Единица измерения',
-        scale: 'Шкала',
-        note: 'Примечание',
-        docLink: 'Ссылка на документацию',
-        responsibilityZone: 'Зона ответственности',
-        connectionScheme: 'Схема подключения',
-        power: 'Питание',
-        plc: 'ПЛК',
-        exVersion: 'Ex-версия',
-        environmentCharacteristics: 'Характеристики окружающей среды',
-        signalPurpose: 'Назначение сигнала',
-        controlPoints: 'Контрольные точки',
-        completeness: 'Комплектность',
-        measuringLimits: 'Пределы измерений',
-      };
-
-      const zraFieldLabelsWord: Record<string, string> = {
-        unitArea: 'Установка/Зона',
-        designType: 'Тип конструкции',
-        valveType: 'Тип клапана',
-        actuatorType: 'Тип привода',
-        pipePosition: 'Положение трубы',
-        nominalDiameter: 'Номинальный диаметр',
-        pressureRating: 'Номинальное давление',
-        pipeMaterial: 'Материал трубы',
-        medium: 'Среда',
-        positionSensor: 'Датчик положения',
-        solenoidType: 'Тип соленоида',
-        emergencyPosition: 'Аварийное положение',
-        controlPanel: 'Панель управления',
-        airConsumption: 'Расход воздуха',
-        connectionSize: 'Размер соединения',
-        fittingsCount: 'Количество фитингов',
-        tubeDiameter: 'Диаметр трубы',
-        limitSwitchType: 'Тип концевого выключателя',
-        positionerType: 'Тип позиционера',
-        deviceDescription: 'Описание устройства',
-        category: 'Категория',
-        plc: 'ПЛК',
-        exVersion: 'Ex-версия',
-        operation: 'Управление',
-        note: 'Примечание',
-      };
-
-      const excludedKeysWord = new Set(['id', 'deviceReferenceId', 'createdAt', 'updatedAt']);
-
       paragraphs.push(new Paragraph({
         text: 'Опросный лист для закупки оборудования',
         heading: 'Title',
@@ -500,8 +450,8 @@ export const generateQuestionnaire = async (req: Request, res: Response) => {
           }));
 
           Object.entries(kip).forEach(([key, value]) => {
-            if (value !== null && value !== undefined && value !== '' && !excludedKeysWord.has(key)) {
-              const label = kipFieldLabelsWord[key] || key;
+            if (value !== null && value !== undefined && value !== '' && !EXCLUDED_KEYS.has(key)) {
+              const label = KIP_FIELD_LABELS[key] || key;
               paragraphs.push(new Paragraph(`${label}: ${value}`));
             }
           });
@@ -512,8 +462,8 @@ export const generateQuestionnaire = async (req: Request, res: Response) => {
           }));
 
           Object.entries(zra).forEach(([key, value]) => {
-            if (value !== null && value !== undefined && value !== '' && !excludedKeysWord.has(key)) {
-              const label = zraFieldLabelsWord[key] || key;
+            if (value !== null && value !== undefined && value !== '' && !EXCLUDED_KEYS.has(key)) {
+              const label = ZRA_FIELD_LABELS[key] || key;
               paragraphs.push(new Paragraph(`${label}: ${value}`));
             }
           });

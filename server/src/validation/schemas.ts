@@ -145,3 +145,26 @@ export const importCsvBodySchema = z
 export const importAssignSignalsParamsSchema = z.object({
   deviceType: z.string().trim().min(1).max(255),
 });
+
+export const deviceCreateBodySchema = z.object({
+  systemCode: z.string().trim().min(1).max(255),
+  equipmentCode: z.string().trim().min(1).max(255),
+  lineNumber: z.string().trim().max(255).default(''),
+  cabinetName: z.string().trim().max(255).default(''),
+  deviceDesignation: z.string().trim().min(1).max(255),
+  deviceType: z.string().trim().min(1).max(255),
+  description: z.string().max(5000).optional().nullable(),
+  parentId: z.number().int().positive().optional().nullable(),
+  projectId: z.number().int().positive(),
+});
+
+export const deviceUpdateBodySchema = z.object({
+  systemCode: z.string().trim().min(1).max(255).optional(),
+  equipmentCode: z.string().trim().min(1).max(255).optional(),
+  lineNumber: z.string().trim().max(255).optional(),
+  cabinetName: z.string().trim().max(255).optional(),
+  deviceDesignation: z.string().trim().min(1).max(255).optional(),
+  deviceType: z.string().trim().min(1).max(255).optional(),
+  description: z.string().max(5000).optional().nullable(),
+  parentId: z.number().int().positive().optional().nullable(),
+});

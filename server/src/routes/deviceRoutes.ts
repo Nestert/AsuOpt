@@ -1,6 +1,8 @@
 import express, { Request, Response, NextFunction } from 'express';
 import * as deviceController from '../controllers/deviceController';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
+import { validateBody, validateParams } from '../middleware/validation';
+import { deviceCreateBodySchema, deviceUpdateBodySchema, idParamSchema } from '../validation/schemas';
 
 const router = express.Router();
 
@@ -43,13 +45,13 @@ router.get('/:id', (req: Request, res: Response, next: NextFunction) => {
 });
 
 // Создание устройства
-router.post('/', (req: Request, res: Response, next: NextFunction) => {
+router.post('/', validateBody(deviceCreateBodySchema), (req: Request, res: Response, next: NextFunction) => {
   deviceController.createDevice(req, res)
     .catch(next);
 });
 
 // Обновление устройства
-router.put('/:id', (req: Request, res: Response, next: NextFunction) => {
+router.put('/:id', validateParams(idParamSchema), validateBody(deviceUpdateBodySchema), (req: Request, res: Response, next: NextFunction) => {
   deviceController.updateDevice(req, res)
     .catch(next);
 });

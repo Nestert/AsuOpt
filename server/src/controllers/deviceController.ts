@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { Device } from '../models/Device';
-import { Op } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
+import { ApiError } from '../errors/ApiError';
 
 /**
  * @swagger
@@ -195,344 +196,230 @@ import { Op } from 'sequelize';
 
 // Получить иерархическую структуру устройств (оптимизированная версия с ленивой загрузкой)
 export const getDeviceTree = async (req: Request, res: Response) => {
-  try {
-    console.log('Запрос на получение дерева устройств');
-
-    const { projectId, lazy = 'true' } = req.query;
-    const whereClause: any = { parentId: null };
-    if (projectId) {
-      whereClause.projectId = Number(projectId);
-    }
-
-    let rootDevices;
-
-    if (lazy === 'true') {
-      // Ленивая загрузка: получаем только корневые устройства без детей
-      rootDevices = await Device.findAll({
-        where: whereClause,
-        order: [['createdAt', 'ASC']]
-      });
-
-      // Добавляем поле childrenCount для UI
-      for (const device of rootDevices) {
-        const childrenCount = await Device.count({
-          where: { parentId: device.id }
-        });
-        (device as any).childrenCount = childrenCount;
-      }
-    } else {
-      // Полная загрузка для совместимости (если lazy=false)
-      rootDevices = await Device.findAll({
-        where: whereClause,
-        include: [
-          {
-            model: Device,
-            as: 'children',
-            include: [{ all: true, nested: true }]
-          }
-        ],
-        order: [['createdAt', 'ASC']]
-      });
-    }
-
-    console.log(`Получено корневых устройств: ${rootDevices.length}`);
-
-    // Проверяем если список пуст, выводим диагностическую информацию
-    if (rootDevices.length === 0) {
-      const allDevices = await Device.findAll();
-      console.log(`Всего устройств в базе: ${allDevices.length}`);
-
-      // Если нет корневых устройств, но есть устройства в базе,
-      // возможно у них не установлен parentId в null явно
-      await Device.update(
-        { parentId: null },
-        {
-          where: {
-            [Op.or]: [
-              { parentId: { [Op.is]: null } },
-              { parentId: '' }
-            ]
-          }
-        }
-      );
-
-      // Получаем устройства еще раз после обновления
-      const updatedRootDevices = lazy === 'true' ?
-        await Device.findAll({
-          where: whereClause,
-          order: [['createdAt', 'ASC']]
-        }) :
-        await Device.findAll({
-          where: whereClause,
-          include: [
-            {
-              model: Device,
-              as: 'children',
-              include: [{ all: true, nested: true }]
-            }
-          ],
-          order: [['createdAt', 'ASC']]
-        });
-
-      console.log(`После исправления получено корневых устройств: ${updatedRootDevices.length}`);
-      return res.status(200).json(updatedRootDevices);
-    }
-
-    res.status(200).json(rootDevices);
-  } catch (error) {
-    console.error('Ошибка при получении дерева устройств:', error);
-    res.status(500).json({ message: 'Ошибка сервера при получении дерева устройств' });
+  const { projectId, lazy = 'true' } = req.query;
+  const whereClause: any = { parentId: null };
+  if (projectId) {
+    whereClause.projectId = Number(projectId);
   }
+
+  let rootDevices;
+
+  if (lazy === 'true') {
+    rootDevices = await Device.findAll({
+      where: whereClause,
+      order: [['createdAt', 'ASC']]
+    });
+
+    const parentIds = rootDevices.map(d => d.id);
+    const childrenCounts = parentIds.length > 0
+      ? await Device.findAll({
+          attributes: ['parentId', [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+          where: { parentId: parentIds },
+          group: ['parentId'],
+          raw: true,
+        }) as unknown as Array<{ parentId: number; count: number }>
+      : [];
+    const countMap = new Map(childrenCounts.map(r => [r.parentId, Number(r.count)]));
+    for (const device of rootDevices) {
+      (device as any).childrenCount = countMap.get(device.id) ?? 0;
+    }
+  } else {
+    rootDevices = await Device.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Device,
+          as: 'children',
+          include: [{ all: true, nested: true }]
+        }
+      ],
+      order: [['createdAt', 'ASC']]
+    });
+  }
+
+  res.status(200).json(rootDevices);
 };
 
 // Получить все устройства (плоский список) с пагинацией
 export const getAllDevices = async (req: Request, res: Response) => {
-  try {
-    const { page = 1, limit = 50, projectId } = req.query;
-    const offset = (Number(page) - 1) * Number(limit);
+  const { page = 1, limit = 50, projectId } = req.query;
+  const offset = (Number(page) - 1) * Number(limit);
 
-    const whereClause: any = {};
-    if (projectId) {
-      whereClause.projectId = Number(projectId);
-    }
-
-    const { count, rows } = await Device.findAndCountAll({
-      where: whereClause,
-      limit: Number(limit),
-      offset,
-      order: [['createdAt', 'DESC']]
-    });
-
-    res.status(200).json({
-      devices: rows,
-      pagination: {
-        total: count,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(count / Number(limit))
-      }
-    });
-  } catch (error) {
-    console.error('Ошибка при получении устройств:', error);
-    res.status(500).json({ message: 'Ошибка сервера при получении устройств' });
+  const whereClause: any = {};
+  if (projectId) {
+    whereClause.projectId = Number(projectId);
   }
+
+  const { count, rows } = await Device.findAndCountAll({
+    where: whereClause,
+    limit: Number(limit),
+    offset,
+    order: [['createdAt', 'DESC']]
+  });
+
+  res.status(200).json({
+    devices: rows,
+    pagination: {
+      total: count,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(count / Number(limit))
+    }
+  });
 };
 
 // Получить устройство по ID
 export const getDeviceById = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const device = await Device.findByPk(id, {
-      include: [
-        {
-          model: Device,
-          as: 'children'
-        },
-        {
-          model: Device,
-          as: 'parent'
-        }
-      ]
-    });
+  const { id } = req.params;
+  const device = await Device.findByPk(id, {
+    include: [
+      { model: Device, as: 'children' },
+      { model: Device, as: 'parent' }
+    ]
+  });
 
-    if (!device) {
-      return res.status(404).json({ message: 'Устройство не найдено' });
-    }
-
-    res.status(200).json(device);
-  } catch (error) {
-    console.error('Ошибка при получении устройства:', error);
-    res.status(500).json({ message: 'Ошибка сервера при получении устройства' });
+  if (!device) {
+    throw new ApiError(404, 'NOT_FOUND', 'Устройство не найдено');
   }
+
+  res.status(200).json(device);
 };
 
 // Создать новое устройство
 export const createDevice = async (req: Request, res: Response) => {
-  try {
-    const deviceData = req.body;
-    const newDevice = await Device.create(deviceData);
-    res.status(201).json(newDevice);
-  } catch (error) {
-    console.error('Ошибка при создании устройства:', error);
-    res.status(500).json({ message: 'Ошибка сервера при создании устройства' });
-  }
+  const newDevice = await Device.create(req.body);
+  res.status(201).json(newDevice);
 };
 
 // Обновить устройство
 export const updateDevice = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    const deviceData = req.body;
-    
-    const device = await Device.findByPk(id);
-    if (!device) {
-      return res.status(404).json({ message: 'Устройство не найдено' });
-    }
+  const { id } = req.params;
 
-    await device.update(deviceData);
-    res.status(200).json(device);
-  } catch (error) {
-    console.error('Ошибка при обновлении устройства:', error);
-    res.status(500).json({ message: 'Ошибка сервера при обновлении устройства' });
+  const device = await Device.findByPk(id);
+  if (!device) {
+    throw new ApiError(404, 'NOT_FOUND', 'Устройство не найдено');
   }
+
+  await device.update(req.body);
+  res.status(200).json(device);
 };
 
 // Удалить устройство
 export const deleteDevice = async (req: Request, res: Response) => {
-  try {
-    const { id } = req.params;
-    
-    const device = await Device.findByPk(id);
-    if (!device) {
-      return res.status(404).json({ message: 'Устройство не найдено' });
-    }
+  const { id } = req.params;
 
-    await device.destroy();
-    res.status(200).json({ message: 'Устройство успешно удалено' });
-  } catch (error) {
-    console.error('Ошибка при удалении устройства:', error);
-    res.status(500).json({ message: 'Ошибка сервера при удалении устройства' });
+  const device = await Device.findByPk(id);
+  if (!device) {
+    throw new ApiError(404, 'NOT_FOUND', 'Устройство не найдено');
   }
+
+  await device.destroy();
+  res.status(200).json({ message: 'Устройство успешно удалено' });
 };
 
 // Очистить базу данных устройств
 export const clearAllDevices = async (req: Request, res: Response) => {
+  const countBefore = await Device.count();
+  const transaction = await Device.sequelize!.transaction();
   try {
-    console.log('Запрос на очистку базы данных устройств');
-    
-    // Получаем текущее количество устройств для информации
-    const countBefore = await Device.count();
-    console.log(`Найдено ${countBefore} устройств для удаления`);
-    
-    // Начинаем транзакцию
-    const transaction = await Device.sequelize!.transaction();
-    
-    try {
-      // Используем более безопасный метод для SQLite
-      await Device.destroy({ 
-        where: {},  // Удаляем все записи без truncate
-        force: true, // Физическое удаление (не soft delete)
-        transaction // Используем транзакцию
-      });
-      
-      // Подтверждаем транзакцию
-      await transaction.commit();
-      
-      console.log(`Очищена база данных. Удалено ${countBefore} устройств.`);
-      
-      res.status(200).json({ 
-        message: 'База данных успешно очищена', 
-        deletedCount: countBefore 
-      });
-    } catch (error) {
-      // Откатываем транзакцию в случае ошибки
-      await transaction.rollback();
-      throw error;
-    }
+    await Device.destroy({ where: {}, force: true, transaction });
+    await transaction.commit();
   } catch (error) {
-    console.error('Ошибка при очистке базы данных:', error);
-    res.status(500).json({ 
-      message: 'Ошибка сервера при очистке базы данных',
-      error: error instanceof Error ? error.message : String(error)
-    });
+    await transaction.rollback();
+    throw error;
   }
+  res.status(200).json({ message: 'База данных успешно очищена', deletedCount: countBefore });
 };
 
 // Получить дочерние устройства по ID родителя
 export const getDeviceChildren = async (req: Request, res: Response) => {
-  try {
-    const { parentId } = req.params;
-    const { projectId, lazy = 'true' } = req.query;
+  const { parentId } = req.params;
+  const { projectId, lazy = 'true' } = req.query;
 
-    const whereClause: any = { parentId: Number(parentId) };
-    if (projectId) {
-      whereClause.projectId = Number(projectId);
-    }
-
-    let children;
-
-    if (lazy === 'true') {
-      // Ленивая загрузка дочерних устройств
-      children = await Device.findAll({
-        where: whereClause,
-        order: [['createdAt', 'ASC']]
-      });
-
-      // Добавляем childrenCount для каждого ребенка
-      for (const device of children) {
-        const childrenCount = await Device.count({
-          where: { parentId: device.id }
-        });
-        (device as any).childrenCount = childrenCount;
-      }
-    } else {
-      // Рекурсивная загрузка для совместимости
-      children = await Device.findAll({
-        where: whereClause,
-        include: [
-          {
-            model: Device,
-            as: 'children',
-            include: [{ all: true, nested: true }]
-          }
-        ],
-        order: [['createdAt', 'ASC']]
-      });
-    }
-
-    res.status(200).json(children);
-  } catch (error) {
-    console.error('Ошибка при получении дочерних устройств:', error);
-    res.status(500).json({ message: 'Ошибка сервера при получении дочерних устройств' });
+  const whereClause: any = { parentId: Number(parentId) };
+  if (projectId) {
+    whereClause.projectId = Number(projectId);
   }
+
+  let children;
+
+  if (lazy === 'true') {
+    children = await Device.findAll({
+      where: whereClause,
+      order: [['createdAt', 'ASC']]
+    });
+
+    const parentIds = children.map(d => d.id);
+    const childrenCounts = parentIds.length > 0
+      ? await Device.findAll({
+          attributes: ['parentId', [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']],
+          where: { parentId: parentIds },
+          group: ['parentId'],
+          raw: true,
+        }) as unknown as Array<{ parentId: number; count: number }>
+      : [];
+    const countMap = new Map(childrenCounts.map(r => [r.parentId, Number(r.count)]));
+    for (const device of children) {
+      (device as any).childrenCount = countMap.get(device.id) ?? 0;
+    }
+  } else {
+    children = await Device.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: Device,
+          as: 'children',
+          include: [{ all: true, nested: true }]
+        }
+      ],
+      order: [['createdAt', 'ASC']]
+    });
+  }
+
+  res.status(200).json(children);
 };
 
 // Поиск устройств по параметрам с пагинацией
 export const searchDevices = async (req: Request, res: Response) => {
-  try {
-    const { query, page = 1, limit = 50, projectId } = req.query;
+  const { query, page = 1, limit = 50, projectId } = req.query;
 
-    if (!query) {
-      return res.status(400).json({ message: 'Необходимо указать параметр query для поиска' });
-    }
-
-    const offset = (Number(page) - 1) * Number(limit);
-    const searchQuery = `%${query}%`;
-
-    const whereClause: any = {
-      [Op.or]: [
-        { systemCode: { [Op.iLike]: searchQuery } },
-        { equipmentCode: { [Op.iLike]: searchQuery } },
-        { deviceDesignation: { [Op.iLike]: searchQuery } },
-        { deviceType: { [Op.iLike]: searchQuery } },
-        { description: { [Op.iLike]: searchQuery } },
-        { lineNumber: { [Op.iLike]: searchQuery } },
-        { cabinetName: { [Op.iLike]: searchQuery } }
-      ]
-    };
-
-    if (projectId) {
-      whereClause.projectId = Number(projectId);
-    }
-
-    const { count, rows } = await Device.findAndCountAll({
-      where: whereClause,
-      limit: Number(limit),
-      offset,
-      order: [['createdAt', 'DESC']]
-    });
-
-    res.status(200).json({
-      devices: rows,
-      pagination: {
-        total: count,
-        page: Number(page),
-        limit: Number(limit),
-        totalPages: Math.ceil(count / Number(limit))
-      }
-    });
-  } catch (error) {
-    console.error('Ошибка при поиске устройств:', error);
-    res.status(500).json({ message: 'Ошибка сервера при поиске устройств' });
+  if (!query) {
+    throw new ApiError(400, 'BAD_REQUEST', 'Необходимо указать параметр query для поиска');
   }
+
+  const offset = (Number(page) - 1) * Number(limit);
+  const searchQuery = `%${query}%`;
+
+  const whereClause: any = {
+    [Op.or]: [
+      { systemCode: { [Op.like]: searchQuery } },
+      { equipmentCode: { [Op.like]: searchQuery } },
+      { deviceDesignation: { [Op.like]: searchQuery } },
+      { deviceType: { [Op.like]: searchQuery } },
+      { description: { [Op.like]: searchQuery } },
+      { lineNumber: { [Op.like]: searchQuery } },
+      { cabinetName: { [Op.like]: searchQuery } }
+    ]
+  };
+
+  if (projectId) {
+    whereClause.projectId = Number(projectId);
+  }
+
+  const { count, rows } = await Device.findAndCountAll({
+    where: whereClause,
+    limit: Number(limit),
+    offset,
+    order: [['createdAt', 'DESC']]
+  });
+
+  res.status(200).json({
+    devices: rows,
+    pagination: {
+      total: count,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(count / Number(limit))
+    }
+  });
 };

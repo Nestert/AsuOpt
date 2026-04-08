@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { Op } from 'sequelize';
 import { User } from '../models/User';
 import { getJwtSecret } from '../config/env';
+import { ApiError } from '../errors/ApiError';
 
 // JWT секретный ключ (в продакшене должен быть в переменных окружения)
 const JWT_SECRET = getJwtSecret();
@@ -95,77 +97,63 @@ const JWT_EXPIRES_IN = '24h';
  *         description: Пользователь уже существует
  */
 export const register = async (req: Request, res: Response) => {
-  try {
-    const { username, email, password } = req.body;
+  const { username, email, password } = req.body;
 
-    // Проверка обязательных полей
-    if (!username || !email || !password) {
-      res.status(400).json({
-        message: 'Необходимо указать username, email и password'
-      });
-      return;
+  // Проверка обязательных полей
+  if (!username || !email || !password) {
+    throw new ApiError(400, 'BAD_REQUEST', 'Необходимо указать username, email и password');
+  }
+
+  // Проверка существующего пользователя
+  const existingUser = await User.findOne({
+    where: {
+      [Op.or]: [
+        { username },
+        { email }
+      ]
     }
+  });
 
-    // Проверка существующего пользователя
-    const existingUser = await User.findOne({
-      where: {
-        [require('sequelize').Op.or]: [
-          { username },
-          { email }
-        ]
-      }
-    });
+  if (existingUser) {
+    throw new ApiError(409, 'CONFLICT', 'Пользователь с таким именем или email уже существует');
+  }
 
-    if (existingUser) {
-      res.status(409).json({
-        message: 'Пользователь с таким именем или email уже существует'
-      });
-      return;
-    }
+  // Создание нового пользователя
+  const user = await User.create({
+    username,
+    email,
+    password, // пароль будет хэширован в модели
+    role: 'user',
+    isActive: true
+  });
 
-    // Создание нового пользователя
-    const user = await User.create({
-      username,
-      email,
-      password, // пароль будет хэширован в модели
-      role: 'user',
-      isActive: true
-    });
-
-    // Генерация JWT токена
-    const token = jwt.sign(
-      {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role
-      },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-
-    // Возвращаем пользователя без пароля
-    const userResponse = {
+  // Генерация JWT токена
+  const token = jwt.sign(
+    {
       id: user.id,
       username: user.username,
       email: user.email,
-      role: user.role,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    };
+      role: user.role
+    },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
 
-    res.status(201).json({
-      token,
-      user: userResponse
-    });
+  // Возвращаем пользователя без пароля
+  const userResponse = {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt
+  };
 
-  } catch (error) {
-    console.error('Ошибка при регистрации:', error);
-    res.status(500).json({
-      message: 'Внутренняя ошибка сервера'
-    });
-  }
+  res.status(201).json({
+    token,
+    user: userResponse
+  });
 };
 
 /**
@@ -193,87 +181,61 @@ export const register = async (req: Request, res: Response) => {
  *         description: Пользователь не активен
  */
 export const login = async (req: Request, res: Response) => {
-  try {
-    const { username, password } = req.body;
+  const { username, password } = req.body;
 
-    // Проверка обязательных полей
-    if (!username || !password) {
-      res.status(400).json({
-        message: 'Необходимо указать username и password'
-      });
-      return;
-    }
+  // Проверка обязательных полей
+  if (!username || !password) {
+    throw new ApiError(400, 'BAD_REQUEST', 'Необходимо указать username и password');
+  }
 
-    // Поиск пользователя
-    const user = await User.findOne({
-      where: { username }
-    });
+  // Поиск пользователя
+  const user = await User.findOne({
+    where: { username }
+  });
 
-    console.log('Login attempt for user:', username);
-    console.log('User found:', !!user);
+  if (!user) {
+    throw new ApiError(400, 'INVALID_CREDENTIALS', 'Неверное имя пользователя или пароль');
+  }
 
-    if (!user) {
-      res.status(400).json({
-        message: 'Неверное имя пользователя или пароль'
-      });
-      return;
-    }
+  // Проверка активности пользователя
+  if (!user.isActive) {
+    throw new ApiError(401, 'ACCOUNT_INACTIVE', 'Аккаунт пользователя не активен');
+  }
 
-    // Проверка активности пользователя
-    if (!user.isActive) {
-      res.status(401).json({
-        message: 'Аккаунт пользователя не активен'
-      });
-      return;
-    }
+  // Проверка пароля
+  const isPasswordValid = await user.checkPassword(password);
 
-    // Проверка пароля
-    console.log('Checking password for user:', user.username);
-    const isPasswordValid = await user.checkPassword(password);
-    console.log('Password valid:', isPasswordValid);
+  if (!isPasswordValid) {
+    throw new ApiError(400, 'INVALID_CREDENTIALS', 'Неверное имя пользователя или пароль');
+  }
 
-    if (!isPasswordValid) {
-      res.status(400).json({
-        message: 'Неверное имя пользователя или пароль'
-      });
-      return;
-    }
-
-    // Генерация JWT токена
-    const token = jwt.sign(
-      {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role
-      },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-
-    // Возвращаем пользователя без пароля
-    const userResponse = {
+  // Генерация JWT токена
+  const token = jwt.sign(
+    {
       id: user.id,
       username: user.username,
       email: user.email,
-      role: user.role,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    };
+      role: user.role
+    },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
 
-    res.json({
-      token,
-      user: userResponse
-    });
-    return;
+  // Возвращаем пользователя без пароля
+  const userResponse = {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt
+  };
 
-  } catch (error) {
-    console.error('Ошибка при входе:', error);
-    res.status(500).json({
-      message: 'Внутренняя ошибка сервера'
-    });
-  }
+  res.json({
+    token,
+    user: userResponse
+  });
 };
 
 /**
@@ -295,27 +257,20 @@ export const login = async (req: Request, res: Response) => {
  *         description: Не авторизован
  */
 export const getCurrentUser = async (req: Request, res: Response) => {
-  try {
-    // Пользователь уже проверен в middleware
-    const user = (req as any).user;
+  // Пользователь уже проверен в middleware
+  const user = (req as any).user;
 
-    const userResponse = {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      role: user.role,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    };
+  const userResponse = {
+    id: user.id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    isActive: user.isActive,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt
+  };
 
-    res.json(userResponse);
-  } catch (error) {
-    console.error('Ошибка при получении пользователя:', error);
-    res.status(500).json({
-      message: 'Внутренняя ошибка сервера'
-    });
-  }
+  res.json(userResponse);
 };
 
 /**
